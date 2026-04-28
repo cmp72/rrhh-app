@@ -1,0 +1,13 @@
+{
+  "name": "Recursos Humanos",
+  "short_name": "RRHH",
+  "description": "Panel de seguimiento de RRHH",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e293b",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
