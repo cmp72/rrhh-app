@@ -185,7 +185,8 @@ function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
   const yKey=String(year);
   const totalD=Number(totales[yKey]??0);
   const ye=entries.filter(e=>yearOf(e.fecha)===year);
-  const usados=ye.reduce((a,e)=>a+Number(e.dias||0),0);
+  const today2=new Date();today2.setHours(0,0,0,0);
+  const usados=ye.filter(e=>new Date(e.fecha+'T00:00:00')<=today2).reduce((a,e)=>a+Number(e.dias||0),0);
   const rest=totalD-usados;
   const pct=totalD>0?Math.min(100,(usados/totalD)*100):0;
 
