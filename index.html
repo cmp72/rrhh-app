@@ -13,11 +13,11 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     *{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
     body{margin:0;background:#f8fafc;overscroll-behavior:none}
-    input,textarea,select{font-size:16px !important}
+    input,textarea,select{font-size:16px!important;font-family:inherit}
+    button{font-family:inherit}
   </style>
 </head>
 <body>
@@ -25,11 +25,6 @@
 <script type="text/babel">
 const {useState,useEffect}=React;
 
-/* ── LocalStorage ── */
-const lsLoad=k=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch{return null}};
-const lsSave=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){console.error(e)}};
-
-/* ── Helpers ── */
 const todayISO=()=>new Date().toISOString().split('T')[0];
 const CY=new Date().getFullYear();
 const CM=new Date().getMonth();
@@ -39,159 +34,145 @@ const monthOf=iso=>parseInt(iso.slice(5,7),10)-1;
 const fmt=iso=>new Date(iso+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
-/* ── SVG icons ── */
-function Plus({s=20}){return<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>}
-function Edit({s=16}){return<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>}
-function Trash({s=16}){return<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>}
-function Xmark({s=18}){return<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>}
-function Chk({s=18}){return<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-
-/* ── Shared UI ── */
-function Stat({label,value,unit,accent}){
-  const c={red:'text-red-600',blue:'text-blue-600',emerald:'text-emerald-600',amber:'text-amber-600'};
-  return<div className="bg-white rounded-xl border border-slate-200 p-3 flex-1 min-w-0">
-    <p className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold truncate">{label}</p>
-    <p className={`text-2xl font-bold mt-1 ${c[accent]||'text-slate-800'}`}>{value}</p>
-    <p className="text-xs text-slate-500">{unit}</p>
-  </div>;
+function weeksAndDays(isoTarget){
+  const now=new Date();now.setHours(0,0,0,0);
+  const tgt=new Date(isoTarget+'T00:00:00');
+  const diff=Math.ceil((tgt-now)/86400000);
+  if(diff<=0)return null;
+  return{weeks:Math.floor(diff/7),days:diff%7,total:diff};
 }
 
-function SHead({title,sub,emoji,accent}){
-  const c={red:'bg-red-100',blue:'bg-blue-100',emerald:'bg-emerald-100',amber:'bg-amber-100'};
-  return<div className="flex items-center gap-3">
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${c[accent]}`}>{emoji}</div>
-    <div><h2 className="text-base font-bold text-slate-800">{title}</h2><p className="text-xs text-slate-500">{sub}</p></div>
-  </div>;
+function nextCobro(){
+  const now=new Date();now.setHours(0,0,0,0);
+  let y=now.getFullYear(),m=now.getMonth();
+  let cobro=new Date(y,m,28);
+  if(cobro<=now){m++;if(m>11){m=0;y++;}cobro=new Date(y,m,28);}
+  const diff=Math.ceil((cobro-now)/86400000);
+  return{date:cobro,weeks:Math.floor(diff/7),days:diff%7,total:diff};
 }
 
-function AddBtn({label,accent,onClick}){
-  const c={red:'bg-red-600 active:bg-red-700',blue:'bg-blue-600 active:bg-blue-700',emerald:'bg-emerald-600 active:bg-emerald-700',amber:'bg-amber-600 active:bg-amber-700'};
-  return<button onClick={onClick} className={`w-full ${c[accent]} text-white rounded-xl py-3 flex items-center justify-center gap-2 font-medium`}>
-    <Plus s={20}/>{label}
-  </button>;
+const lsLoad=k=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}};
+const lsSave=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){console.error(e);}};
+
+/* SVG icons */
+function IconPlus(){return(<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>);}
+function IconEdit(){return(<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>);}
+function IconTrash(){return(<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>);}
+function IconX({s=18}){return(<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>);}
+function IconChk(){return(<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>);}
+
+const ACCENT={
+  red:    '#dc2626', redL:'#fee2e2',
+  blue:   '#2563eb', blueL:'#dbeafe',
+  emerald:'#059669', emeraldL:'#d1fae5',
+  amber:  '#d97706', amberL:'#fef3c7',
+  purple: '#7c3aed', purpleL:'#ede9fe',
+};
+
+function Stat({label,value,unit,color}){
+  return(
+    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',flex:1,minWidth:0}}>
+      <div style={{fontSize:10,textTransform:'uppercase',letterSpacing:'0.05em',color:'#94a3b8',fontWeight:600}}>{label}</div>
+      <div style={{fontSize:26,fontWeight:800,color:color,marginTop:2,lineHeight:1}}>{value}</div>
+      <div style={{fontSize:11,color:'#94a3b8',marginTop:2}}>{unit}</div>
+    </div>
+  );
 }
 
-function Form({title,fields,initial,onSave,onCancel,accent}){
+function SHead({emoji,title,sub,bg}){
+  return(
+    <div style={{display:'flex',alignItems:'center',gap:10}}>
+      <div style={{width:40,height:40,borderRadius:12,background:bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>{emoji}</div>
+      <div>
+        <div style={{fontWeight:800,fontSize:16,color:'#1e293b'}}>{title}</div>
+        <div style={{fontSize:11,color:'#94a3b8'}}>{sub}</div>
+      </div>
+    </div>
+  );
+}
+
+function AddBtn({label,color,onClick}){
+  return(
+    <button onClick={onClick} style={{width:'100%',background:color,color:'white',border:'none',borderRadius:12,padding:'13px 0',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontWeight:600,fontSize:15,cursor:'pointer'}}>
+      <IconPlus/>{label}
+    </button>
+  );
+}
+
+function Form({title,fields,initial,onSave,onCancel,color}){
   const [d,setD]=useState({...initial});
-  const btnC={red:'bg-red-600',blue:'bg-blue-600',emerald:'bg-emerald-600',amber:'bg-amber-600'};
   const submit=()=>{
     for(const f of fields)if(f.req&&!String(d[f.name]||'').trim()){alert('Completá: '+f.label);return;}
     onSave(d);
   };
-  const cls="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400";
-  return<div className="bg-white rounded-xl border border-slate-200 shadow p-4 space-y-3">
-    <div className="flex items-center justify-between">
-      <p className="font-semibold text-slate-800 text-sm">{title}</p>
-      <button onClick={onCancel} className="text-slate-400 p-1"><Xmark s={18}/></button>
+  const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
+  return(
+    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',boxShadow:'0 2px 8px rgba(0,0,0,0.06)',padding:16,display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <span style={{fontWeight:700,color:'#1e293b'}}>{title}</span>
+        <button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IconX/></button>
+      </div>
+      {fields.map(f=>(
+        <div key={f.name}>
+          <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>{f.label}{f.req&&<span style={{color:'#ef4444'}}> *</span>}</label>
+          {f.type==='textarea'
+            ?<textarea rows={3} value={d[f.name]||''} onChange={e=>setD({...d,[f.name]:e.target.value})} placeholder={f.ph||''} style={{...inp,resize:'none'}}/>
+            :<input type={f.type||'text'} step={f.step} min={f.min} value={d[f.name]||''} onChange={e=>setD({...d,[f.name]:e.target.value})} placeholder={f.ph||''} style={inp}/>
+          }
+        </div>
+      ))}
+      <div style={{display:'flex',gap:8,marginTop:4}}>
+        <button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button>
+        <button onClick={submit}   style={{flex:1,padding:'11px 0',borderRadius:8,border:'none',background:color,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button>
+      </div>
     </div>
-    {fields.map(f=><div key={f.name}>
-      <label className="block text-xs font-medium text-slate-600 mb-1">{f.label}{f.req&&<span className="text-red-500 ml-0.5">*</span>}</label>
-      {f.type==='textarea'
-        ?<textarea rows={3} value={d[f.name]||''} onChange={e=>setD({...d,[f.name]:e.target.value})} placeholder={f.ph||''} className={cls+" resize-none"}/>
-        :<input type={f.type||'text'} step={f.step} min={f.min} value={d[f.name]||''} onChange={e=>setD({...d,[f.name]:e.target.value})} placeholder={f.ph||''} className={cls}/>
-      }
-    </div>)}
-    <div className="flex gap-2 pt-1">
-      <button onClick={onCancel} className="flex-1 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium">Cancelar</button>
-      <button onClick={submit}   className={`flex-1 py-2.5 rounded-lg text-white text-sm font-medium ${btnC[accent]}`}>Guardar</button>
-    </div>
-  </div>;
+  );
 }
 
 function Item({item,onEdit,onDelete,children}){
   const [conf,setConf]=useState(false);
-  return<div className="bg-white rounded-xl border border-slate-200 p-3 flex gap-2">
-    <div className="flex-1 min-w-0">{children}</div>
-    <div className="flex flex-col gap-1 shrink-0">
-      {!conf?<>
-        <button onClick={()=>onEdit(item)}     className="p-2 text-slate-400 rounded-lg active:bg-slate-100"><Edit s={16}/></button>
-        <button onClick={()=>setConf(true)}    className="p-2 text-slate-400 rounded-lg active:bg-red-50"><Trash s={16}/></button>
-      </>:<>
-        <button onClick={()=>{onDelete(item.id);setConf(false);}} className="p-2 bg-red-600 text-white rounded-lg text-[11px] font-bold leading-none">OK</button>
-        <button onClick={()=>setConf(false)} className="p-2 bg-slate-200 rounded-lg text-slate-600"><Xmark s={14}/></button>
-      </>}
+  return(
+    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:12,display:'flex',gap:8}}>
+      <div style={{flex:1,minWidth:0}}>{children}</div>
+      <div style={{display:'flex',flexDirection:'column',gap:4,flexShrink:0}}>
+        {!conf?<>
+          <button onClick={()=>onEdit(item)} style={{padding:8,background:'none',border:'none',borderRadius:8,cursor:'pointer',color:'#94a3b8'}}><IconEdit/></button>
+          <button onClick={()=>setConf(true)} style={{padding:8,background:'none',border:'none',borderRadius:8,cursor:'pointer',color:'#94a3b8'}}><IconTrash/></button>
+        </>:<>
+          <button onClick={()=>{onDelete(item.id);setConf(false);}} style={{padding:'6px 8px',background:'#dc2626',border:'none',borderRadius:8,cursor:'pointer',color:'white',fontWeight:800,fontSize:11}}>OK</button>
+          <button onClick={()=>setConf(false)} style={{padding:6,background:'#f1f5f9',border:'none',borderRadius:8,cursor:'pointer',color:'#64748b'}}><IconX s={14}/></button>
+        </>}
+      </div>
     </div>
-  </div>;
+  );
 }
 
 function Empty({text}){
-  return<div className="bg-white rounded-xl border border-dashed border-slate-300 p-8 text-center">
-    <p className="text-sm text-slate-400">{text}</p>
-  </div>;
+  return<div style={{background:'white',borderRadius:12,border:'2px dashed #cbd5e1',padding:32,textAlign:'center',color:'#94a3b8',fontSize:14}}>{text}</div>;
 }
 
-/* ══ FALLOS ══ */
-function FallosSection({items,year,onUpdate}){
-  const [form,setForm]=useState(false);
-  const [ed,setEd]=useState(null);
-  const yi=items.filter(i=>yearOf(i.fecha)===year);
-  const mi=yi.filter(i=>monthOf(i.fecha)===CM&&year===CY);
-  const F=[
-    {name:'fecha',label:'Fecha',type:'date',req:true},
-    {name:'desc', label:'Descripción',type:'textarea',req:true,ph:'Describe el fallo…'},
-  ];
-  const save=e=>{
-    if(ed){onUpdate(items.map(i=>i.id===ed.id?{...e,id:ed.id}:i));setEd(null);}
-    else{onUpdate([{...e,id:uid()},...items]);setForm(false);}
-  };
-  return<>
-    <SHead title="Fallos" sub="Registro de errores" emoji="⚠️" accent="red"/>
-    <div className="flex gap-3">
-      <Stat label={MESES[CM]}    value={mi.length} unit="este mes"  accent="red"/>
-      <Stat label={`Año ${year}`} value={yi.length} unit="en total" accent="red"/>
-    </div>
-    <AddBtn label="Añadir fallo" accent="red" onClick={()=>{setEd(null);setForm(true);}}/>
-    {(form||ed)&&<Form title={ed?'Editar fallo':'Nuevo fallo'} fields={F} initial={ed||{fecha:todayISO(),desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} accent="red"/>}
-    <div className="space-y-2">
-      {yi.length===0&&<Empty text="Sin fallos registrados este año"/>}
-      {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
-        <Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}>
-          <p className="text-xs text-slate-500">{fmt(it.fecha)}</p>
-          <p className="text-sm text-slate-800 mt-1 break-words">{it.desc}</p>
-        </Item>
-      ))}
-    </div>
-  </>;
-}
-
-/* ══ HORAS EXTRAS ══ */
-function HorasSection({items,year,onUpdate}){
-  const [form,setForm]=useState(false);
-  const [ed,setEd]=useState(null);
-  const yi=items.filter(i=>yearOf(i.fecha)===year);
-  const mi=yi.filter(i=>monthOf(i.fecha)===CM&&year===CY);
-  const sum=a=>a.reduce((s,i)=>s+Number(i.horas||0),0);
-  const F=[
-    {name:'fecha',label:'Fecha',type:'date',req:true},
-    {name:'horas',label:'Horas',type:'number',step:'0.5',min:'0',req:true,ph:'Ej: 2.5'},
-    {name:'desc', label:'Nota (opcional)',type:'textarea',ph:'Motivo…'},
-  ];
-  const save=e=>{
-    const c={...e,horas:Number(e.horas)||0};
-    if(ed){onUpdate(items.map(i=>i.id===ed.id?{...c,id:ed.id}:i));setEd(null);}
-    else{onUpdate([{...c,id:uid()},...items]);setForm(false);}
-  };
-  return<>
-    <SHead title="Horas extras" sub="Horas fuera de horario" emoji="⏱️" accent="blue"/>
-    <div className="flex gap-3">
-      <Stat label={MESES[CM]}    value={sum(mi)} unit="horas este mes"  accent="blue"/>
-      <Stat label={`Año ${year}`} value={sum(yi)} unit="horas en total" accent="blue"/>
-    </div>
-    <AddBtn label="Añadir horas extras" accent="blue" onClick={()=>{setEd(null);setForm(true);}}/>
-    {(form||ed)&&<Form title={ed?'Editar horas':'Nuevas horas extras'} fields={F} initial={ed||{fecha:todayISO(),horas:'',desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} accent="blue"/>}
-    <div className="space-y-2">
-      {yi.length===0&&<Empty text="Sin horas extras este año"/>}
-      {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
-        <Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}>
-          <div className="flex items-baseline justify-between gap-2">
-            <p className="text-xs text-slate-500">{fmt(it.fecha)}</p>
-            <p className="text-xl font-bold text-blue-600 shrink-0">{it.horas} h</p>
+/* ══ COBRO ══ */
+function CobroSection(){
+  const cobro=nextCobro();
+  const mes=cobro.date.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <SHead emoji="💰" title="Próximo cobro" sub="Se cobra el día 28 de cada mes" bg={ACCENT.purpleL}/>
+      <div style={{background:'white',borderRadius:16,border:'1px solid #e2e8f0',padding:24,textAlign:'center'}}>
+        <div style={{fontSize:13,color:'#94a3b8',marginBottom:4}}>Fecha de cobro</div>
+        <div style={{fontSize:22,fontWeight:800,color:'#1e293b',marginBottom:20}}>28 de {mes}</div>
+        <div style={{background:ACCENT.purpleL,borderRadius:12,padding:'20px 16px',marginBottom:12}}>
+          <div style={{fontSize:13,color:ACCENT.purple,fontWeight:600,marginBottom:8}}>Tiempo restante</div>
+          <div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:6,flexWrap:'wrap'}}>
+            {cobro.weeks>0&&<><span style={{fontSize:52,fontWeight:900,color:ACCENT.purple,lineHeight:1}}>{cobro.weeks}</span><span style={{fontSize:16,color:ACCENT.purple,fontWeight:600}}>sem</span></>}
+            {cobro.days>0&&<><span style={{fontSize:52,fontWeight:900,color:'#5b21b6',lineHeight:1,marginLeft:cobro.weeks>0?8:0}}>{cobro.days}</span><span style={{fontSize:16,color:'#5b21b6',fontWeight:600}}>día{cobro.days!==1?'s':''}</span></>}
+            {cobro.weeks===0&&cobro.days===0&&<span style={{fontSize:28,fontWeight:800,color:ACCENT.emerald}}>¡Hoy cobras! 🎉</span>}
           </div>
-          {it.desc&&<p className="text-sm text-slate-700 mt-1 break-words">{it.desc}</p>}
-        </Item>
-      ))}
+        </div>
+        <div style={{fontSize:13,color:'#94a3b8'}}>{cobro.total===1?'¡Mañana cobras! 🎉':`Faltan ${cobro.total} días en total`}</div>
+      </div>
     </div>
-  </>;
+  );
 }
 
 /* ══ VACACIONES ══ */
@@ -200,19 +181,27 @@ function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
   const [ed,setEd]=useState(null);
   const [editT,setEditT]=useState(false);
   const [tInput,setTInput]=useState('');
+
   const yKey=String(year);
   const totalD=Number(totales[yKey]??0);
   const ye=entries.filter(e=>yearOf(e.fecha)===year);
   const usados=ye.reduce((a,e)=>a+Number(e.dias||0),0);
   const rest=totalD-usados;
   const pct=totalD>0?Math.min(100,(usados/totalD)*100):0;
+
+  const today=new Date();today.setHours(0,0,0,0);
+  const futuras=entries.filter(e=>new Date(e.fecha+'T00:00:00')>today).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const proximas=futuras[0]||null;
+  const countdown=proximas?weeksAndDays(proximas.fecha):null;
+
   const abrirTotal=()=>{setTInput(String(totalD||''));setEditT(true);};
   const guardarTotal=()=>{
     const n=parseInt(tInput,10);
-    if(isNaN(n)||n<0){alert('Ingresá un número válido de días');return;}
+    if(isNaN(n)||n<0){alert('Ingresá un número válido');return;}
     onUpdateT({...totales,[yKey]:n});
     setEditT(false);
   };
+
   const F=[
     {name:'fecha',label:'Fecha de inicio',type:'date',req:true},
     {name:'dias', label:'Cantidad de días',type:'number',min:'1',step:'1',req:true,ph:'Ej: 5'},
@@ -223,59 +212,146 @@ function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
     if(ed){onUpdateE(entries.map(i=>i.id===ed.id?{...c,id:ed.id}:i));setEd(null);}
     else{onUpdateE([{...c,id:uid()},...entries]);setForm(false);}
   };
-  return<>
-    <SHead title="Vacaciones" sub={`Días para ${year}`} emoji="🌴" accent="emerald"/>
 
-    {/* Total anual */}
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Días totales del año</p>
-        {!editT&&<button onClick={abrirTotal} className="text-xs text-emerald-700 font-medium flex items-center gap-1">
-          <Edit s={12}/> {totalD>0?'Cambiar':'Definir'}
-        </button>}
-      </div>
-      {editT?(
-        <div className="flex gap-2">
-          <input type="number" min="0" step="1" value={tInput} autoFocus
-            onChange={e=>setTInput(e.target.value)}
-            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
-          <button onClick={guardarTotal}        className="bg-emerald-600 text-white px-3 rounded-lg"><Chk s={18}/></button>
-          <button onClick={()=>setEditT(false)} className="bg-slate-200 text-slate-700 px-3 rounded-lg"><Xmark s={18}/></button>
-        </div>
-      ):(
-        <p className="text-3xl font-bold text-slate-800">{totalD} <span className="text-sm font-normal text-slate-500">días asignados</span></p>
-      )}
-    </div>
+  const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:20,fontWeight:700,boxSizing:'border-box',outline:'none'};
 
-    {/* Stats */}
-    <div className="flex gap-3">
-      <Stat label="Usados"      value={usados} unit="días" accent="amber"/>
-      <Stat label="Disponibles" value={rest}   unit="días" accent={rest<0?'red':'emerald'}/>
-    </div>
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <SHead emoji="🌴" title="Vacaciones" sub={"Días para "+year} bg={ACCENT.emeraldL}/>
 
-    {/* Barra progreso */}
-    {totalD>0&&<div className="bg-white rounded-xl border border-slate-200 p-3">
-      <div className="flex justify-between text-xs text-slate-500 mb-1.5"><span>Progreso</span><span>{usados} / {totalD} días</span></div>
-      <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-        <div className="h-full bg-emerald-500 rounded-full transition-all" style={{width:`${pct}%`}}/>
-      </div>
-    </div>}
-
-    <AddBtn label="Registrar vacaciones tomadas" accent="emerald" onClick={()=>{setEd(null);setForm(true);}}/>
-    {(form||ed)&&<Form title={ed?'Editar vacaciones':'Nuevas vacaciones'} fields={F} initial={ed||{fecha:todayISO(),dias:'',desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} accent="emerald"/>}
-    <div className="space-y-2">
-      {ye.length===0&&<Empty text="Sin vacaciones registradas este año"/>}
-      {[...ye].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
-        <Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdateE(entries.filter(i=>i.id!==id))}>
-          <div className="flex items-baseline justify-between gap-2">
-            <p className="text-xs text-slate-500">Desde {fmt(it.fecha)}</p>
-            <p className="text-xl font-bold text-emerald-600 shrink-0">{it.dias} {it.dias===1?'día':'días'}</p>
+      {/* Countdown próximas vacaciones */}
+      {countdown&&(
+        <div style={{background:ACCENT.emeraldL,borderRadius:14,padding:16,border:'1px solid #6ee7b7'}}>
+          <div style={{fontSize:11,color:ACCENT.emerald,fontWeight:700,marginBottom:4,textTransform:'uppercase',letterSpacing:'0.05em'}}>⏳ Próximas vacaciones</div>
+          <div style={{fontWeight:700,color:'#065f46',fontSize:14,marginBottom:8}}>{proximas.desc||fmt(proximas.fecha)}</div>
+          <div style={{display:'flex',alignItems:'baseline',gap:6,flexWrap:'wrap'}}>
+            {countdown.weeks>0&&<><span style={{fontSize:40,fontWeight:900,color:ACCENT.emerald,lineHeight:1}}>{countdown.weeks}</span><span style={{fontSize:15,color:ACCENT.emerald,fontWeight:600}}>semana{countdown.weeks!==1?'s':''}</span></>}
+            {countdown.days>0&&<><span style={{fontSize:40,fontWeight:900,color:'#065f46',lineHeight:1,marginLeft:countdown.weeks>0?8:0}}>{countdown.days}</span><span style={{fontSize:15,color:'#065f46',fontWeight:600}}>día{countdown.days!==1?'s':''}</span></>}
+            {countdown.weeks===0&&countdown.days===0&&<span style={{fontSize:20,fontWeight:800,color:ACCENT.emerald}}>¡Empiezan hoy! 🎉</span>}
           </div>
-          {it.desc&&<p className="text-sm text-slate-700 mt-1 break-words">{it.desc}</p>}
-        </Item>
-      ))}
+          <div style={{fontSize:12,color:'#047857',marginTop:4}}>Inician el {fmt(proximas.fecha)}</div>
+        </div>
+      )}
+
+      {/* Total anual */}
+      <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+          <span style={{fontSize:11,textTransform:'uppercase',letterSpacing:'0.05em',color:'#94a3b8',fontWeight:700}}>Días totales del año</span>
+          {!editT&&<button onClick={abrirTotal} style={{background:'none',border:'none',cursor:'pointer',color:ACCENT.emerald,fontWeight:600,fontSize:12,display:'flex',alignItems:'center',gap:4,padding:4}}><IconEdit/>{totalD>0?'Cambiar':'Definir'}</button>}
+        </div>
+        {editT?(
+          <div style={{display:'flex',gap:8}}>
+            <input type="number" min="0" step="1" value={tInput} autoFocus onChange={e=>setTInput(e.target.value)} style={inp}/>
+            <button onClick={guardarTotal} style={{background:ACCENT.emerald,border:'none',borderRadius:8,padding:'0 12px',cursor:'pointer',color:'white',display:'flex',alignItems:'center'}}><IconChk/></button>
+            <button onClick={()=>setEditT(false)} style={{background:'#f1f5f9',border:'none',borderRadius:8,padding:'0 10px',cursor:'pointer',color:'#64748b',display:'flex',alignItems:'center'}}><IconX/></button>
+          </div>
+        ):(
+          <span style={{fontSize:30,fontWeight:800,color:'#1e293b'}}>{totalD} <span style={{fontSize:14,fontWeight:400,color:'#94a3b8'}}>días asignados</span></span>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div style={{display:'flex',gap:10}}>
+        <Stat label="Usados"      value={usados} unit="días" color={ACCENT.amber}/>
+        <Stat label="Disponibles" value={rest}   unit="días" color={rest<0?ACCENT.red:ACCENT.emerald}/>
+      </div>
+
+      {/* Barra */}
+      {totalD>0&&(
+        <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:12}}>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'#94a3b8',marginBottom:6}}><span>Progreso</span><span>{usados} / {totalD} días</span></div>
+          <div style={{height:10,background:'#f1f5f9',borderRadius:99,overflow:'hidden'}}>
+            <div style={{height:'100%',width:pct+'%',background:ACCENT.emerald,borderRadius:99,transition:'width 0.3s'}}/>
+          </div>
+        </div>
+      )}
+
+      <AddBtn label="Registrar vacaciones" color={ACCENT.emerald} onClick={()=>{setEd(null);setForm(true);}}/>
+      {(form||ed)&&<Form title={ed?'Editar vacaciones':'Nuevas vacaciones'} fields={F} initial={ed||{fecha:todayISO(),dias:'',desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.emerald}/>}
+
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {ye.length===0&&<Empty text="Sin vacaciones registradas este año"/>}
+        {[...ye].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(it=>{
+          const wd=weeksAndDays(it.fecha);
+          return(
+            <Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdateE(entries.filter(i=>i.id!==id))}>
+              <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8}}>
+                <span style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</span>
+                <span style={{fontSize:18,fontWeight:800,color:ACCENT.emerald,flexShrink:0}}>{it.dias} {it.dias===1?'día':'días'}</span>
+              </div>
+              {it.desc&&<div style={{fontSize:13,color:'#475569',marginTop:3}}>{it.desc}</div>}
+              {wd&&<div style={{fontSize:12,color:ACCENT.emerald,marginTop:4,fontWeight:600}}>⏳ Faltan {wd.weeks>0?wd.weeks+' sem':''}{wd.weeks>0&&wd.days>0?' y ':''}{wd.days>0?wd.days+' día'+(wd.days!==1?'s':''):''} para empezar</div>}
+              {!wd&&<div style={{fontSize:12,color:'#94a3b8',marginTop:4}}>✅ Ya pasaron</div>}
+            </Item>
+          );
+        })}
+      </div>
     </div>
-  </>;
+  );
+}
+
+/* ══ FALLOS ══ */
+function FallosSection({items,year,onUpdate}){
+  const [form,setForm]=useState(false);
+  const [ed,setEd]=useState(null);
+  const yi=items.filter(i=>yearOf(i.fecha)===year);
+  const mi=yi.filter(i=>monthOf(i.fecha)===CM&&year===CY);
+  const F=[{name:'fecha',label:'Fecha',type:'date',req:true},{name:'desc',label:'Descripción',type:'textarea',req:true,ph:'Describe el fallo…'}];
+  const save=e=>{if(ed){onUpdate(items.map(i=>i.id===ed.id?{...e,id:ed.id}:i));setEd(null);}else{onUpdate([{...e,id:uid()},...items]);setForm(false);}};
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <SHead emoji="⚠️" title="Fallos" sub="Registro de errores" bg={ACCENT.redL}/>
+      <div style={{display:'flex',gap:10}}>
+        <Stat label={MESES[CM]} value={mi.length} unit="este mes" color={ACCENT.red}/>
+        <Stat label={"Año "+year} value={yi.length} unit="en total" color={ACCENT.red}/>
+      </div>
+      <AddBtn label="Añadir fallo" color={ACCENT.red} onClick={()=>{setEd(null);setForm(true);}}/>
+      {(form||ed)&&<Form title={ed?'Editar fallo':'Nuevo fallo'} fields={F} initial={ed||{fecha:todayISO(),desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.red}/>}
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {yi.length===0&&<Empty text="Sin fallos registrados este año"/>}
+        {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
+          <Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}>
+            <div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div>
+            <div style={{fontSize:14,color:'#1e293b',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>
+          </Item>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ══ HORAS EXTRAS ══ */
+function HorasSection({items,year,onUpdate}){
+  const [form,setForm]=useState(false);
+  const [ed,setEd]=useState(null);
+  const yi=items.filter(i=>yearOf(i.fecha)===year);
+  const mi=yi.filter(i=>monthOf(i.fecha)===CM&&year===CY);
+  const sum=a=>a.reduce((s,i)=>s+Number(i.horas||0),0);
+  const F=[{name:'fecha',label:'Fecha',type:'date',req:true},{name:'horas',label:'Horas',type:'number',step:'0.5',min:'0',req:true,ph:'Ej: 2.5'},{name:'desc',label:'Nota (opcional)',type:'textarea',ph:'Motivo…'}];
+  const save=e=>{const c={...e,horas:Number(e.horas)||0};if(ed){onUpdate(items.map(i=>i.id===ed.id?{...c,id:ed.id}:i));setEd(null);}else{onUpdate([{...c,id:uid()},...items]);setForm(false);}};
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <SHead emoji="⏱️" title="Horas extras" sub="Horas fuera de horario" bg={ACCENT.blueL}/>
+      <div style={{display:'flex',gap:10}}>
+        <Stat label={MESES[CM]} value={sum(mi)} unit="horas este mes" color={ACCENT.blue}/>
+        <Stat label={"Año "+year} value={sum(yi)} unit="horas en total" color={ACCENT.blue}/>
+      </div>
+      <AddBtn label="Añadir horas extras" color={ACCENT.blue} onClick={()=>{setEd(null);setForm(true);}}/>
+      {(form||ed)&&<Form title={ed?'Editar horas':'Nuevas horas extras'} fields={F} initial={ed||{fecha:todayISO(),horas:'',desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.blue}/>}
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {yi.length===0&&<Empty text="Sin horas extras este año"/>}
+        {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
+          <Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}>
+            <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8}}>
+              <span style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</span>
+              <span style={{fontSize:20,fontWeight:800,color:ACCENT.blue}}>{it.horas} h</span>
+            </div>
+            {it.desc&&<div style={{fontSize:13,color:'#475569',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>}
+          </Item>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /* ══ INCIDENCIAS ══ */
@@ -284,105 +360,103 @@ function IncidSection({items,year,onUpdate}){
   const [ed,setEd]=useState(null);
   const yi=items.filter(i=>yearOf(i.fecha)===year);
   const mi=yi.filter(i=>monthOf(i.fecha)===CM&&year===CY);
-  const F=[
-    {name:'fecha',  label:'Fecha',type:'date',req:true},
-    {name:'titulo', label:'Título',type:'text',req:true,ph:'Ej: Reclamo de cliente'},
-    {name:'desc',   label:'Descripción',type:'textarea',req:true,ph:'Detalla la incidencia…'},
-  ];
-  const save=e=>{
-    if(ed){onUpdate(items.map(i=>i.id===ed.id?{...e,id:ed.id}:i));setEd(null);}
-    else{onUpdate([{...e,id:uid()},...items]);setForm(false);}
-  };
-  return<>
-    <SHead title="Incidencias" sub="Cuestiones del trabajo" emoji="📋" accent="amber"/>
-    <div className="flex gap-3">
-      <Stat label={MESES[CM]}    value={mi.length} unit="este mes"  accent="amber"/>
-      <Stat label={`Año ${year}`} value={yi.length} unit="en total" accent="amber"/>
+  const F=[{name:'fecha',label:'Fecha',type:'date',req:true},{name:'titulo',label:'Título',type:'text',req:true,ph:'Ej: Reclamo de cliente'},{name:'desc',label:'Descripción',type:'textarea',req:true,ph:'Detalla la incidencia…'}];
+  const save=e=>{if(ed){onUpdate(items.map(i=>i.id===ed.id?{...e,id:ed.id}:i));setEd(null);}else{onUpdate([{...e,id:uid()},...items]);setForm(false);}};
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <SHead emoji="📋" title="Incidencias" sub="Cuestiones del trabajo" bg={ACCENT.amberL}/>
+      <div style={{display:'flex',gap:10}}>
+        <Stat label={MESES[CM]} value={mi.length} unit="este mes" color={ACCENT.amber}/>
+        <Stat label={"Año "+year} value={yi.length} unit="en total" color={ACCENT.amber}/>
+      </div>
+      <AddBtn label="Añadir incidencia" color={ACCENT.amber} onClick={()=>{setEd(null);setForm(true);}}/>
+      {(form||ed)&&<Form title={ed?'Editar incidencia':'Nueva incidencia'} fields={F} initial={ed||{fecha:todayISO(),titulo:'',desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.amber}/>}
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {yi.length===0&&<Empty text="Sin incidencias este año"/>}
+        {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
+          <Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}>
+            <div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div>
+            {it.titulo&&<div style={{fontSize:14,fontWeight:700,color:'#1e293b',marginTop:3}}>{it.titulo}</div>}
+            <div style={{fontSize:13,color:'#475569',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>
+          </Item>
+        ))}
+      </div>
     </div>
-    <AddBtn label="Añadir incidencia" accent="amber" onClick={()=>{setEd(null);setForm(true);}}/>
-    {(form||ed)&&<Form title={ed?'Editar incidencia':'Nueva incidencia'} fields={F} initial={ed||{fecha:todayISO(),titulo:'',desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} accent="amber"/>}
-    <div className="space-y-2">
-      {yi.length===0&&<Empty text="Sin incidencias este año"/>}
-      {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
-        <Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}>
-          <p className="text-xs text-slate-500">{fmt(it.fecha)}</p>
-          {it.titulo&&<p className="text-sm font-semibold text-slate-800 mt-1">{it.titulo}</p>}
-          <p className="text-sm text-slate-700 mt-1 break-words">{it.desc}</p>
-        </Item>
-      ))}
-    </div>
-  </>;
+  );
 }
 
 /* ══ APP PRINCIPAL ══ */
 function App(){
-  const [tab,setTab]=useState('fallos');
+  const [tab,setTab]=useState('vacaciones');
   const [year,setYear]=useState(CY);
   const [fallos,setFallos]=useState([]);
-  const [horas, setHoras] =useState([]);
-  const [vacE,  setVacE]  =useState([]);
-  const [vacT,  setVacT]  =useState({});
-  const [incid, setIncid] =useState([]);
+  const [horas,setHoras]=useState([]);
+  const [vacE,setVacE]=useState([]);
+  const [vacT,setVacT]=useState({});
+  const [incid,setIncid]=useState([]);
 
   useEffect(()=>{
-    const f=lsLoad('fallos'); if(Array.isArray(f)) setFallos(f);
-    const h=lsLoad('horas');  if(Array.isArray(h)) setHoras(h);
-    const ve=lsLoad('vac-e'); if(Array.isArray(ve)) setVacE(ve);
-    const vt=lsLoad('vac-t'); if(vt&&typeof vt==='object') setVacT(vt);
-    const i=lsLoad('incid');  if(Array.isArray(i)) setIncid(i);
+    const f=lsLoad('fallos');if(Array.isArray(f))setFallos(f);
+    const h=lsLoad('horas');if(Array.isArray(h))setHoras(h);
+    const ve=lsLoad('vac-e');if(Array.isArray(ve))setVacE(ve);
+    const vt=lsLoad('vac-t');if(vt&&typeof vt==='object')setVacT(vt);
+    const i=lsLoad('incid');if(Array.isArray(i))setIncid(i);
   },[]);
 
   const sf=d=>{setFallos(d);lsSave('fallos',d);};
-  const sh=d=>{setHoras(d); lsSave('horas',d);};
-  const sve=d=>{setVacE(d); lsSave('vac-e',d);};
-  const svt=d=>{setVacT(d); lsSave('vac-t',d);};
-  const si=d=>{setIncid(d); lsSave('incid',d);};
+  const sh=d=>{setHoras(d);lsSave('horas',d);};
+  const sve=d=>{setVacE(d);lsSave('vac-e',d);};
+  const svt=d=>{setVacT(d);lsSave('vac-t',d);};
+  const si=d=>{setIncid(d);lsSave('incid',d);};
 
   const ys=[];for(let y=CY+1;y>=CY-4;y--)ys.push(y);
+  const showYear=tab!=='cobro';
 
   const TABS=[
-    {id:'fallos',     label:'Fallos',      emoji:'⚠️'},
-    {id:'horas',      label:'H.Extras',    emoji:'⏱️'},
-    {id:'vacaciones', label:'Vacaciones',  emoji:'🌴'},
-    {id:'incidencias',label:'Incidencias', emoji:'📋'},
+    {id:'vacaciones', label:'Vacaciones',emoji:'🌴'},
+    {id:'cobro',      label:'Cobro',     emoji:'💰'},
+    {id:'fallos',     label:'Fallos',    emoji:'⚠️'},
+    {id:'horas',      label:'H.Extras',  emoji:'⏱️'},
+    {id:'incidencias',label:'Más',       emoji:'📋'},
   ];
 
   return(
     <div style={{minHeight:'100svh',display:'flex',flexDirection:'column',background:'#f8fafc',fontFamily:'system-ui,-apple-system,sans-serif'}}>
-      {/* Header */}
-      <div style={{background:'#1e293b',color:'white',padding:'12px 16px',display:'flex',alignItems:'center',gap:'10px',flexShrink:0}}>
+      <div style={{background:'#1e293b',color:'white',padding:'12px 16px',display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
         <span style={{fontSize:20}}>💼</span>
         <div style={{flex:1}}>
           <div style={{fontWeight:700,fontSize:15}}>Recursos Humanos</div>
           <div style={{fontSize:11,color:'#94a3b8'}}>Panel de seguimiento</div>
         </div>
-        {/* Year picker */}
-        <div style={{position:'relative'}}>
-          <select value={year} onChange={e=>setYear(Number(e.target.value))}
-            style={{appearance:'none',background:'#334155',color:'white',border:'none',borderRadius:8,padding:'6px 28px 6px 10px',fontWeight:600,fontSize:14,cursor:'pointer'}}>
-            {ys.map(y=><option key={y} value={y}>{y}</option>)}
-          </select>
-          <span style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'#94a3b8',fontSize:10}}>▾</span>
-        </div>
+        {showYear&&(
+          <div style={{position:'relative'}}>
+            <select value={year} onChange={e=>setYear(Number(e.target.value))}
+              style={{appearance:'none',background:'#334155',color:'white',border:'none',borderRadius:8,padding:'6px 28px 6px 10px',fontWeight:600,fontSize:14,cursor:'pointer'}}>
+              {ys.map(y=><option key={y} value={y}>{y}</option>)}
+            </select>
+            <span style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'#94a3b8',fontSize:10}}>▾</span>
+          </div>
+        )}
       </div>
 
-      {/* Content */}
-      <div style={{flex:1,overflowY:'auto',padding:'16px',paddingBottom:88,display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{flex:1,overflowY:'auto',padding:16,paddingBottom:80}}>
+        {tab==='vacaciones' &&<VacSection    entries={vacE} totales={vacT} year={year} onUpdateE={sve} onUpdateT={svt}/>}
+        {tab==='cobro'      &&<CobroSection/>}
         {tab==='fallos'     &&<FallosSection items={fallos} year={year} onUpdate={sf}/>}
         {tab==='horas'      &&<HorasSection  items={horas}  year={year} onUpdate={sh}/>}
-        {tab==='vacaciones' &&<VacSection    entries={vacE} totales={vacT} year={year} onUpdateE={sve} onUpdateT={svt}/>}
         {tab==='incidencias'&&<IncidSection  items={incid}  year={year} onUpdate={si}/>}
       </div>
 
-      {/* Bottom tabs */}
-      <div style={{position:'fixed',bottom:0,left:0,right:0,background:'white',borderTop:'1px solid #e2e8f0',display:'grid',gridTemplateColumns:'repeat(4,1fr)',zIndex:99}}>
+      <div style={{position:'fixed',bottom:0,left:0,right:0,background:'white',borderTop:'1px solid #e2e8f0',display:'grid',gridTemplateColumns:'repeat(5,1fr)',zIndex:99}}>
         {TABS.map(({id,label,emoji})=>{
           const active=tab===id;
-          return<button key={id} onClick={()=>setTab(id)}
-            style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'8px 4px',background:active?'#f8fafc':'white',border:'none',cursor:'pointer',transition:'background 0.15s'}}>
-            <span style={{fontSize:22,lineHeight:1}}>{emoji}</span>
-            <span style={{fontSize:10,fontWeight:600,marginTop:3,color:active?'#1e293b':'#94a3b8'}}>{label}</span>
-          </button>;
+          return(
+            <button key={id} onClick={()=>setTab(id)}
+              style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'7px 2px',background:active?'#f8fafc':'white',border:'none',cursor:'pointer'}}>
+              <span style={{fontSize:19,lineHeight:1}}>{emoji}</span>
+              <span style={{fontSize:9,fontWeight:600,marginTop:2,color:active?'#1e293b':'#94a3b8',whiteSpace:'nowrap'}}>{label}</span>
+            </button>
+          );
         })}
       </div>
     </div>
@@ -392,9 +466,9 @@ function App(){
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 <script>
-  if('serviceWorker' in navigator){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
-  }
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
 </script>
 </body>
 </html>
