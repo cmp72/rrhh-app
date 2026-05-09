@@ -395,7 +395,11 @@ textarea{min-height:80px;resize:vertical;line-height:1.4}
 </div>
 
 <script>
-const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+window.onerror=function(msg,src,line,col,err){
+  document.body.innerHTML='<div style="padding:20px;font-family:sans-serif"><h2 style="color:red">Error detectado</h2><p><b>Mensaje:</b> '+msg+'</p><p><b>Línea:</b> '+line+'</p><p><b>Columna:</b> '+col+'</p></div>';
+  return true;
+};
+['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DS=['L','M','X','J','V','S','D'];
 const today=new Date();today.setHours(0,0,0,0);
 let calYear=today.getFullYear(),calMonth=today.getMonth();
@@ -481,7 +485,8 @@ function calcVacFin(){
     if(contados<dias)cur.setDate(cur.getDate()+1);
   }
   var finStr=fmtD(cur);
-  hint.textContent='Fin: '+cur.toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'})+(festUsados>0?' ('+festUsados+' festivo'+(festUsados>1?'s':'')+' no contado'+(festUsados>1?'s':'')+')'  :'');
+  var extra=festUsados>0?' ('+festUsados+' festivo'+(festUsados>1?'s':'')+' no contado'+(festUsados>1?'s':'')+')'  :'';
+  hint.textContent='Fin: '+fmtFecha(finStr)+extra;
   hint.setAttribute('data-fin',finStr);
 }
 
