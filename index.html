@@ -3,13 +3,62 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Test Labora</title>
+<title>Diagnóstico Labora</title>
 </head>
 <body>
-<h1 id="titulo">Cargando...</h1>
-<button onclick="document.getElementById('titulo').textContent='Funciona!'">Tócame</button>
+<div id="log" style="font-family:sans-serif;padding:16px;font-size:14px"></div>
 <script>
-document.getElementById('titulo').textContent = 'JavaScript OK';
+var log = document.getElementById('log');
+function ok(msg){log.innerHTML+='<p style="color:green">✅ '+msg+'</p>';}
+function err(msg){log.innerHTML+='<p style="color:red">❌ '+msg+'</p>';}
+
+try{
+  var MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  ok('MESES OK');
+}catch(e){err('MESES: '+e.message);}
+
+try{
+  var today=new Date();today.setHours(0,0,0,0);
+  ok('Fecha OK: '+today);
+}catch(e){err('Fecha: '+e.message);}
+
+try{
+  function load(k,def){try{var v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
+  function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+  var cfg=load('labora_cfg',{cobro:28,comunidad:'cataluna',tipo:'laborables',total:23});
+  ok('localStorage OK, cobro='+cfg.cobro);
+}catch(e){err('localStorage: '+e.message);}
+
+try{
+  function easter(y){
+    var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),dy=((h+l-7*m+114)%31)+1;
+    return new Date(y,mo-1,dy);
+  }
+  var e=easter(2026);
+  ok('Easter OK: '+e);
+}catch(e){err('Easter: '+e.message);}
+
+try{
+  var el=document.createElement('div');
+  el.className='test';
+  el.textContent='hola';
+  document.body.appendChild(el);
+  ok('DOM OK');
+}catch(e){err('DOM: '+e.message);}
+
+try{
+  function openModal(id){document.getElementById(id)&&document.getElementById(id).classList.add('open');}
+  function closeModal(id){document.getElementById(id)&&document.getElementById(id).classList.remove('open');}
+  ok('Funciones modal OK');
+}catch(e){err('Funciones modal: '+e.message);}
+
+try{
+  var arr=[1,2,3];
+  var res=arr.filter(function(x){return x>1;}).map(function(x){return x*2;});
+  ok('Array methods OK: '+res);
+}catch(e){err('Array methods: '+e.message);}
+
+log.innerHTML+='<p style="margin-top:16px;font-weight:bold">Diagnóstico completo</p>';
 </script>
 </body>
 </html>
