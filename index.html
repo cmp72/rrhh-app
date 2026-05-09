@@ -2,63 +2,723 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Diagnóstico Labora</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#2563EB">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Labora">
+<title>Labora</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--blue:#2563EB;--blue-light:#EFF6FF;--green:#059669;--green-light:#ECFDF5;--red:#DC2626;--red-light:#FEF2F2;--amber:#D97706;--amber-light:#FFFBEB;--bg:#F8FAFC;--card:#fff;--text:#1E293B;--muted:#64748B;--border:rgba(30,41,59,0.12);--radius:12px;--radius-sm:8px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);max-width:430px;margin:0 auto}
+.header{background:var(--blue);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.header-left{display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--blue)}
+.header h1{color:#fff;font-size:17px;font-weight:600}
+.header-sub{color:rgba(255,255,255,0.7);font-size:11px;margin-top:1px}
+.btn-gear{background:rgba(255,255,255,0.15);border:none;border-radius:8px;padding:8px;cursor:pointer;font-size:18px;display:flex;align-items:center}
+.cobro-bar{background:#1D4ED8;padding:6px 16px;display:flex;align-items:center;justify-content:space-between}
+.cobro-bar span{color:rgba(255,255,255,0.8);font-size:12px}
+.cobro-bar button{background:none;border:none;color:#fff;font-size:12px;cursor:pointer;text-decoration:underline}
+.main{padding:16px;padding-bottom:90px}
+.screen{display:none}
+.screen.active{display:block}
+.nav{display:flex;background:var(--card);border-top:0.5px solid var(--border);position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:50}
+.nav-btn{flex:1;padding:8px 2px 10px;font-size:9.5px;color:var(--muted);border:none;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;border-top:2px solid transparent}
+.nav-btn.active{color:var(--blue);border-top-color:var(--blue)}
+.nav-icon{font-size:20px;line-height:1}
+.section-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 10px}
+.card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.stat{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px}
+.stat-label{font-size:11px;color:var(--muted);margin-bottom:3px}
+.stat-value{font-size:24px;font-weight:600;color:var(--text)}
+.stat-value.blue{color:var(--blue)}.stat-value.green{color:var(--green)}.stat-value.red{color:var(--red)}.stat-value.amber{color:var(--amber)}
+.countdown-card{background:var(--blue);border-radius:var(--radius);padding:20px;margin-bottom:16px;text-align:center}
+.countdown-label{color:rgba(255,255,255,0.75);font-size:12px;margin-bottom:6px}
+.countdown-num{color:#fff;font-size:48px;font-weight:700;line-height:1}
+.countdown-sub{color:rgba(255,255,255,0.75);font-size:13px;margin-top:6px}
+.countdown-date{color:rgba(255,255,255,0.6);font-size:11px;margin-top:4px}
+.summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px}
+.summary-item{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:12px;cursor:pointer}
+.summary-icon{font-size:20px;margin-bottom:4px}
+.summary-title{font-size:12px;font-weight:600;color:var(--text)}
+.summary-val{font-size:11px;color:var(--muted)}
+.cal-nav-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cal-title-txt{font-size:15px;font-weight:600;color:var(--text)}
+.cal-nav-btns{display:flex;gap:6px}
+.cal-nav-btns button{width:30px;height:30px;border-radius:50%;border:0.5px solid var(--border);background:var(--card);cursor:pointer;color:var(--text);font-size:16px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:14px}
+.cal-dn{text-align:center;font-size:10px;font-weight:600;color:var(--muted);padding:4px 0}
+.cal-day{text-align:center;padding:5px 1px;border-radius:6px;font-size:12px;min-height:28px;display:flex;align-items:center;justify-content:center;color:var(--text)}
+.cal-day.we{color:var(--muted)}.cal-day.fest{background:var(--blue-light);color:var(--blue);font-weight:600}
+.cal-day.vac{background:var(--green-light)}.cal-day.today{background:var(--blue);color:#fff;font-weight:600}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
+.leg-dot{width:8px;height:8px;border-radius:50%}
+.fest-list{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.fest-item{display:flex;align-items:center;gap:10px;background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px}
+.fest-date{font-size:11px;font-weight:600;color:var(--blue);min-width:68px}
+.fest-name{font-size:13px;color:var(--text)}
+.vac-config{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px}
+.config-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.config-row:last-child{border-bottom:none}
+.config-label{font-size:13px;color:var(--text)}
+.config-hint{font-size:11px;color:var(--muted);margin-top:2px}
+select{font-size:13px;padding:6px 8px;border-radius:var(--radius-sm);border:0.5px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;max-width:140px}
+.entry-list{display:flex;flex-direction:column;gap:8px}
+.entry-card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px}
+.entry-card.injustificado{background:var(--red-light);border:0.5px solid #FCA5A5;border-left:4px solid var(--red);border-radius:0 var(--radius) var(--radius) 0}
+.entry-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.entry-date{font-size:11px;font-weight:600;color:var(--blue)}
+.entry-desc{font-size:13px;color:var(--text);margin-bottom:8px;line-height:1.4}
+.entry-footer{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pill{display:inline-block;font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px}
+.pill-green{background:var(--green-light);color:#065F46}.pill-red{background:var(--red-light);color:#991B1B}
+.pill-blue{background:var(--blue-light);color:#1D4ED8}.pill-amber{background:var(--amber-light);color:#92400E}.pill-gray{background:#F1F5F9;color:#475569}
+.btn-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:4px;line-height:1}
+.btn-add{width:100%;padding:14px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px}
+.empty{text-align:center;padding:32px 16px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.foto-thumb{width:72px;height:72px;border-radius:8px;object-fit:cover;border:0.5px solid var(--border);cursor:pointer}
+.foto-add{width:72px;height:72px;border-radius:8px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:24px;color:var(--muted);background:var(--bg)}
+.foto-area{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+input[type=file]{display:none}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:200;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--card);border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:430px;max-height:90vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px}
+.modal-subtitle{font-size:12px;color:var(--muted);margin-bottom:20px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em}
+.field-hint{font-size:11px;color:var(--muted);margin-top:4px;font-style:italic}
+input[type=text],input[type=date],input[type=number],textarea,select.full{width:100%;padding:11px 12px;border:0.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);background:var(--bg);font-family:inherit}
+textarea{min-height:80px;resize:vertical;line-height:1.4}
+.radio-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.radio-btn{padding:8px 14px;border:0.5px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;background:var(--bg);color:var(--text)}
+.radio-btn.sel{background:var(--blue);color:#fff;border-color:var(--blue)}
+.radio-btn.sel-red{background:var(--red);color:#fff;border-color:var(--red)}
+.modal-actions{display:flex;gap:8px;margin-top:20px}
+.btn-cancel{flex:1;padding:13px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;color:var(--muted)}
+.btn-save{flex:2;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer}
+.aj-section{margin-bottom:20px}
+.aj-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:0.5px solid var(--border)}
+.overlay{display:none;position:fixed;inset:0;z-index:500;align-items:center;justify-content:center;padding:24px}
+.overlay.open{display:flex}
+.overlay-box{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:320px;text-align:center}
+</style>
 </head>
 <body>
-<div id="log" style="font-family:sans-serif;padding:16px;font-size:14px"></div>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">L</div>
+    <div><h1>Labora</h1><div class="header-sub">Tu gestor laboral</div></div>
+  </div>
+  <button class="btn-gear" onclick="openModal('modal-ajustes')">⚙️</button>
+</div>
+<div class="cobro-bar">
+  <span id="cobro-bar-label">Día de cobro: 28</span>
+  <button onclick="openModal('modal-ajustes')">Cambiar ›</button>
+</div>
+
+<div class="main">
+  <div id="s-inicio" class="screen active">
+    <div class="countdown-card">
+      <div class="countdown-label">Días para el próximo cobro</div>
+      <div class="countdown-num" id="cd-dias">—</div>
+      <div class="countdown-sub" id="cd-semanas"></div>
+      <div class="countdown-date" id="cd-fecha"></div>
+    </div>
+    <p class="section-label">Resumen</p>
+    <div class="summary-grid">
+      <div class="summary-item" onclick="goScreen('s-vacaciones','nav-vac')"><div class="summary-icon">🌴</div><div class="summary-title">Vacaciones</div><div class="summary-val" id="sum-vac">— disponibles</div></div>
+      <div class="summary-item" onclick="goScreen('s-fallos','nav-fallos')"><div class="summary-icon">⚠️</div><div class="summary-title">Fallos</div><div class="summary-val" id="sum-fallos">0 este mes</div></div>
+      <div class="summary-item" onclick="goScreen('s-incidencias','nav-inc')"><div class="summary-icon">📋</div><div class="summary-title">Incidencias</div><div class="summary-val" id="sum-inc">0 este mes</div></div>
+      <div class="summary-item" onclick="goScreen('s-ausencias','nav-aus')"><div class="summary-icon">🚫</div><div class="summary-title">Ausencias</div><div class="summary-val" id="sum-aus">0 este mes</div></div>
+      <div class="summary-item" onclick="goScreen('s-extras','nav-ext')"><div class="summary-icon">⏱️</div><div class="summary-title">Horas extra</div><div class="summary-val" id="sum-ext">0h este mes</div></div>
+    </div>
+  </div>
+
+  <div id="s-vacaciones" class="screen">
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-label">Días totales</div><div class="stat-value blue" id="vac-total">—</div></div>
+      <div class="stat"><div class="stat-label">Disponibles</div><div class="stat-value green" id="vac-disp">—</div></div>
+      <div class="stat"><div class="stat-label">Usados</div><div class="stat-value amber" id="vac-usados">0</div></div>
+      <div class="stat"><div class="stat-label">Festivos en vacs.</div><div class="stat-value" id="vac-fest">0</div></div>
+    </div>
+    <div class="vac-config">
+      <div class="config-row">
+        <div><div class="config-label">Tipo de días</div><div class="config-hint">¿Cómo cuenta tu convenio?</div></div>
+        <select id="sel-tipo" onchange="saveCfg()"><option value="laborables">Laborables</option><option value="naturales">Naturales</option></select>
+      </div>
+      <div class="config-row">
+        <div><div class="config-label">Total anual</div><div class="config-hint">Escribe los días que te corresponden este año</div></div>
+        <input type="number" id="sel-total" min="1" max="60" style="width:70px;padding:6px 8px;border-radius:var(--radius-sm);border:0.5px solid var(--border);background:var(--card);color:var(--text);font-size:13px;text-align:center" onchange="saveCfg()">
+      </div>
+    </div>
+    <button class="btn-add" onclick="openModal('modal-vac')">+ Añadir vacaciones</button>
+    <p class="section-label">Calendario</p>
+    <div class="cal-nav-row">
+      <div class="cal-title-txt" id="cal-title2"></div>
+      <div class="cal-nav-btns"><button onclick="chMes(-1)">‹</button><button onclick="chMes(1)">›</button></div>
+    </div>
+    <div class="cal-grid" id="cal-grid2"></div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>Festivo</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>Vacaciones</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#1E293B"></div>Hoy</div>
+    </div>
+    <p class="section-label">Festivos del mes</p>
+    <div class="fest-list" id="fest-list2"></div>
+    <p class="section-label">Próximas vacaciones</p>
+    <div id="vac-countdown" style="margin-bottom:16px"></div>
+    <p class="section-label">Mis vacaciones</p>
+    <div class="entry-list" id="vac-list"></div>
+  </div>
+
+  <div id="s-fallos" class="screen">
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-label">Este mes</div><div class="stat-value red" id="fall-mes">0</div></div>
+      <div class="stat"><div class="stat-label">Este año</div><div class="stat-value amber" id="fall-anio">0</div></div>
+    </div>
+    <button class="btn-add" onclick="openModal('modal-fallo')">+ Registrar fallo</button>
+    <p class="section-label">Registros</p>
+    <div class="entry-list" id="fallos-list"></div>
+  </div>
+
+  <div id="s-incidencias" class="screen">
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-label">Este mes</div><div class="stat-value amber" id="inc-mes">0</div></div>
+      <div class="stat"><div class="stat-label">Este año</div><div class="stat-value" id="inc-anio">0</div></div>
+    </div>
+    <button class="btn-add" onclick="openModal('modal-inc')">+ Registrar incidencia</button>
+    <p class="section-label">Registros</p>
+    <div class="entry-list" id="inc-list"></div>
+  </div>
+
+  <div id="s-ausencias" class="screen">
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-label">Este mes</div><div class="stat-value red" id="aus-mes">0</div></div>
+      <div class="stat"><div class="stat-label">Horas pend. mes</div><div class="stat-value amber" id="aus-hmes">0h</div></div>
+      <div class="stat"><div class="stat-label">Este año</div><div class="stat-value" id="aus-anio">0</div></div>
+      <div class="stat"><div class="stat-label">Horas pend. año</div><div class="stat-value" id="aus-hanio">0h</div></div>
+    </div>
+    <button class="btn-add" onclick="openModal('modal-aus')">+ Registrar ausencia</button>
+    <p class="section-label">Registros</p>
+    <div class="entry-list" id="aus-list"></div>
+  </div>
+
+  <div id="s-extras" class="screen">
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-label">Horas extra mes</div><div class="stat-value blue" id="ext-mes">0h</div></div>
+      <div class="stat"><div class="stat-label">Pendientes mes</div><div class="stat-value amber" id="ext-pmes">0h</div></div>
+      <div class="stat"><div class="stat-label">Horas extra año</div><div class="stat-value" id="ext-anio">0h</div></div>
+      <div class="stat"><div class="stat-label">Pendientes año</div><div class="stat-value" id="ext-panio">0h</div></div>
+    </div>
+    <button class="btn-add" onclick="openModal('modal-ext')">+ Registrar horas extra</button>
+    <p class="section-label">Registros</p>
+    <div class="entry-list" id="ext-list"></div>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" id="nav-inicio" onclick="goScreen('s-inicio','nav-inicio')"><span class="nav-icon">🏠</span>Inicio</button>
+  <button class="nav-btn" id="nav-vac" onclick="goScreen('s-vacaciones','nav-vac')"><span class="nav-icon">🌴</span>Vacaciones</button>
+  <button class="nav-btn" id="nav-fallos" onclick="goScreen('s-fallos','nav-fallos')"><span class="nav-icon">⚠️</span>Fallos</button>
+  <button class="nav-btn" id="nav-inc" onclick="goScreen('s-incidencias','nav-inc')"><span class="nav-icon">📋</span>Incidencias</button>
+  <button class="nav-btn" id="nav-aus" onclick="goScreen('s-ausencias','nav-aus')"><span class="nav-icon">🚫</span>Ausencias</button>
+  <button class="nav-btn" id="nav-ext" onclick="goScreen('s-extras','nav-ext')"><span class="nav-icon">⏱️</span>Extras</button>
+</nav>
+
+<!-- OVERLAY BORRAR -->
+<div class="overlay" id="ov-del" style="background:rgba(15,23,42,0.6)">
+  <div class="overlay-box">
+    <div style="font-size:28px;margin-bottom:10px">🗑️</div>
+    <div style="font-size:16px;font-weight:600;color:#1E293B;margin-bottom:6px">¿Borrar este registro?</div>
+    <div style="font-size:13px;color:#64748B;margin-bottom:20px">Esta acción no se puede deshacer</div>
+    <div style="display:flex;gap:10px">
+      <button onclick="delCancel()" class="btn-cancel">Cancelar</button>
+      <button onclick="delConfirm()" class="btn-save" style="background:var(--red)">Borrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY FOTO -->
+<div class="overlay" id="ov-foto" style="background:rgba(0,0,0,0.92);padding:16px" onclick="closeFoto()">
+  <img id="ov-foto-img" src="" style="max-width:100%;max-height:85vh;border-radius:8px;object-fit:contain">
+</div>
+
+<!-- MODAL AJUSTES -->
+<div class="modal-bg" id="modal-ajustes" onclick="closeBg(event,'modal-ajustes')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚙️ Ajustes</div>
+    <div class="modal-subtitle">Configurá tu perfil laboral</div>
+    <div class="aj-section">
+      <div class="aj-title">Cobro</div>
+      <div class="field">
+        <label>Día de cobro del mes</label>
+        <div class="field-hint">¿Qué día recibes tu sueldo? (ej: 28)</div>
+        <input type="number" id="aj-cobro" min="1" max="31" placeholder="ej: 28" style="width:100%;margin-top:6px">
+      </div>
+    </div>
+    <div class="aj-section">
+      <div class="aj-title">Comunidad autónoma</div>
+      <div class="field">
+        <div class="field-hint">Determina qué festivos de Semana Santa te corresponden</div>
+        <select class="full" id="aj-comunidad" style="margin-top:6px">
+          <option value="cataluna">Cataluña</option>
+          <option value="c-valenciana">Comunidad Valenciana</option>
+          <option value="baleares">Islas Baleares</option>
+          <option value="navarra">Navarra</option>
+          <option value="pais-vasco">País Vasco</option>
+          <option value="la-rioja">La Rioja</option>
+          <option value="murcia">Murcia</option>
+          <option value="otras">Resto de España (Jueves Santo)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-ajustes')">Cancelar</button>
+      <button class="btn-save" onclick="saveAjustes()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VACACIONES -->
+<div class="modal-bg" id="modal-vac" onclick="closeBg(event,'modal-vac')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🌴 Nueva vacación</div>
+    <div class="modal-subtitle">Registrá un período de vacaciones</div>
+    <div class="field"><label>Fecha de inicio</label><div class="field-hint">¿Cuándo empieza tu período de vacaciones?</div><input type="date" id="vac-ini" style="width:100%;margin-top:6px" oninput="calcVacFin()"></div>
+    <div class="field"><label>Cantidad de días</label><div class="field-hint">Días según tu convenio. Los festivos que caigan en medio NO se cuentan.</div><input type="number" id="vac-dias" min="1" max="60" step="1" placeholder="ej: 5" style="width:100%;margin-top:6px" oninput="calcVacFin()"></div>
+    <div class="field"><label>Fecha de fin estimada</label><div class="field-hint" id="vac-fin-hint">Se calcula automáticamente</div></div>
+    <div class="field"><label>Nota (opcional)</label><div class="field-hint">Puedes añadir un comentario</div><input type="text" id="vac-nota" placeholder="ej: Vacaciones de verano" style="width:100%;margin-top:6px"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-vac')">Cancelar</button>
+      <button class="btn-save" onclick="saveVac()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FALLO -->
+<div class="modal-bg" id="modal-fallo" onclick="closeBg(event,'modal-fallo')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚠️ Registrar fallo</div>
+    <div class="modal-subtitle">Un error cometido en el trabajo por ti</div>
+    <div class="field"><label>Fecha</label><div class="field-hint">¿Cuándo ocurrió el fallo?</div><input type="date" id="fall-fecha" style="width:100%;margin-top:6px"></div>
+    <div class="field"><label>Descripción</label><div class="field-hint">Describí brevemente qué salió mal en tu trabajo</div><textarea id="fall-desc" placeholder="ej: Me equivoqué al introducir los datos del pedido..."></textarea></div>
+    <div class="field"><label>¿Lo comunicaste a tu superior?</label><div class="field-hint">Es importante registrar si informaste del fallo</div>
+      <div class="radio-group" id="fall-com"><div class="radio-btn" onclick="selR(this,'fall-com')">Sí</div><div class="radio-btn" onclick="selR(this,'fall-com')">No</div><div class="radio-btn" onclick="selR(this,'fall-com')">En proceso</div></div>
+    </div>
+    <div class="field"><label>Consecuencias</label><div class="field-hint">¿Tuvo alguna consecuencia o amonestación?</div>
+      <div class="radio-group" id="fall-con"><div class="radio-btn" onclick="selR(this,'fall-con')">Ninguna</div><div class="radio-btn" onclick="selR(this,'fall-con')">Verbal</div><div class="radio-btn" onclick="selR(this,'fall-con')">Escrita</div><div class="radio-btn" onclick="selR(this,'fall-con')">Otra</div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-fallo')">Cancelar</button>
+      <button class="btn-save" onclick="saveFallo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INCIDENCIA -->
+<div class="modal-bg" id="modal-inc" onclick="closeBg(event,'modal-inc')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📋 Registrar incidencia</div>
+    <div class="modal-subtitle">Problema externo no atribuible a ti</div>
+    <div class="field"><label>Fecha</label><div class="field-hint">¿Cuándo ocurrió la incidencia?</div><input type="date" id="inc-fecha" style="width:100%;margin-top:6px"></div>
+    <div class="field"><label>Tipo de incidencia</label><div class="field-hint">¿De qué tipo es el problema?</div>
+      <select class="full" id="inc-tipo" style="margin-top:6px"><option value="">— Selecciona —</option><option>Fallo de máquina</option><option>Problema de seguridad</option><option>Accidente</option><option>Fallo de sistema</option><option>Problema de material</option><option>Otra</option></select>
+    </div>
+    <div class="field"><label>Descripción</label><div class="field-hint">Describí qué pasó con el mayor detalle posible</div><textarea id="inc-desc" placeholder="ej: La máquina de envasado se paró sin aviso..."></textarea></div>
+    <div class="field"><label>¿Fue reportada?</label><div class="field-hint">¿Informaste de la incidencia a quien corresponde?</div>
+      <div class="radio-group" id="inc-rep"><div class="radio-btn" onclick="selR(this,'inc-rep')">Sí</div><div class="radio-btn" onclick="selR(this,'inc-rep')">No</div><div class="radio-btn" onclick="selR(this,'inc-rep')">En proceso</div></div>
+    </div>
+    <div class="field"><label>Estado</label><div class="field-hint">¿En qué punto está la resolución?</div>
+      <div class="radio-group" id="inc-est"><div class="radio-btn" onclick="selR(this,'inc-est')">Pendiente</div><div class="radio-btn" onclick="selR(this,'inc-est')">En resolución</div><div class="radio-btn" onclick="selR(this,'inc-est')">Resuelta</div></div>
+    </div>
+    <div class="field"><label>Fotos (máx. 3)</label><div class="field-hint">Añade fotos como evidencia de la incidencia</div>
+      <div class="foto-area" id="foto-area"><div class="foto-add" onclick="document.getElementById('foto-inp').click()">+</div><input type="file" id="foto-inp" accept="image/*" multiple onchange="addFotos(this)"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-inc')">Cancelar</button>
+      <button class="btn-save" onclick="saveInc()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AUSENCIA -->
+<div class="modal-bg" id="modal-aus" onclick="closeBg(event,'modal-aus')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🚫 Registrar ausencia</div>
+    <div class="modal-subtitle">Día no trabajado o llegada tardía</div>
+    <div class="field"><label>Fecha</label><div class="field-hint">¿Qué día fue la ausencia?</div><input type="date" id="aus-fecha" style="width:100%;margin-top:6px"></div>
+    <div class="field"><label>¿Justificada?</label><div class="field-hint">Las ausencias injustificadas se marcarán en rojo</div>
+      <div class="radio-group" id="aus-just"><div class="radio-btn" onclick="selR(this,'aus-just')">Justificada</div><div class="radio-btn" onclick="selR(this,'aus-just','red')">Injustificada</div></div>
+    </div>
+    <div class="field"><label>Motivo</label><div class="field-hint">Explica brevemente el motivo de la ausencia</div><textarea id="aus-motivo" placeholder="ej: Cita médica, enfermedad..."></textarea></div>
+    <div class="field"><label>Horas faltantes (si es parcial)</label><div class="field-hint">Si solo faltaste unas horas, ¿cuántas? Deja en 0 si fue día completo</div><input type="number" id="aus-horas" min="0" max="12" step="0.5" placeholder="0" style="width:100%;margin-top:6px"></div>
+    <div class="field"><label>Estado de las horas</label><div class="field-hint">¿Cómo se van a gestionar las horas faltantes?</div>
+      <div class="radio-group" id="aus-est"><div class="radio-btn" onclick="selR(this,'aus-est')">Pendiente</div><div class="radio-btn" onclick="selR(this,'aus-est')">Devueltas</div><div class="radio-btn" onclick="selR(this,'aus-est')">Descontadas</div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-aus')">Cancelar</button>
+      <button class="btn-save" onclick="saveAus()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXTRAS -->
+<div class="modal-bg" id="modal-ext" onclick="closeBg(event,'modal-ext')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⏱️ Registrar horas extra</div>
+    <div class="modal-subtitle">Horas trabajadas fuera de tu jornada</div>
+    <div class="field"><label>Fecha</label><div class="field-hint">¿Qué día hiciste las horas extra?</div><input type="date" id="ext-fecha" style="width:100%;margin-top:6px"></div>
+    <div class="field"><label>Cantidad de horas</label><div class="field-hint">¿Cuántas horas extra hiciste ese día?</div><input type="number" id="ext-horas" min="0.5" max="12" step="0.5" placeholder="ej: 2" style="width:100%;margin-top:6px"></div>
+    <div class="field"><label>Descripción (opcional)</label><div class="field-hint">¿Por qué fue necesario quedarte más tiempo?</div><textarea id="ext-desc" placeholder="ej: Cierre de mes, urgencia con cliente..."></textarea></div>
+    <div class="field"><label>Estado</label><div class="field-hint">¿Cómo se compensarán estas horas?</div>
+      <div class="radio-group" id="ext-est"><div class="radio-btn" onclick="selR(this,'ext-est')">Pendiente</div><div class="radio-btn" onclick="selR(this,'ext-est')">Compensadas</div><div class="radio-btn" onclick="selR(this,'ext-est')">Pagadas</div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-ext')">Cancelar</button>
+      <button class="btn-save" onclick="saveExt()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <script>
-var log = document.getElementById('log');
-function ok(msg){log.innerHTML+='<p style="color:green">✅ '+msg+'</p>';}
-function err(msg){log.innerHTML+='<p style="color:red">❌ '+msg+'</p>';}
+window.onerror=function(msg,src,line,col){
+  var d=document.createElement('div');
+  d.style.cssText='position:fixed;top:0;left:0;right:0;background:red;color:white;padding:16px;font-size:14px;z-index:9999;font-family:sans-serif';
+  d.textContent='ERROR linea '+line+': '+msg;
+  document.body.appendChild(d);
+  return true;
+};
+['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DS=['L','M','X','J','V','S','D'];
+const today=new Date();today.setHours(0,0,0,0);
+let calYear=today.getFullYear(),calMonth=today.getMonth();
 
-try{
-  var MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  ok('MESES OK');
-}catch(e){err('MESES: '+e.message);}
+function fmtD(d){return d.toISOString().split('T')[0]}
+function sameDay(a,b){return fmtD(a)===fmtD(b)}
+function load(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 
-try{
-  var today=new Date();today.setHours(0,0,0,0);
-  ok('Fecha OK: '+today);
-}catch(e){err('Fecha: '+e.message);}
+var cfg=load('labora_cfg',{cobro:28,comunidad:'cataluna',tipo:'laborables',total:23});
+var vacaciones,fallos,incidencias,ausencias,extras;
+var pendingDel={tipo:null,i:null};
+var tempFotos=[];
 
-try{
-  function load(k,def){try{var v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
-  function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
-  var cfg=load('labora_cfg',{cobro:28,comunidad:'cataluna',tipo:'laborables',total:23});
-  ok('localStorage OK, cobro='+cfg.cobro);
-}catch(e){err('localStorage: '+e.message);}
+function migrate(){
+  var oldVe=load('vac-e',null);
+  var oldVt=load('vac-t',null);
+  if(oldVe&&Array.isArray(oldVe)&&oldVe.length>0&&load('labora_vac',[]).length===0)
+    save('labora_vac',oldVe.map(function(e){return{ini:e.fecha,fin:e.fecha,dias:e.dias,nota:e.desc||''};}));
+  if(oldVt&&typeof oldVt==='object'){var t=parseInt(oldVt[String(today.getFullYear())]||23);cfg.total=t;save('labora_cfg',cfg);}
+  var oldF=load('fallos',null);
+  if(oldF&&Array.isArray(oldF)&&oldF.length>0&&load('labora_fallos',[]).length===0)
+    save('labora_fallos',oldF.map(function(e){return{fecha:e.fecha,desc:e.desc,comunicado:'No indicado',consec:'No indicado'};}));
+  var oldH=load('horas',null);
+  if(oldH&&Array.isArray(oldH)&&oldH.length>0&&load('labora_ext',[]).length===0)
+    save('labora_ext',oldH.map(function(e){return{fecha:e.fecha,horas:e.horas,desc:e.desc||'',estado:'Pendiente'};}));
+  var oldI=load('incid',null);
+  if(oldI&&Array.isArray(oldI)&&oldI.length>0&&load('labora_inc',[]).length===0)
+    save('labora_inc',oldI.map(function(e){return{fecha:e.fecha,tipo:'Otra',desc:(e.titulo?e.titulo+': ':'')+e.desc,reportada:'No indicado',estado:'Pendiente',fotos:[]};}));
+}
 
-try{
-  function easter(y){
-    var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),dy=((h+l-7*m+114)%31)+1;
-    return new Date(y,mo-1,dy);
+migrate();
+vacaciones=load('labora_vac',[]);
+fallos=load('labora_fallos',[]);
+incidencias=load('labora_inc',[]);
+ausencias=load('labora_aus',[]);
+extras=load('labora_ext',[]);
+
+function easter(y){
+  var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),dy=((h+l-7*m+114)%31)+1;
+  return new Date(y,mo-1,dy);
+}
+
+function getFestivos(year){
+  var e=easter(year);
+  var vs=new Date(e);vs.setDate(e.getDate()-2);
+  var lp=new Date(e);lp.setDate(e.getDate()+1);
+  var js=new Date(e);js.setDate(e.getDate()-3);
+  var lunes=['cataluna','c-valenciana','baleares','navarra','pais-vasco','la-rioja','murcia'];
+  var f=[
+    {d:new Date(year,0,1),n:'Año Nuevo'},{d:new Date(year,0,6),n:'Reyes Magos'},
+    {d:vs,n:'Viernes Santo'},{d:new Date(year,4,1),n:'Día del Trabajo'},
+    {d:new Date(year,9,12),n:'Fiesta Nacional'},{d:new Date(year,10,1),n:'Todos los Santos'},
+    {d:new Date(year,11,6),n:'Día de la Constitución'},{d:new Date(year,11,8),n:'Inmaculada Concepción'},
+    {d:new Date(year,11,25),n:'Navidad'}
+  ];
+  if(lunes.indexOf(cfg.comunidad)>=0)f.push({d:lp,n:'Lunes de Pascua'});
+  else f.push({d:js,n:'Jueves Santo'});
+  if(cfg.comunidad==='cataluna'){
+    f.push({d:new Date(year,8,11),n:'La Diada (Cat.)'});
+    f.push({d:new Date(year,5,24),n:'Sant Joan (Cat.)'});
+    f.push({d:new Date(year,11,26),n:'Sant Esteve (Cat.)'});
   }
-  var e=easter(2026);
-  ok('Easter OK: '+e);
-}catch(e){err('Easter: '+e.message);}
+  return f.sort(function(a,b){return a.d-b.d;});
+}
 
-try{
-  var el=document.createElement('div');
-  el.className='test';
-  el.textContent='hola';
-  document.body.appendChild(el);
-  ok('DOM OK');
-}catch(e){err('DOM: '+e.message);}
+function fmtFecha(iso){
+  var d=new Date(iso+'T00:00:00');
+  return d.getDate()+' de '+MESES[d.getMonth()]+' '+d.getFullYear();
+}return getFestivos(date.getFullYear()).some(function(f){return sameDay(f.d,date);});}
+function isWE(d){var dw=d.getDay();return dw===0||dw===6;}
 
-try{
-  function openModal(id){document.getElementById(id)&&document.getElementById(id).classList.add('open');}
-  function closeModal(id){document.getElementById(id)&&document.getElementById(id).classList.remove('open');}
-  ok('Funciones modal OK');
-}catch(e){err('Funciones modal: '+e.message);}
+function calcVacFin(){
+  var ini=document.getElementById('vac-ini').value;
+  var dias=parseInt(document.getElementById('vac-dias').value)||0;
+  var hint=document.getElementById('vac-fin-hint');
+  if(!ini||dias<=0){hint.textContent='Se calcula automáticamente';hint.removeAttribute('data-fin');return;}
+  var cur=new Date(ini+'T00:00:00'),contados=0,festUsados=0;
+  while(contados<dias){
+    var isF=isFest(cur),isW=isWE(cur);
+    if(cfg.tipo==='laborables'){if(!isF&&!isW)contados++;else if(isF)festUsados++;}
+    else{if(!isF)contados++;else festUsados++;}
+    if(contados<dias)cur.setDate(cur.getDate()+1);
+  }
+  var finStr=fmtD(cur);
+  var extra=festUsados>0?' ('+festUsados+' festivo'+(festUsados>1?'s':'')+' no contado'+(festUsados>1?'s':'')+')'  :'';
+  hint.textContent='Fin: '+fmtFecha(finStr)+extra;
+  hint.setAttribute('data-fin',finStr);
+}
 
-try{
-  var arr=[1,2,3];
-  var res=arr.filter(function(x){return x>1;}).map(function(x){return x*2;});
-  ok('Array methods OK: '+res);
-}catch(e){err('Array methods: '+e.message);}
+function getVacDays(){
+  var days=[];
+  vacaciones.forEach(function(v){var c=new Date(v.ini+'T00:00:00');var fi=new Date(v.fin+'T00:00:00');while(c<=fi){days.push(fmtD(c));c.setDate(c.getDate()+1);}});
+  return days;
+}
 
-log.innerHTML+='<p style="margin-top:16px;font-weight:bold">Diagnóstico completo</p>';
+function countVacUsed(){
+  var used=0;
+  var hoy=new Date();hoy.setHours(23,59,59,0);
+  vacaciones.forEach(function(v){
+    var c=new Date(v.ini+'T00:00:00');var fi=new Date(v.fin+'T00:00:00');
+    while(c<=fi){
+      if(c<=hoy){
+        var isF=isFest(c),isW=isWE(c);
+        if(cfg.tipo==='laborables'){if(!isF&&!isW)used++;}
+        else{if(!isF)used++;}
+      }
+      c.setDate(c.getDate()+1);
+    }
+  });
+  return used;
+}
+
+function countFestInVac(){
+  var cnt=0;
+  vacaciones.forEach(function(v){var c=new Date(v.ini+'T00:00:00');var fi=new Date(v.fin+'T00:00:00');while(c<=fi){if(isFest(c))cnt++;c.setDate(c.getDate()+1);}});
+  return cnt;
+}
+
+function renderCal(){
+  var festivos=getFestivos(calYear);
+  var vacDays=getVacDays();
+  document.getElementById('cal-title2').textContent=MESES[calMonth]+' '+calYear;
+  var grid=document.getElementById('cal-grid2');grid.innerHTML='';
+  DS.forEach(function(d){var el=document.createElement('div');el.className='cal-dn';el.textContent=d;grid.appendChild(el);});
+  var first=new Date(calYear,calMonth,1);
+  var startDay=(first.getDay()+6)%7;
+  for(var i=0;i<startDay;i++){var el=document.createElement('div');el.className='cal-day';grid.appendChild(el);}
+  var days=new Date(calYear,calMonth+1,0).getDate();
+  for(var d=1;d<=days;d++){
+    var date=new Date(calYear,calMonth,d);var ds=fmtD(date);
+    var isF=festivos.some(function(f){return sameDay(f.d,date);});
+    var isW=isWE(date);var isT=sameDay(date,today);var isV=vacDays.indexOf(ds)>=0;
+    var cls='cal-day';if(isW)cls+=' we';if(isF)cls+=' fest';else if(isV)cls+=' vac';if(isT)cls+=' today';
+    var el=document.createElement('div');el.className=cls;el.textContent=d;grid.appendChild(el);
+  }
+  var list=document.getElementById('fest-list2');
+  var mf=festivos.filter(function(f){return f.d.getMonth()===calMonth&&f.d.getFullYear()===calYear;});
+  list.innerHTML=mf.length?mf.map(function(f){return'<div class="fest-item"><div class="fest-date">'+f.d.getDate()+' '+MESES[f.d.getMonth()].substring(0,3)+'</div><div class="fest-name">'+f.n+'</div></div>';}).join(''):'<div class="empty"><div class="empty-icon">✅</div><div style="font-size:14px">Sin festivos este mes</div></div>';
+}
+
+function chMes(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCal();}
+
+function renderVac(){
+  var used=countVacUsed();var fest=countFestInVac();var total=cfg.total;var disp=Math.max(0,total-used);
+  document.getElementById('vac-total').textContent=total;document.getElementById('vac-disp').textContent=disp;
+  document.getElementById('vac-usados').textContent=used;document.getElementById('vac-fest').textContent=fest;
+  document.getElementById('sel-tipo').value=cfg.tipo;document.getElementById('sel-total').value=cfg.total;
+  document.getElementById('sum-vac').textContent=disp+' disponibles';
+  renderVacCountdown();
+  var list=document.getElementById('vac-list');
+  if(!vacaciones.length){list.innerHTML='<div class="empty"><div class="empty-icon">🌴</div><div style="font-size:14px">Sin vacaciones registradas</div></div>';return;}
+  list.innerHTML=vacaciones.slice().reverse().map(function(v,ri){var i=vacaciones.length-1-ri;return'<div class="entry-card"><div class="entry-header"><div class="entry-date">'+fmtFecha(v.ini)+(v.fin&&v.fin!==v.ini?' → '+fmtFecha(v.fin):'')+'</div><button class="btn-del" onclick="del(\'vac\','+i+')">🗑</button></div>'+(v.nota?'<div class="entry-desc">'+v.nota+'</div>':'')+'<div class="entry-footer"><span class="pill pill-blue">'+(v.dias||'?')+' días</span></div></div>';}).join('');
+}
+
+function saveCfg(){
+  cfg.tipo=document.getElementById('sel-tipo').value;
+  cfg.total=parseInt(document.getElementById('sel-total').value)||31;
+  save('labora_cfg',cfg);
+  renderVac();
+}
+
+function getProximasVac(){
+  var now=new Date();now.setHours(0,0,0,0);
+  var futuras=vacaciones.filter(function(v){return new Date(v.ini+'T00:00:00')>now;});
+  futuras.sort(function(a,b){return a.ini.localeCompare(b.ini);});
+  return futuras.length?futuras[0]:null;
+}
+
+function renderVacCountdown(){
+  var el=document.getElementById('vac-countdown');
+  var prox=getProximasVac();
+  if(!prox){el.innerHTML='<div class="empty" style="padding:16px"><div style="font-size:14px;color:var(--muted)">Sin vacaciones futuras registradas</div></div>';return;}
+  var now=new Date();now.setHours(0,0,0,0);
+  var ini=new Date(prox.ini+'T00:00:00');
+  var diff=Math.round((ini-now)/(1000*60*60*24));
+  var sem=Math.floor(diff/7);var dias=diff%7;
+  var txt=diff===0?'¡Empiezan hoy! 🎉':diff===1?'¡Empiezan mañana! 🎉':(sem>0?sem+' sem y ':'')+dias+' día'+(dias!==1?'s':'');
+  el.innerHTML='<div style="background:var(--green-light);border:0.5px solid #6EE7B7;border-radius:var(--radius);padding:16px"><div style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Próximas vacaciones</div><div style="font-size:22px;font-weight:700;color:#065F46;margin-bottom:4px">'+txt+'</div><div style="font-size:12px;color:var(--green)">Inician el '+fmtFecha(prox.ini)+(prox.nota?' · '+prox.nota:'')+'</div></div>';
+}
+
+function renderFallos(){
+  var m=today.getMonth(),y=today.getFullYear();
+  var mes=fallos.filter(function(f){var d=new Date(f.fecha+'T00:00:00');return d.getMonth()===m&&d.getFullYear()===y;}).length;
+  var anio=fallos.filter(function(f){return new Date(f.fecha+'T00:00:00').getFullYear()===y;}).length;
+  document.getElementById('fall-mes').textContent=mes;document.getElementById('fall-anio').textContent=anio;
+  document.getElementById('sum-fallos').textContent=mes+' este mes';
+  var list=document.getElementById('fallos-list');
+  if(!fallos.length){list.innerHTML='<div class="empty"><div class="empty-icon">✅</div><div style="font-size:14px">Sin fallos registrados</div></div>';return;}
+  list.innerHTML=fallos.slice().reverse().map(function(f,ri){var i=fallos.length-1-ri;return'<div class="entry-card"><div class="entry-header"><div class="entry-date">'+f.fecha+'</div><button class="btn-del" onclick="del(\'fallos\','+i+')">🗑</button></div><div class="entry-desc">'+f.desc+'</div><div class="entry-footer"><span class="pill '+(f.comunicado==='Sí'?'pill-green':'pill-gray')+'">'+f.comunicado+'</span><span class="pill '+(f.consec==='Ninguna'?'pill-green':'pill-amber')+'">'+f.consec+'</span></div></div>';}).join('');
+}
+
+function renderInc(){
+  var m=today.getMonth(),y=today.getFullYear();
+  var mes=incidencias.filter(function(f){var d=new Date(f.fecha+'T00:00:00');return d.getMonth()===m&&d.getFullYear()===y;}).length;
+  var anio=incidencias.filter(function(f){return new Date(f.fecha+'T00:00:00').getFullYear()===y;}).length;
+  document.getElementById('inc-mes').textContent=mes;document.getElementById('inc-anio').textContent=anio;
+  document.getElementById('sum-inc').textContent=mes+' este mes';
+  var list=document.getElementById('inc-list');
+  if(!incidencias.length){list.innerHTML='<div class="empty"><div class="empty-icon">✅</div><div style="font-size:14px">Sin incidencias registradas</div></div>';return;}
+  list.innerHTML=incidencias.slice().reverse().map(function(v,ri){var i=incidencias.length-1-ri;var ec=v.estado==='Resuelta'?'pill-green':v.estado==='En resolución'?'pill-amber':'pill-red';var fotos=v.fotos&&v.fotos.length?'<div class="foto-area" style="margin:8px 0">'+v.fotos.map(function(f){return'<img class="foto-thumb" src="'+f+'" onclick="openFoto(\''+f+'\')">';}).join('')+'</div>':'';return'<div class="entry-card"><div class="entry-header"><div class="entry-date">'+v.fecha+'</div><button class="btn-del" onclick="del(\'inc\','+i+')">🗑</button></div><div class="entry-desc" style="font-weight:600;margin-bottom:4px">'+v.tipo+'</div><div class="entry-desc">'+v.desc+'</div>'+fotos+'<div class="entry-footer"><span class="pill '+(v.reportada==='Sí'?'pill-green':'pill-gray')+'">Reportada: '+v.reportada+'</span><span class="pill '+ec+'">'+v.estado+'</span></div></div>';}).join('');
+}
+
+function renderAus(){
+  var m=today.getMonth(),y=today.getFullYear();
+  var thisMes=ausencias.filter(function(a){var d=new Date(a.fecha+'T00:00:00');return d.getMonth()===m&&d.getFullYear()===y;});
+  var thisAnio=ausencias.filter(function(a){return new Date(a.fecha+'T00:00:00').getFullYear()===y;});
+  var hMes=thisMes.filter(function(a){return a.estado==='Pendiente';}).reduce(function(s,a){return s+parseFloat(a.horas||0);},0);
+  var hAnio=thisAnio.filter(function(a){return a.estado==='Pendiente';}).reduce(function(s,a){return s+parseFloat(a.horas||0);},0);
+  document.getElementById('aus-mes').textContent=thisMes.length;document.getElementById('aus-anio').textContent=thisAnio.length;
+  document.getElementById('aus-hmes').textContent=hMes>0?hMes+'h':'0h';document.getElementById('aus-hanio').textContent=hAnio>0?hAnio+'h':'0h';
+  document.getElementById('sum-aus').textContent=thisMes.length+' este mes';
+  var list=document.getElementById('aus-list');
+  if(!ausencias.length){list.innerHTML='<div class="empty"><div class="empty-icon">✅</div><div style="font-size:14px">Sin ausencias registradas</div></div>';return;}
+  list.innerHTML=ausencias.slice().reverse().map(function(a,ri){var i=ausencias.length-1-ri;var inj=a.just==='Injustificada';var ec=a.estado==='Devueltas'?'pill-green':a.estado==='Descontadas'?'pill-red':'pill-amber';return'<div class="entry-card'+(inj?' injustificado':'')+'"><div class="entry-header"><div class="entry-date">'+a.fecha+'</div><button class="btn-del" onclick="del(\'aus\','+i+')">🗑</button></div>'+(a.motivo?'<div class="entry-desc">'+a.motivo+'</div>':'')+'<div class="entry-footer"><span class="pill '+(inj?'pill-red':'pill-green')+'">'+a.just+'</span>'+(parseFloat(a.horas)>0?'<span class="pill pill-amber">'+a.horas+'h faltantes</span>':'')+'<span class="pill '+ec+'">'+a.estado+'</span></div></div>';}).join('');
+}
+
+function renderExt(){
+  var m=today.getMonth(),y=today.getFullYear();
+  var thisMes=extras.filter(function(e){var d=new Date(e.fecha+'T00:00:00');return d.getMonth()===m&&d.getFullYear()===y;});
+  var thisAnio=extras.filter(function(e){return new Date(e.fecha+'T00:00:00').getFullYear()===y;});
+  var hMes=thisMes.reduce(function(s,e){return s+parseFloat(e.horas||0);},0);
+  var hAnio=thisAnio.reduce(function(s,e){return s+parseFloat(e.horas||0);},0);
+  var hPmes=thisMes.filter(function(e){return e.estado==='Pendiente';}).reduce(function(s,e){return s+parseFloat(e.horas||0);},0);
+  var hPanio=thisAnio.filter(function(e){return e.estado==='Pendiente';}).reduce(function(s,e){return s+parseFloat(e.horas||0);},0);
+  document.getElementById('ext-mes').textContent=hMes+'h';document.getElementById('ext-anio').textContent=hAnio+'h';
+  document.getElementById('ext-pmes').textContent=hPmes+'h';document.getElementById('ext-panio').textContent=hPanio+'h';
+  document.getElementById('sum-ext').textContent=hMes+'h este mes';
+  var list=document.getElementById('ext-list');
+  if(!extras.length){list.innerHTML='<div class="empty"><div class="empty-icon">✅</div><div style="font-size:14px">Sin horas extra registradas</div></div>';return;}
+  list.innerHTML=extras.slice().reverse().map(function(e,ri){var i=extras.length-1-ri;var ec=e.estado==='Compensadas'||e.estado==='Pagadas'?'pill-green':'pill-amber';return'<div class="entry-card"><div class="entry-header"><div class="entry-date">'+e.fecha+'</div><button class="btn-del" onclick="del(\'ext\','+i+')">🗑</button></div>'+(e.desc?'<div class="entry-desc">'+e.desc+'</div>':'')+'<div class="entry-footer"><span class="pill pill-blue">'+e.horas+'h extra</span><span class="pill '+ec+'">'+e.estado+'</span></div></div>';}).join('');
+}
+
+function renderCountdown(){
+  var cobro=cfg.cobro||28;
+  document.getElementById('cobro-bar-label').textContent='Día de cobro: '+cobro;
+  var now=new Date();now.setHours(0,0,0,0);
+  var next=new Date(now.getFullYear(),now.getMonth(),cobro);
+  if(next<=now)next=new Date(now.getFullYear(),now.getMonth()+1,cobro);
+  var diff=Math.round((next-now)/(1000*60*60*24));
+  var sem=Math.floor(diff/7);var dias=diff%7;
+  document.getElementById('cd-dias').textContent=diff;
+  if(diff===0)document.getElementById('cd-semanas').textContent='¡Hoy cobras! 🎉';
+  else if(diff===1)document.getElementById('cd-semanas').textContent='¡Mañana cobras! 🎉';
+  else document.getElementById('cd-semanas').textContent=(sem>0?sem+' semana'+(sem>1?'s':'')+' y ':'')+dias+' día'+(dias!==1?'s':'');
+  document.getElementById('cd-fecha').textContent='Próximo cobro: día '+cobro+' de '+MESES[next.getMonth()];
+}
+
+function goScreen(id,navId){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  document.getElementById(navId).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function openModal(id){
+  var t=fmtD(new Date());
+  if(id==='modal-vac'){document.getElementById('vac-ini').value=t;document.getElementById('vac-dias').value='';document.getElementById('vac-nota').value='';var h=document.getElementById('vac-fin-hint');h.textContent='Se calcula automáticamente';h.removeAttribute('data-fin');}
+  if(id==='modal-fallo'){document.getElementById('fall-fecha').value=t;document.getElementById('fall-desc').value='';clearR('fall-com');clearR('fall-con');}
+  if(id==='modal-inc'){document.getElementById('inc-fecha').value=t;document.getElementById('inc-desc').value='';document.getElementById('inc-tipo').value='';clearR('inc-rep');clearR('inc-est');tempFotos=[];renderFotoArea();}
+  if(id==='modal-aus'){document.getElementById('aus-fecha').value=t;document.getElementById('aus-motivo').value='';document.getElementById('aus-horas').value='';clearR('aus-just');clearR('aus-est');}
+  if(id==='modal-ext'){document.getElementById('ext-fecha').value=t;document.getElementById('ext-horas').value='';document.getElementById('ext-desc').value='';clearR('ext-est');}
+  if(id==='modal-ajustes'){document.getElementById('aj-cobro').value=cfg.cobro||28;document.getElementById('aj-comunidad').value=cfg.comunidad||'cataluna';}
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeBg(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+
+function selR(btn,gid,color){
+  document.querySelectorAll('#'+gid+' .radio-btn').forEach(function(b){b.classList.remove('sel','sel-red');});
+  btn.classList.add(color==='red'?'sel-red':'sel');
+}
+function clearR(gid){document.querySelectorAll('#'+gid+' .radio-btn').forEach(function(b){b.classList.remove('sel','sel-red');});}
+function getR(gid){var s=document.querySelector('#'+gid+' .radio-btn.sel, #'+gid+' .radio-btn.sel-red');return s?s.textContent:'';}
+
+function addFotos(input){
+  var files=Array.from(input.files).slice(0,3-tempFotos.length);
+  files.forEach(function(f){var r=new FileReader();r.onload=function(e){tempFotos.push(e.target.result);renderFotoArea();};r.readAsDataURL(f);});
+}
+function renderFotoArea(){
+  var area=document.getElementById('foto-area');
+  area.innerHTML=tempFotos.map(function(f,i){return'<img class="foto-thumb" src="'+f+'" onclick="openFoto(\''+f+'\')"><button onclick="delFoto('+i+')" style="background:var(--red);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;align-self:flex-start;margin-left:-14px;margin-top:-6px">x</button>';}).join('');
+  if(tempFotos.length<3)area.innerHTML+='<div class="foto-add" onclick="document.getElementById(\'foto-inp\').click()">+</div><input type="file" id="foto-inp" accept="image/*" multiple onchange="addFotos(this)">';
+}
+function delFoto(i){tempFotos.splice(i,1);renderFotoArea();}
+function openFoto(src){document.getElementById('ov-foto-img').src=src;document.getElementById('ov-foto').classList.add('open');}
+function closeFoto(){document.getElementById('ov-foto').classList.remove('open');}
+
+function del(tipo,i){pendingDel={tipo:tipo,i:i};document.getElementById('ov-del').classList.add('open');}
+function delCancel(){pendingDel={tipo:null,i:null};document.getElementById('ov-del').classList.remove('open');}
+function delConfirm(){
+  var tipo=pendingDel.tipo,i=pendingDel.i;
+  if(tipo==='vac'){vacaciones.splice(i,1);save('labora_vac',vacaciones);renderVac();renderCal();}
+  if(tipo==='fallos'){fallos.splice(i,1);save('labora_fallos',fallos);renderFallos();}
+  if(tipo==='inc'){incidencias.splice(i,1);save('labora_inc',incidencias);renderInc();}
+  if(tipo==='aus'){ausencias.splice(i,1);save('labora_aus',ausencias);renderAus();}
+  if(tipo==='ext'){extras.splice(i,1);save('labora_ext',extras);renderExt();}
+  delCancel();
+}
+
+function saveAjustes(){cfg.cobro=parseInt(document.getElementById('aj-cobro').value)||28;cfg.comunidad=document.getElementById('aj-comunidad').value;save('labora_cfg',cfg);closeModal('modal-ajustes');renderCountdown();renderCal();renderVac();}
+function saveVac(){var ini=document.getElementById('vac-ini').value;var dias=parseInt(document.getElementById('vac-dias').value)||0;var hint=document.getElementById('vac-fin-hint');var fin=hint.getAttribute('data-fin')||ini;if(!ini||dias<=0){alert('Indica la fecha de inicio y los días.');return;}vacaciones.push({ini:ini,fin:fin,dias:dias,nota:document.getElementById('vac-nota').value});save('labora_vac',vacaciones);closeModal('modal-vac');renderVac();renderCal();renderCountdown();}
+function saveFallo(){var fecha=document.getElementById('fall-fecha').value;var desc=document.getElementById('fall-desc').value.trim();if(!fecha||!desc){alert('Completa la fecha y la descripción.');return;}fallos.push({fecha:fecha,desc:desc,comunicado:getR('fall-com')||'No indicado',consec:getR('fall-con')||'No indicado'});save('labora_fallos',fallos);closeModal('modal-fallo');renderFallos();}
+function saveInc(){var fecha=document.getElementById('inc-fecha').value;var tipo=document.getElementById('inc-tipo').value;var desc=document.getElementById('inc-desc').value.trim();if(!fecha||!tipo||!desc){alert('Completa fecha, tipo y descripción.');return;}incidencias.push({fecha:fecha,tipo:tipo,desc:desc,reportada:getR('inc-rep')||'No indicado',estado:getR('inc-est')||'Pendiente',fotos:tempFotos.slice()});tempFotos=[];save('labora_inc',incidencias);closeModal('modal-inc');renderInc();}
+function saveAus(){var fecha=document.getElementById('aus-fecha').value;var just=getR('aus-just');if(!fecha||!just){alert('Indica la fecha y si la ausencia es justificada o no.');return;}ausencias.push({fecha:fecha,just:just,motivo:document.getElementById('aus-motivo').value.trim(),horas:parseFloat(document.getElementById('aus-horas').value)||0,estado:getR('aus-est')||'Pendiente'});save('labora_aus',ausencias);closeModal('modal-aus');renderAus();}
+function saveExt(){var fecha=document.getElementById('ext-fecha').value;var horas=parseFloat(document.getElementById('ext-horas').value);if(!fecha||!horas||horas<=0){alert('Indica la fecha y las horas extra realizadas.');return;}extras.push({fecha:fecha,horas:horas,desc:document.getElementById('ext-desc').value.trim(),estado:getR('ext-est')||'Pendiente'});save('labora_ext',extras);closeModal('modal-ext');renderExt();}
+
+renderCountdown();
+renderCal();
+renderVac();
+renderFallos();
+renderInc();
+renderAus();
+renderExt();
 </script>
 </body>
 </html>
