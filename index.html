@@ -40,11 +40,11 @@ function weeksAndDays(isoTarget){
   return{weeks:Math.floor(diff/7),days:diff%7,total:diff};
 }
 
-function nextCobro(){
+function nextCobro(dia){
   const now=new Date();now.setHours(0,0,0,0);
   let y=now.getFullYear(),m=now.getMonth();
-  let cobro=new Date(y,m,28);
-  if(cobro<=now){m++;if(m>11){m=0;y++;}cobro=new Date(y,m,28);}
+  let cobro=new Date(y,m,dia);
+  if(cobro<=now){m++;if(m>11){m=0;y++;}cobro=new Date(y,m,dia);}
   const diff=Math.ceil((cobro-now)/86400000);
   return{date:cobro,weeks:Math.floor(diff/7),days:diff%7,total:diff};
 }
@@ -149,14 +149,33 @@ function Empty({text}){
 }
 
 function CobroSection(){
-  const cobro=nextCobro();
+  const [dia,setDia]=useState(()=>parseInt(lsLoad('cobro-dia')||'28'));
+  const [editando,setEditando]=useState(false);
+  const [input,setInput]=useState('');
+  const cobro=nextCobro(dia);
   const mes=cobro.date.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+
+  const guardar=()=>{
+    const n=parseInt(input);
+    if(isNaN(n)||n<1||n>31){alert('Ingresá un día válido entre 1 y 31');return;}
+    setDia(n);lsSave('cobro-dia',n);setEditando(false);
+  };
+
   return(
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <SHead emoji="💰" title="Próximo cobro" sub="Se cobra el día 28 de cada mes" bg={ACCENT.purpleL}/>
+      <SHead emoji="💰" title="Próximo cobro" sub="Configura tu día de cobro" bg={ACCENT.purpleL}/>
       <div style={{background:'white',borderRadius:16,border:'1px solid #e2e8f0',padding:24,textAlign:'center'}}>
         <div style={{fontSize:13,color:'#94a3b8',marginBottom:4}}>Fecha de cobro</div>
-        <div style={{fontSize:22,fontWeight:800,color:'#1e293b',marginBottom:20}}>28 de {mes}</div>
+        <div style={{fontSize:22,fontWeight:800,color:'#1e293b',marginBottom:8}}>Día {dia} de {mes}</div>
+        {!editando?(
+          <button onClick={()=>{setInput(String(dia));setEditando(true);}} style={{fontSize:12,color:ACCENT.purple,background:'none',border:'none',cursor:'pointer',textDecoration:'underline',marginBottom:16}}>Cambiar día de cobro</button>
+        ):(
+          <div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:16}}>
+            <input type="number" min="1" max="31" value={input} onChange={e=>setInput(e.target.value)} style={{width:80,padding:'8px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:18,fontWeight:700,textAlign:'center'}} autoFocus/>
+            <button onClick={guardar} style={{background:ACCENT.purple,border:'none',borderRadius:8,padding:'0 14px',cursor:'pointer',color:'white',display:'flex',alignItems:'center'}}><IconChk/></button>
+            <button onClick={()=>setEditando(false)} style={{background:'#f1f5f9',border:'none',borderRadius:8,padding:'0 10px',cursor:'pointer',color:'#64748b',display:'flex',alignItems:'center'}}><IconX/></button>
+          </div>
+        )}
         <div style={{background:ACCENT.purpleL,borderRadius:12,padding:'20px 16px',marginBottom:12}}>
           <div style={{fontSize:13,color:ACCENT.purple,fontWeight:600,marginBottom:8}}>Tiempo restante</div>
           <div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:6,flexWrap:'wrap'}}>
