@@ -219,8 +219,8 @@ function Calendario({entries,festivos,calYear,calMonth,onChMes}){
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
         <span style={{fontWeight:700,fontSize:15,color:'#1e293b'}}>{MESES[calMonth]} {calYear}</span>
         <div style={{display:'flex',gap:8}}>
-          <button onClick={()=>onChMes(-1)} style={{width:30,height:30,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:16}}>‹</button>
-          <button onClick={()=>onChMes(1)} style={{width:30,height:30,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:16}}>›</button>
+          <button onClick={()=>onChMes(-1)} style={{width:30,height:30,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:16}}>&#8249;</button>
+          <button onClick={()=>onChMes(1)} style={{width:30,height:30,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:16}}>&#8250;</button>
         </div>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2,marginBottom:8}}>
@@ -267,20 +267,17 @@ function VacForm({initial,tipo,festivos,onSave,onCancel,color}){
   const [finCalc,setFinCalc]=useState('');
   const [festUsados,setFestUsados]=useState(0);
   const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
-
   const calcular=(fecha,dias)=>{
     if(!fecha||!dias||parseInt(dias)<1)return;
     const r=calcFin(fecha,parseInt(dias),tipo,festivos);
     setFinCalc(r.fin);setFestUsados(r.festUsados);
   };
-
   const submit=()=>{
-    if(!d.fecha){alert('Ingresá la fecha de inicio');return;}
-    if(!d.dias||parseInt(d.dias)<1){alert('Ingresá la cantidad de días');return;}
+    if(!d.fecha){alert('Ingresa la fecha de inicio');return;}
+    if(!d.dias||parseInt(d.dias)<1){alert('Ingresa la cantidad de dias');return;}
     const r=calcFin(d.fecha,parseInt(d.dias),tipo,festivos);
     onSave({...d,dias:parseInt(d.dias),fin:r.fin});
   };
-
   return(
     <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -288,16 +285,16 @@ function VacForm({initial,tipo,festivos,onSave,onCancel,color}){
         <button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IconX/></button>
       </div>
       <div>
-        <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha de inicio <span style={{color:'#ef4444'}}>*</span></label>
+        <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha de inicio *</label>
         <input type="date" value={d.fecha||''} onChange={e=>{const v=e.target.value;setD({...d,fecha:v});calcular(v,d.dias);}} style={inp}/>
       </div>
       <div>
-        <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Días de vacaciones ({tipo}) <span style={{color:'#ef4444'}}>*</span></label>
+        <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Dias de vacaciones ({tipo}) *</label>
         <input type="number" min="1" step="1" placeholder="Ej: 5" value={d.dias||''} onChange={e=>{const v=e.target.value;setD({...d,dias:v});calcular(d.fecha,v);}} style={inp}/>
       </div>
       {finCalc&&(
         <div style={{background:'#f0fdf4',border:'1px solid #6ee7b7',borderRadius:8,padding:'10px 12px',fontSize:13,color:'#065f46'}}>
-          📅 Fin: <strong>{fmtLargo(finCalc)}</strong>
+          Fin: {fmtLargo(finCalc)}
           {festUsados>0&&<div style={{fontSize:12,marginTop:4,color:'#059669'}}>{festUsados} festivo{festUsados>1?'s':''} no contado{festUsados>1?'s':''}</div>}
         </div>
       )}
@@ -322,108 +319,75 @@ function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
   const [calMonth,setCalMonth]=useState(CM);
   const [tipo,setTipo]=useState(()=>lsLoad('vac-tipo')||'laborables');
   const [comunidad,setComunidad]=useState(()=>lsLoad('vac-comunidad')||'cataluna');
-
   const festivos=getFestivos(year,comunidad);
   const festCal=getFestivos(calYear,comunidad);
-
-  const chMes=dir=>{
-    let m=calMonth+dir,y=calYear;
-    if(m>11){m=0;y++;}if(m<0){m=11;y--;}
-    setCalYear(y);setCalMonth(m);
-  };
-
+  const chMes=dir=>{let m=calMonth+dir,y=calYear;if(m>11){m=0;y++;}if(m<0){m=11;y--;}setCalYear(y);setCalMonth(m);};
   const yKey=String(year);
   const totalD=Number(totales[yKey]??0);
   const ye=entries.filter(e=>yearOf(e.fecha)===year);
   const hoy=new Date();hoy.setHours(23,59,59,0);
-
   const usados=ye.reduce((acc,e)=>{
     if(!e.fin)return acc+Number(e.dias||0);
     let cur=new Date(e.fecha+'T00:00:00');
     const fin=new Date(e.fin+'T00:00:00');
     const fests=getFestivos(yearOf(e.fecha),comunidad);
     while(cur<=fin){
-      if(cur<=hoy){
-        const isF=isFest(cur,fests),isW=isWE(cur);
-        if(tipo==='laborables'){if(!isF&&!isW)acc++;}
-        else{if(!isF)acc++;}
-      }
+      if(cur<=hoy){const isF=isFest(cur,fests),isW=isWE(cur);if(tipo==='laborables'){if(!isF&&!isW)acc++;}else{if(!isF)acc++;}}
       cur.setDate(cur.getDate()+1);
     }
     return acc;
   },0);
-
   const rest=totalD-usados;
   const pct=totalD>0?Math.min(100,(usados/totalD)*100):0;
   const now=new Date();now.setHours(0,0,0,0);
   const futuras=entries.filter(e=>new Date(e.fecha+'T00:00:00')>now).sort((a,b)=>a.fecha.localeCompare(b.fecha));
   const proximas=futuras[0]||null;
   const countdown=proximas?weeksAndDays(proximas.fecha):null;
-
   const abrirTotal=()=>{setTInput(String(totalD||''));setEditT(true);};
-  const guardarTotal=()=>{
-    const n=parseInt(tInput,10);
-    if(isNaN(n)||n<0){alert('Ingresá un número válido');return;}
-    onUpdateT({...totales,[yKey]:n});setEditT(false);
-  };
-
-  const save=e=>{
-    if(ed){onUpdateE(entries.map(i=>i.id===ed.id?{...e,id:ed.id}:i));setEd(null);}
-    else{onUpdateE([{...e,id:uid()},...entries]);setForm(false);}
-  };
-
+  const guardarTotal=()=>{const n=parseInt(tInput,10);if(isNaN(n)||n<0){alert('Ingresa un numero valido');return;}onUpdateT({...totales,[yKey]:n});setEditT(false);};
+  const save=e=>{if(ed){onUpdateE(entries.map(i=>i.id===ed.id?{...e,id:ed.id}:i));setEd(null);}else{onUpdateE([{...e,id:uid()},...entries]);setForm(false);}};
   const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:20,fontWeight:700,boxSizing:'border-box',outline:'none'};
-
   return(
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <SHead emoji="🌴" title="Vacaciones" sub={"Días para "+year} bg={ACCENT.emeraldL}/>
-
+      <SHead emoji="🌴" title="Vacaciones" sub={"Dias para "+year} bg={ACCENT.emeraldL}/>
       <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14,display:'flex',flexDirection:'column',gap:10}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div>
-            <div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Tipo de días</div>
-            <div style={{fontSize:11,color:'#94a3b8'}}>¿Cómo cuenta tu convenio?</div>
-          </div>
+          <div><div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Tipo de dias</div><div style={{fontSize:11,color:'#94a3b8'}}>Como cuenta tu convenio</div></div>
           <select value={tipo} onChange={e=>{setTipo(e.target.value);lsSave('vac-tipo',e.target.value);}} style={{fontSize:13,padding:'6px 8px',borderRadius:8,border:'1px solid #e2e8f0',background:'#f8fafc',color:'#1e293b'}}>
             <option value="laborables">Laborables</option>
             <option value="naturales">Naturales</option>
           </select>
         </div>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div>
-            <div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Comunidad autónoma</div>
-            <div style={{fontSize:11,color:'#94a3b8'}}>Para calcular festivos</div>
-          </div>
+          <div><div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Comunidad autonoma</div><div style={{fontSize:11,color:'#94a3b8'}}>Para calcular festivos</div></div>
           <select value={comunidad} onChange={e=>{setComunidad(e.target.value);lsSave('vac-comunidad',e.target.value);}} style={{fontSize:12,padding:'6px 8px',borderRadius:8,border:'1px solid #e2e8f0',background:'#f8fafc',color:'#1e293b',maxWidth:130}}>
-            <option value="cataluna">Cataluña</option>
+            <option value="cataluna">Cataluna</option>
             <option value="c-valenciana">C. Valenciana</option>
             <option value="baleares">Baleares</option>
             <option value="navarra">Navarra</option>
-            <option value="pais-vasco">País Vasco</option>
+            <option value="pais-vasco">Pais Vasco</option>
             <option value="la-rioja">La Rioja</option>
             <option value="murcia">Murcia</option>
-            <option value="otras">Resto de España</option>
+            <option value="otras">Resto de Espana</option>
           </select>
         </div>
       </div>
-
       {countdown&&(
         <div style={{background:ACCENT.emeraldL,borderRadius:14,padding:16,border:'1px solid #6ee7b7'}}>
-          <div style={{fontSize:11,color:ACCENT.emerald,fontWeight:700,marginBottom:4,textTransform:'uppercase',letterSpacing:'0.05em'}}>⏳ Próximas vacaciones</div>
+          <div style={{fontSize:11,color:ACCENT.emerald,fontWeight:700,marginBottom:4,textTransform:'uppercase'}}>Proximas vacaciones</div>
           <div style={{fontWeight:700,color:'#065f46',fontSize:14,marginBottom:8}}>{proximas.desc||fmtLargo(proximas.fecha)}</div>
           <div style={{display:'flex',alignItems:'baseline',gap:6,flexWrap:'wrap'}}>
             {countdown.weeks>0&&<><span style={{fontSize:40,fontWeight:900,color:ACCENT.emerald,lineHeight:1}}>{countdown.weeks}</span><span style={{fontSize:15,color:ACCENT.emerald,fontWeight:600}}>sem</span></>}
-            {countdown.days>0&&<><span style={{fontSize:40,fontWeight:900,color:'#065f46',lineHeight:1,marginLeft:countdown.weeks>0?8:0}}>{countdown.days}</span><span style={{fontSize:15,color:'#065f46',fontWeight:600}}>día{countdown.days!==1?'s':''}</span></>}
-            {countdown.weeks===0&&countdown.days===0&&<span style={{fontSize:20,fontWeight:800,color:ACCENT.emerald}}>¡Empiezan hoy! 🎉</span>}
+            {countdown.days>0&&<><span style={{fontSize:40,fontWeight:900,color:'#065f46',lineHeight:1,marginLeft:countdown.weeks>0?8:0}}>{countdown.days}</span><span style={{fontSize:15,color:'#065f46',fontWeight:600}}>dia{countdown.days!==1?'s':''}</span></>}
+            {countdown.weeks===0&&countdown.days===0&&<span style={{fontSize:20,fontWeight:800,color:ACCENT.emerald}}>Empiezan hoy!</span>}
           </div>
           <div style={{fontSize:12,color:'#047857',marginTop:4}}>Inician el {fmtLargo(proximas.fecha)}</div>
         </div>
       )}
-
       <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
-          <span style={{fontSize:11,textTransform:'uppercase',letterSpacing:'0.05em',color:'#94a3b8',fontWeight:700}}>Días totales del año</span>
-          {!editT&&<button onClick={abrirTotal} style={{background:'none',border:'none',cursor:'pointer',color:ACCENT.emerald,fontWeight:600,fontSize:12,display:'flex',alignItems:'center',gap:4,padding:4}}><IconEdit/>{totalD>0?'Cambiar':'Definir'}</button>}
+          <span style={{fontSize:11,textTransform:'uppercase',color:'#94a3b8',fontWeight:700}}>Dias totales del ano</span>
+          {!editT&&<button onClick={abrirTotal} style={{background:'none',border:'none',cursor:'pointer',color:ACCENT.emerald,fontWeight:600,fontSize:12,padding:4}}>{totalD>0?'Cambiar':'Definir'}</button>}
         </div>
         {editT?(
           <div style={{display:'flex',gap:8}}>
@@ -432,44 +396,39 @@ function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
             <button onClick={()=>setEditT(false)} style={{background:'#f1f5f9',border:'none',borderRadius:8,padding:'0 10px',cursor:'pointer',color:'#64748b',display:'flex',alignItems:'center'}}><IconX/></button>
           </div>
         ):(
-          <span style={{fontSize:30,fontWeight:800,color:'#1e293b'}}>{totalD} <span style={{fontSize:14,fontWeight:400,color:'#94a3b8'}}>días asignados</span></span>
+          <span style={{fontSize:30,fontWeight:800,color:'#1e293b'}}>{totalD} <span style={{fontSize:14,fontWeight:400,color:'#94a3b8'}}>dias asignados</span></span>
         )}
       </div>
-
       <div style={{display:'flex',gap:10}}>
-        <Stat label="Usados" value={usados} unit="días" color={ACCENT.amber}/>
-        <Stat label="Disponibles" value={rest} unit="días" color={rest<0?ACCENT.red:ACCENT.emerald}/>
+        <Stat label="Usados" value={usados} unit="dias" color={ACCENT.amber}/>
+        <Stat label="Disponibles" value={rest} unit="dias" color={rest<0?ACCENT.red:ACCENT.emerald}/>
       </div>
-
       {totalD>0&&(
         <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:12}}>
-          <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'#94a3b8',marginBottom:6}}><span>Progreso</span><span>{usados} / {totalD} días</span></div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'#94a3b8',marginBottom:6}}><span>Progreso</span><span>{usados} / {totalD} dias</span></div>
           <div style={{height:10,background:'#f1f5f9',borderRadius:99,overflow:'hidden'}}>
             <div style={{height:'100%',width:pct+'%',background:ACCENT.emerald,borderRadius:99,transition:'width 0.3s'}}/>
           </div>
         </div>
       )}
-
       <AddBtn label="Registrar vacaciones" color={ACCENT.emerald} onClick={()=>{setEd(null);setForm(true);}}/>
       {(form||ed)&&<VacForm initial={ed||{fecha:todayISO(),dias:'',desc:''}} tipo={tipo} festivos={festivos} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.emerald}/>}
-
       <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14}}>
         <Calendario entries={ye} festivos={festCal} calYear={calYear} calMonth={calMonth} onChMes={chMes}/>
       </div>
-
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
-        {ye.length===0&&<Empty text="Sin vacaciones registradas este año"/>}
+        {ye.length===0&&<Empty text="Sin vacaciones registradas este ano"/>}
         {[...ye].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(it=>{
           const wd=weeksAndDays(it.fecha);
           return(
             <Item key={it.id} item={it} onEdit={i=>{setEd(i);setForm(false);}} onDelete={id=>onUpdateE(entries.filter(i=>i.id!==id))}>
               <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8}}>
-                <span style={{fontSize:12,color:'#94a3b8'}}>{fmtLargo(it.fecha)}{it.fin&&it.fin!==it.fecha?' → '+fmtLargo(it.fin):''}</span>
-                <span style={{fontSize:18,fontWeight:800,color:ACCENT.emerald,flexShrink:0}}>{it.dias} {it.dias===1?'día':'días'}</span>
+                <span style={{fontSize:12,color:'#94a3b8'}}>{fmtLargo(it.fecha)}{it.fin&&it.fin!==it.fecha?' a '+fmtLargo(it.fin):''}</span>
+                <span style={{fontSize:18,fontWeight:800,color:ACCENT.emerald,flexShrink:0}}>{it.dias} {it.dias===1?'dia':'dias'}</span>
               </div>
               {it.desc&&<div style={{fontSize:13,color:'#475569',marginTop:3}}>{it.desc}</div>}
-              {wd&&<div style={{fontSize:12,color:ACCENT.emerald,marginTop:4,fontWeight:600}}>⏳ Faltan {wd.weeks>0?wd.weeks+' sem':''}{wd.weeks>0&&wd.days>0?' y ':''}{wd.days>0?wd.days+' día'+(wd.days!==1?'s':''):''}</div>}
-              {!wd&&<div style={{fontSize:12,color:'#94a3b8',marginTop:4}}>✅ Ya pasaron</div>}
+              {wd&&<div style={{fontSize:12,color:ACCENT.emerald,marginTop:4,fontWeight:600}}>Faltan {wd.weeks>0?wd.weeks+' sem':''}{wd.weeks>0&&wd.days>0?' y ':''}{wd.days>0?wd.days+' dia'+(wd.days!==1?'s':''):''}</div>}
+              {!wd&&<div style={{fontSize:12,color:'#94a3b8',marginTop:4}}>Ya pasaron</div>}
             </Item>
           );
         })}
@@ -484,19 +443,15 @@ function CobroSection(){
   const [input,setInput]=useState('');
   const cobro=nextCobro(dia);
   const mes=cobro.date.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
-  const guardar=()=>{
-    const n=parseInt(input);
-    if(isNaN(n)||n<1||n>31){alert('Ingresá un día válido entre 1 y 31');return;}
-    setDia(n);lsSave('cobro-dia',n);setEditando(false);
-  };
+  const guardar=()=>{const n=parseInt(input);if(isNaN(n)||n<1||n>31){alert('Ingresa un dia valido entre 1 y 31');return;}setDia(n);lsSave('cobro-dia',n);setEditando(false);};
   return(
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <SHead emoji="💰" title="Próximo cobro" sub="Configura tu día de cobro" bg={ACCENT.purpleL}/>
+      <SHead emoji="💰" title="Proximo cobro" sub="Configura tu dia de cobro" bg={ACCENT.purpleL}/>
       <div style={{background:'white',borderRadius:16,border:'1px solid #e2e8f0',padding:24,textAlign:'center'}}>
         <div style={{fontSize:13,color:'#94a3b8',marginBottom:4}}>Fecha de cobro</div>
-        <div style={{fontSize:22,fontWeight:800,color:'#1e293b',marginBottom:8}}>Día {dia} de {mes}</div>
+        <div style={{fontSize:22,fontWeight:800,color:'#1e293b',marginBottom:8}}>Dia {dia} de {mes}</div>
         {!editando?(
-          <button onClick={()=>{setInput(String(dia));setEditando(true);}} style={{fontSize:12,color:ACCENT.purple,background:'none',border:'none',cursor:'pointer',textDecoration:'underline',marginBottom:16}}>Cambiar día de cobro</button>
+          <button onClick={()=>{setInput(String(dia));setEditando(true);}} style={{fontSize:12,color:ACCENT.purple,background:'none',border:'none',cursor:'pointer',textDecoration:'underline',marginBottom:16}}>Cambiar dia de cobro</button>
         ):(
           <div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:16}}>
             <input type="number" min="1" max="31" value={input} onChange={e=>setInput(e.target.value)} style={{width:80,padding:'8px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:18,fontWeight:700,textAlign:'center'}} autoFocus/>
@@ -508,40 +463,179 @@ function CobroSection(){
           <div style={{fontSize:13,color:ACCENT.purple,fontWeight:600,marginBottom:8}}>Tiempo restante</div>
           <div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:6,flexWrap:'wrap'}}>
             {cobro.weeks>0&&<><span style={{fontSize:52,fontWeight:900,color:ACCENT.purple,lineHeight:1}}>{cobro.weeks}</span><span style={{fontSize:16,color:ACCENT.purple,fontWeight:600}}>sem</span></>}
-            {cobro.days>0&&<><span style={{fontSize:52,fontWeight:900,color:'#5b21b6',lineHeight:1,marginLeft:cobro.weeks>0?8:0}}>{cobro.days}</span><span style={{fontSize:16,color:'#5b21b6',fontWeight:600}}>día{cobro.days!==1?'s':''}</span></>}
-            {cobro.weeks===0&&cobro.days===0&&<span style={{fontSize:28,fontWeight:800,color:ACCENT.emerald}}>¡Hoy cobras! 🎉</span>}
+            {cobro.days>0&&<><span style={{fontSize:52,fontWeight:900,color:'#5b21b6',lineHeight:1,marginLeft:cobro.weeks>0?8:0}}>{cobro.days}</span><span style={{fontSize:16,color:'#5b21b6',fontWeight:600}}>dia{cobro.days!==1?'s':''}</span></>}
+            {cobro.weeks===0&&cobro.days===0&&<span style={{fontSize:28,fontWeight:800,color:ACCENT.emerald}}>Hoy cobras!</span>}
           </div>
         </div>
-        <div style={{fontSize:13,color:'#94a3b8'}}>{cobro.total===1?'¡Mañana cobras! 🎉':`Faltan ${cobro.total} días en total`}</div>
+        <div style={{fontSize:13,color:'#94a3b8'}}>{cobro.total===1?'Manana cobras!':`Faltan ${cobro.total} dias en total`}</div>
       </div>
     </div>
   );
 }
 
-function FallosSection({items,year,onUpdate}){
-  const [form,setForm]=useState(false);
-  const [ed,setEd]=useState(null);
-  const yi=items.filter(i=>yearOf(i.fecha)===year);
+function FallosSection({fallos,incid,year,onUpdateF,onUpdateI}){
+  const [subTab,setSubTab]=useState('fallos');
+  const [formF,setFormF]=useState(false);
+  const [edF,setEdF]=useState(null);
+  const [formI,setFormI]=useState(false);
+  const [edI,setEdI]=useState(null);
+  const yf=fallos.filter(i=>yearOf(i.fecha)===year);
+  const mf=yf.filter(i=>monthOf(i.fecha)===CM&&year===CY);
+  const yi=incid.filter(i=>yearOf(i.fecha)===year);
   const mi=yi.filter(i=>monthOf(i.fecha)===CM&&year===CY);
-  const F=[{name:'fecha',label:'Fecha',type:'date',req:true},{name:'desc',label:'Descripción',type:'textarea',req:true,ph:'Describe el fallo…'}];
-  const save=e=>{if(ed){onUpdate(items.map(i=>i.id===ed.id?{...e,id:ed.id}:i));setEd(null);}else{onUpdate([{...e,id:uid()},...items]);setForm(false);}};
+  const FF=[{name:'fecha',label:'Fecha',type:'date',req:true},{name:'desc',label:'Descripcion',type:'textarea',req:true,ph:'Describe el fallo...'}];
+  const FI=[{name:'fecha',label:'Fecha',type:'date',req:true},{name:'titulo',label:'Titulo',type:'text',req:true,ph:'Ej: Fallo de maquina'},{name:'desc',label:'Descripcion',type:'textarea',req:true,ph:'Detalla la incidencia...'}];
+  const saveF=e=>{if(edF){onUpdateF(fallos.map(i=>i.id===edF.id?{...e,id:edF.id}:i));setEdF(null);}else{onUpdateF([{...e,id:uid()},...fallos]);setFormF(false);}};
+  const saveI=e=>{if(edI){onUpdateI(incid.map(i=>i.id===edI.id?{...e,id:edI.id}:i));setEdI(null);}else{onUpdateI([{...e,id:uid()},...incid]);setFormI(false);}};
   return(
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <SHead emoji="⚠️" title="Fallos" sub="Registro de errores propios" bg={ACCENT.redL}/>
+      <SHead emoji="⚠️" title="Fallos" sub="Errores e incidencias" bg={ACCENT.redL}/>
+      <div style={{display:'flex',background:'white',borderRadius:10,border:'1px solid #e2e8f0',padding:4,gap:4}}>
+        <button onClick={()=>setSubTab('fallos')} style={{flex:1,padding:'8px 0',borderRadius:8,border:'none',background:subTab==='fallos'?'#1e293b':'transparent',color:subTab==='fallos'?'white':'#64748b',fontWeight:600,fontSize:13,cursor:'pointer'}}>Fallos propios</button>
+        <button onClick={()=>setSubTab('incid')} style={{flex:1,padding:'8px 0',borderRadius:8,border:'none',background:subTab==='incid'?'#1e293b':'transparent',color:subTab==='incid'?'white':'#64748b',fontWeight:600,fontSize:13,cursor:'pointer'}}>Incidencias</button>
+      </div>
+      {subTab==='fallos'&&(
+        <div style={{display:'flex',flexDirection:'column',gap:14}}>
+          <div style={{display:'flex',gap:10}}>
+            <Stat label={MESES[CM]} value={mf.length} unit="este mes" color={ACCENT.red}/>
+            <Stat label={"Ano "+year} value={yf.length} unit="en total" color={ACCENT.red}/>
+          </div>
+          <AddBtn label="Anadir fallo" color={ACCENT.red} onClick={()=>{setEdF(null);setFormF(true);}}/>
+          {(formF||edF)&&<Form title={edF?'Editar fallo':'Nuevo fallo'} fields={FF} initial={edF||{fecha:todayISO(),desc:''}} onSave={saveF} onCancel={()=>{setFormF(false);setEdF(null);}} color={ACCENT.red}/>}
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {yf.length===0&&<Empty text="Sin fallos registrados este ano"/>}
+            {[...yf].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
+              <Item key={it.id} item={it} onEdit={setEdF} onDelete={id=>onUpdateF(fallos.filter(i=>i.id!==id))}>
+                <div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div>
+                <div style={{fontSize:14,color:'#1e293b',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>
+              </Item>
+            ))}
+          </div>
+        </div>
+      )}
+      {subTab==='incid'&&(
+        <div style={{display:'flex',flexDirection:'column',gap:14}}>
+          <div style={{display:'flex',gap:10}}>
+            <Stat label={MESES[CM]} value={mi.length} unit="este mes" color={ACCENT.amber}/>
+            <Stat label={"Ano "+year} value={yi.length} unit="en total" color={ACCENT.amber}/>
+          </div>
+          <AddBtn label="Anadir incidencia" color={ACCENT.amber} onClick={()=>{setEdI(null);setFormI(true);}}/>
+          {(formI||edI)&&<Form title={edI?'Editar incidencia':'Nueva incidencia'} fields={FI} initial={edI||{fecha:todayISO(),titulo:'',desc:''}} onSave={saveI} onCancel={()=>{setFormI(false);setEdI(null);}} color={ACCENT.amber}/>}
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {yi.length===0&&<Empty text="Sin incidencias este ano"/>}
+            {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
+              <Item key={it.id} item={it} onEdit={setEdI} onDelete={id=>onUpdateI(incid.filter(i=>i.id!==id))}>
+                <div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div>
+                {it.titulo&&<div style={{fontSize:14,fontWeight:700,color:'#1e293b',marginTop:3}}>{it.titulo}</div>}
+                <div style={{fontSize:13,color:'#475569',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>
+              </Item>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AusenciasSection({items,year,onUpdate}){
+  const [form,setForm]=useState(false);
+  const [ed,setEd]=useState(null);
+  const [fecha,setFecha]=useState(todayISO());
+  const [just,setJust]=useState('');
+  const [motivo,setMotivo]=useState('');
+  const [horas,setHoras]=useState('');
+  const [estado,setEstado]=useState('Pendiente');
+  const yi=items.filter(i=>yearOf(i.fecha)===year);
+  const mi=yi.filter(i=>monthOf(i.fecha)===CM&&year===CY);
+  const hPendMes=mi.filter(i=>i.estado==='Pendiente').reduce((s,i)=>s+Number(i.horas||0),0);
+  const hPendAnio=yi.filter(i=>i.estado==='Pendiente').reduce((s,i)=>s+Number(i.horas||0),0);
+  const reset=()=>{setFecha(todayISO());setJust('');setMotivo('');setHoras('');setEstado('Pendiente');};
+  const abrir=()=>{reset();setEd(null);setForm(true);};
+  const abrirEd=it=>{setFecha(it.fecha);setJust(it.just);setMotivo(it.motivo||'');setHoras(String(it.horas||''));setEstado(it.estado||'Pendiente');setEd(it);setForm(true);};
+  const guardar=()=>{
+    if(!fecha){alert('Ingresa la fecha');return;}
+    if(!just){alert('Indica si es justificada o no');return;}
+    const item={fecha,just,motivo,horas:parseFloat(horas)||0,estado};
+    if(ed){onUpdate(items.map(i=>i.id===ed.id?{...item,id:ed.id}:i));setEd(null);}
+    else{onUpdate([{...item,id:uid()},...items]);}
+    setForm(false);reset();
+  };
+  const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
+  const Rbtn=({val,cur,onSel,col})=>(
+    <button onClick={()=>onSel(val)} style={{padding:'8px 14px',borderRadius:20,border:'1px solid '+(cur===val?(col||ACCENT.blue):'#e2e8f0'),background:cur===val?(col||ACCENT.blue):'white',color:cur===val?'white':'#475569',fontSize:13,fontWeight:600,cursor:'pointer'}}>{val}</button>
+  );
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <SHead emoji="🚫" title="Ausencias" sub="Dias no trabajados" bg={ACCENT.redL}/>
       <div style={{display:'flex',gap:10}}>
         <Stat label={MESES[CM]} value={mi.length} unit="este mes" color={ACCENT.red}/>
-        <Stat label={"Año "+year} value={yi.length} unit="en total" color={ACCENT.red}/>
+        <Stat label={"Ano "+year} value={yi.length} unit="en total" color={ACCENT.red}/>
       </div>
-      <AddBtn label="Añadir fallo" color={ACCENT.red} onClick={()=>{setEd(null);setForm(true);}}/>
-      {(form||ed)&&<Form title={ed?'Editar fallo':'Nuevo fallo'} fields={F} initial={ed||{fecha:todayISO(),desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.red}/>}
+      {(hPendMes>0||hPendAnio>0)&&(
+        <div style={{display:'flex',gap:10}}>
+          <Stat label="Horas pend. mes" value={hPendMes+'h'} unit="pendientes" color={ACCENT.amber}/>
+          <Stat label="Horas pend. ano" value={hPendAnio+'h'} unit="pendientes" color={ACCENT.amber}/>
+        </div>
+      )}
+      <AddBtn label="Registrar ausencia" color={ACCENT.red} onClick={abrir}/>
+      {form&&(
+        <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <span style={{fontWeight:700,color:'#1e293b'}}>{ed?'Editar ausencia':'Nueva ausencia'}</span>
+            <button onClick={()=>{setForm(false);setEd(null);}} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IconX/></button>
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha *</label>
+            <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={inp}/>
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:6}}>Justificada? *</label>
+            <div style={{display:'flex',gap:8}}>
+              <Rbtn val="Justificada" cur={just} onSel={setJust} col={ACCENT.emerald}/>
+              <Rbtn val="Injustificada" cur={just} onSel={setJust} col={ACCENT.red}/>
+            </div>
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Motivo</label>
+            <textarea rows={2} placeholder="Ej: Cita medica, enfermedad..." value={motivo} onChange={e=>setMotivo(e.target.value)} style={{...inp,resize:'none'}}/>
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Horas faltantes (0 si fue dia completo)</label>
+            <input type="number" min="0" max="12" step="0.5" placeholder="0" value={horas} onChange={e=>setHoras(e.target.value)} style={inp}/>
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:6}}>Estado</label>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              <Rbtn val="Pendiente" cur={estado} onSel={setEstado} col={ACCENT.amber}/>
+              <Rbtn val="Devueltas" cur={estado} onSel={setEstado} col={ACCENT.emerald}/>
+              <Rbtn val="Descontadas" cur={estado} onSel={setEstado} col='#475569'/>
+            </div>
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            <button onClick={()=>{setForm(false);setEd(null);}} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button>
+            <button onClick={guardar} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:ACCENT.red,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button>
+          </div>
+        </div>
+      )}
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
-        {yi.length===0&&<Empty text="Sin fallos registrados este año"/>}
-        {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
-          <Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}>
-            <div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div>
-            <div style={{fontSize:14,color:'#1e293b',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>
-          </Item>
-        ))}
+        {yi.length===0&&<Empty text="Sin ausencias registradas este ano"/>}
+        {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>{
+          const inj=it.just==='Injustificada';
+          const estColor=it.estado==='Devueltas'?ACCENT.emerald:it.estado==='Descontadas'?'#475569':ACCENT.amber;
+          return(
+            <Item key={it.id} item={it} onEdit={abrirEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginBottom:4}}>
+                <span style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</span>
+                <span style={{fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:20,background:inj?ACCENT.redL:ACCENT.emeraldL,color:inj?ACCENT.red:ACCENT.emerald}}>{it.just}</span>
+              </div>
+              {it.motivo&&<div style={{fontSize:13,color:'#475569',marginBottom:4,wordBreak:'break-word'}}>{it.motivo}</div>}
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {it.horas>0&&<span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:ACCENT.amberL,color:ACCENT.amber}}>{it.horas}h faltantes</span>}
+                <span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:'#f1f5f9',color:estColor}}>{it.estado}</span>
+              </div>
+            </Item>
+          );
+        })}
       </div>
     </div>
   );
@@ -553,19 +647,19 @@ function HorasSection({items,year,onUpdate}){
   const yi=items.filter(i=>yearOf(i.fecha)===year);
   const mi=yi.filter(i=>monthOf(i.fecha)===CM&&year===CY);
   const sum=a=>a.reduce((s,i)=>s+Number(i.horas||0),0);
-  const F=[{name:'fecha',label:'Fecha',type:'date',req:true},{name:'horas',label:'Horas',type:'number',step:'0.5',min:'0',req:true,ph:'Ej: 2.5'},{name:'desc',label:'Nota (opcional)',type:'textarea',ph:'Motivo…'}];
+  const F=[{name:'fecha',label:'Fecha',type:'date',req:true},{name:'horas',label:'Horas',type:'number',step:'0.5',min:'0',req:true,ph:'Ej: 2.5'},{name:'desc',label:'Nota (opcional)',type:'textarea',ph:'Motivo...'}];
   const save=e=>{const c={...e,horas:Number(e.horas)||0};if(ed){onUpdate(items.map(i=>i.id===ed.id?{...c,id:ed.id}:i));setEd(null);}else{onUpdate([{...c,id:uid()},...items]);setForm(false);}};
   return(
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <SHead emoji="⏱️" title="Horas extras" sub="Horas fuera de horario" bg={ACCENT.blueL}/>
       <div style={{display:'flex',gap:10}}>
         <Stat label={MESES[CM]} value={sum(mi)} unit="horas este mes" color={ACCENT.blue}/>
-        <Stat label={"Año "+year} value={sum(yi)} unit="horas en total" color={ACCENT.blue}/>
+        <Stat label={"Ano "+year} value={sum(yi)} unit="horas en total" color={ACCENT.blue}/>
       </div>
-      <AddBtn label="Añadir horas extras" color={ACCENT.blue} onClick={()=>{setEd(null);setForm(true);}}/>
+      <AddBtn label="Anadir horas extras" color={ACCENT.blue} onClick={()=>{setEd(null);setForm(true);}}/>
       {(form||ed)&&<Form title={ed?'Editar horas':'Nuevas horas extras'} fields={F} initial={ed||{fecha:todayISO(),horas:'',desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.blue}/>}
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
-        {yi.length===0&&<Empty text="Sin horas extras este año"/>}
+        {yi.length===0&&<Empty text="Sin horas extras este ano"/>}
         {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
           <Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}>
             <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8}}>
@@ -573,36 +667,6 @@ function HorasSection({items,year,onUpdate}){
               <span style={{fontSize:20,fontWeight:800,color:ACCENT.blue}}>{it.horas} h</span>
             </div>
             {it.desc&&<div style={{fontSize:13,color:'#475569',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>}
-          </Item>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function IncidSection({items,year,onUpdate}){
-  const [form,setForm]=useState(false);
-  const [ed,setEd]=useState(null);
-  const yi=items.filter(i=>yearOf(i.fecha)===year);
-  const mi=yi.filter(i=>monthOf(i.fecha)===CM&&year===CY);
-  const F=[{name:'fecha',label:'Fecha',type:'date',req:true},{name:'titulo',label:'Título',type:'text',req:true,ph:'Ej: Fallo de máquina'},{name:'desc',label:'Descripción',type:'textarea',req:true,ph:'Detalla la incidencia…'}];
-  const save=e=>{if(ed){onUpdate(items.map(i=>i.id===ed.id?{...e,id:ed.id}:i));setEd(null);}else{onUpdate([{...e,id:uid()},...items]);setForm(false);}};
-  return(
-    <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <SHead emoji="📋" title="Incidencias" sub="Problemas externos" bg={ACCENT.amberL}/>
-      <div style={{display:'flex',gap:10}}>
-        <Stat label={MESES[CM]} value={mi.length} unit="este mes" color={ACCENT.amber}/>
-        <Stat label={"Año "+year} value={yi.length} unit="en total" color={ACCENT.amber}/>
-      </div>
-      <AddBtn label="Añadir incidencia" color={ACCENT.amber} onClick={()=>{setEd(null);setForm(true);}}/>
-      {(form||ed)&&<Form title={ed?'Editar incidencia':'Nueva incidencia'} fields={F} initial={ed||{fecha:todayISO(),titulo:'',desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.amber}/>}
-      <div style={{display:'flex',flexDirection:'column',gap:8}}>
-        {yi.length===0&&<Empty text="Sin incidencias este año"/>}
-        {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
-          <Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}>
-            <div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div>
-            {it.titulo&&<div style={{fontSize:14,fontWeight:700,color:'#1e293b',marginTop:3}}>{it.titulo}</div>}
-            <div style={{fontSize:13,color:'#475569',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>
           </Item>
         ))}
       </div>
@@ -618,6 +682,7 @@ function App(){
   const [vacE,setVacE]=useState([]);
   const [vacT,setVacT]=useState({});
   const [incid,setIncid]=useState([]);
+  const [ausencias,setAusencias]=useState([]);
 
   useEffect(()=>{
     const f=lsLoad('fallos');if(Array.isArray(f))setFallos(f);
@@ -625,6 +690,7 @@ function App(){
     const ve=lsLoad('vac-e');if(Array.isArray(ve))setVacE(ve);
     const vt=lsLoad('vac-t');if(vt&&typeof vt==='object')setVacT(vt);
     const i=lsLoad('incid');if(Array.isArray(i))setIncid(i);
+    const a=lsLoad('ausencias');if(Array.isArray(a))setAusencias(a);
   },[]);
 
   const sf=d=>{setFallos(d);lsSave('fallos',d);};
@@ -632,6 +698,7 @@ function App(){
   const sve=d=>{setVacE(d);lsSave('vac-e',d);};
   const svt=d=>{setVacT(d);lsSave('vac-t',d);};
   const si=d=>{setIncid(d);lsSave('incid',d);};
+  const sa=d=>{setAusencias(d);lsSave('ausencias',d);};
 
   const ys=[];for(let y=CY+1;y>=CY-4;y--)ys.push(y);
   const showYear=tab!=='cobro';
@@ -640,8 +707,8 @@ function App(){
     {id:'vacaciones',label:'Vacaciones',emoji:'🌴'},
     {id:'cobro',label:'Cobro',emoji:'💰'},
     {id:'fallos',label:'Fallos',emoji:'⚠️'},
+    {id:'ausencias',label:'Ausencias',emoji:'🚫'},
     {id:'horas',label:'H.Extras',emoji:'⏱️'},
-    {id:'incidencias',label:'Más',emoji:'📋'},
   ];
 
   return(
@@ -654,29 +721,25 @@ function App(){
         </div>
         {showYear&&(
           <div style={{position:'relative'}}>
-            <select value={year} onChange={e=>setYear(Number(e.target.value))}
-              style={{appearance:'none',background:'#334155',color:'white',border:'none',borderRadius:8,padding:'6px 28px 6px 10px',fontWeight:600,fontSize:14,cursor:'pointer'}}>
+            <select value={year} onChange={e=>setYear(Number(e.target.value))} style={{appearance:'none',background:'#334155',color:'white',border:'none',borderRadius:8,padding:'6px 28px 6px 10px',fontWeight:600,fontSize:14,cursor:'pointer'}}>
               {ys.map(y=><option key={y} value={y}>{y}</option>)}
             </select>
             <span style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'#94a3b8',fontSize:10}}>▾</span>
           </div>
         )}
       </div>
-
       <div style={{flex:1,overflowY:'auto',padding:16,paddingBottom:80}}>
         {tab==='vacaciones'&&<VacSection entries={vacE} totales={vacT} year={year} onUpdateE={sve} onUpdateT={svt}/>}
         {tab==='cobro'&&<CobroSection/>}
-        {tab==='fallos'&&<FallosSection items={fallos} year={year} onUpdate={sf}/>}
+        {tab==='fallos'&&<FallosSection fallos={fallos} incid={incid} year={year} onUpdateF={sf} onUpdateI={si}/>}
+        {tab==='ausencias'&&<AusenciasSection items={ausencias} year={year} onUpdate={sa}/>}
         {tab==='horas'&&<HorasSection items={horas} year={year} onUpdate={sh}/>}
-        {tab==='incidencias'&&<IncidSection items={incid} year={year} onUpdate={si}/>}
       </div>
-
       <div style={{position:'fixed',bottom:0,left:0,right:0,background:'white',borderTop:'1px solid #e2e8f0',display:'grid',gridTemplateColumns:'repeat(5,1fr)',zIndex:99}}>
         {TABS.map(({id,label,emoji})=>{
           const active=tab===id;
           return(
-            <button key={id} onClick={()=>setTab(id)}
-              style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'7px 2px',background:active?'#f8fafc':'white',border:'none',cursor:'pointer'}}>
+            <button key={id} onClick={()=>setTab(id)} style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'7px 2px',background:active?'#f8fafc':'white',border:'none',cursor:'pointer'}}>
               <span style={{fontSize:19,lineHeight:1}}>{emoji}</span>
               <span style={{fontSize:9,fontWeight:600,marginTop:2,color:active?'#1e293b':'#94a3b8',whiteSpace:'nowrap'}}>{label}</span>
             </button>
