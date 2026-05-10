@@ -27,10 +27,60 @@ const todayISO=()=>new Date().toISOString().split('T')[0];
 const CY=new Date().getFullYear();
 const CM=new Date().getMonth();
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS_S=['L','M','X','J','V','S','D'];
 const yearOf=iso=>parseInt(iso.slice(0,4),10);
 const monthOf=iso=>parseInt(iso.slice(5,7),10)-1;
 const fmt=iso=>new Date(iso+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const fmtFecha=iso=>{const d=new Date(iso+'T00:00:00');return d.getDate()+' de '+MESES[d.getMonth()]+' '+d.getFullYear();};
+
+function easter(y){
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),dy=((h+l-7*m+114)%31)+1;
+  return new Date(y,mo-1,dy);
+}
+
+function getFestivos(year,comunidad){
+  const e=easter(year);
+  const vs=new Date(e);vs.setDate(e.getDate()-2);
+  const lp=new Date(e);lp.setDate(e.getDate()+1);
+  const js=new Date(e);js.setDate(e.getDate()-3);
+  const conLunes=['cataluna','c-valenciana','baleares','navarra','pais-vasco','la-rioja','murcia'];
+  const f=[
+    {d:new Date(year,0,1),n:'Año Nuevo'},
+    {d:new Date(year,0,6),n:'Reyes Magos'},
+    {d:vs,n:'Viernes Santo'},
+    {d:new Date(year,4,1),n:'Día del Trabajo'},
+    {d:new Date(year,9,12),n:'Fiesta Nacional'},
+    {d:new Date(year,10,1),n:'Todos los Santos'},
+    {d:new Date(year,11,6),n:'Día de la Constitución'},
+    {d:new Date(year,11,8),n:'Inmaculada Concepción'},
+    {d:new Date(year,11,25),n:'Navidad'},
+  ];
+  if(conLunes.includes(comunidad))f.push({d:lp,n:'Lunes de Pascua'});
+  else f.push({d:js,n:'Jueves Santo'});
+  if(comunidad==='cataluna'){
+    f.push({d:new Date(year,5,24),n:'Sant Joan'});
+    f.push({d:new Date(year,8,11),n:'La Diada'});
+    f.push({d:new Date(year,11,26),n:'Sant Esteve'});
+  }
+  return f.sort((a,b)=>a.d-b.d);
+}
+
+function isoToDate(iso){return new Date(iso+'T00:00:00');}
+function fmtISO(d){return d.toISOString().split('T')[0];}
+function isWE(d){const dw=d.getDay();return dw===0||dw===6;}
+function isFest(d,festivos){return festivos.some(f=>fmtISO(f.d)===fmtISO(d));}
+
+function calcFin(ini,dias,tipo,festivos){
+  let cur=new Date(ini+'T00:00:00'),contados=0,festUsados=0;
+  while(contados<dias){
+    const isF=isFest(cur,festivos),isW=isWE(cur);
+    if(tipo==='laborables'){if(!isF&&!isW)contados++;else if(isF)festUsados++;}
+    else{if(!isF)contados++;else festUsados++;}
+    if(contados<dias)cur.setDate(cur.getDate()+1);
+  }
+  return{fin:fmtISO(cur),festUsados};
+}
 
 function weeksAndDays(isoTarget){
   const now=new Date();now.setHours(0,0,0,0);
@@ -190,7 +240,260 @@ function CobroSection(){
   );
 }
 
+function CalendarioVac({entries,festivos,calYear,calMonth,onChMes}){
+  const vacDays=new Set();
+  entries.forEach(e=>{
+    if(!e.fin)return;
+    let cur=new Date(e.fecha+'T00:00:00');
+    const fin=new Date(e.fin+'T00:00:00');
+    while(cur<=fin){vacDays.add(fmtISO(cur));cur.setDate(cur.getDate()+1);}
+  });
+  const todayStr=fmtISO(new Date());
+  const first=new Date(calYear,calMonth,1);
+  const startDay=(first.getDay()+6)%7;
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const festMes=festivos.filter(f=>f.d.getMonth()===calMonth&&f.d.getFullYear()===calYear);
+
+  return(
+    <div>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+        <span style={{fontWeight:700,fontSize:15,color:'#1e293b'}}>{MESES[calMonth]} {calYear}</span>
+        <div style={{display:'flex',gap:8}}>
+          <button onClick={()=>onChMes(-1)} style={{width:30,height:30,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:16}}>‹</button>
+          <button onClick={()=>onChMes(1)} style={{width:30,height:30,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:16}}>›</button>
+        </div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2,marginBottom:8}}>
+        {DIAS_S.map(d=><div key={d} style={{textAlign:'center',fontSize:10,fontWeight:600,color:'#94a3b8',padding:'4px 0'}}>{d}</div>)}
+        {Array(startDay).fill(null).map((_,i)=><div key={'e'+i}/>)}
+        {Array(daysInMonth).fill(null).map((_,i)=>{
+          const d=i+1;
+          const date=new Date(calYear,calMonth,d);
+          const ds=fmtISO(date);
+          const isF=isFest(date,festivos);
+          const isV=vacDays.has(ds);
+          const isT=ds===todayStr;
+          const isW=isWE(date);
+          let bg='transparent',color=isW?'#94a3b8':'#1e293b',fw='normal';
+          if(isT){bg='#1e293b';color='white';fw='700';}
+          else if(isF){bg='#dbeafe';color='#2563eb';fw='700';}
+          else if(isV){bg='#d1fae5';color='#065f46';}
+          return(
+            <div key={d} style={{textAlign:'center',padding:'5px 1px',borderRadius:6,fontSize:12,background:bg,color,fontWeight:fw,minHeight:28,display:'flex',alignItems:'center',justifyContent:'center'}}>
+              {d}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:8}}>
+        <div style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'#94a3b8'}}><div style={{width:8,height:8,borderRadius:'50%',background:'#2563eb'}}/>Festivo</div>
+        <div style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'#94a3b8'}}><div style={{width:8,height:8,borderRadius:'50%',background:'#059669'}}/>Vacaciones</div>
+        <div style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'#94a3b8'}}><div style={{width:8,height:8,borderRadius:'50%',background:'#1e293b'}}/>Hoy</div>
+      </div>
+      {festMes.length>0&&(
+        <div style={{display:'flex',flexDirection:'column',gap:4}}>
+          {festMes.map((f,i)=>(
+            <div key={i} style={{display:'flex',gap:10,background:'white',border:'1px solid #e2e8f0',borderRadius:8,padding:'8px 12px',alignItems:'center'}}>
+              <span style={{fontSize:11,fontWeight:600,color:'#2563eb',minWidth:64}}>{f.d.getDate()} {MESES[f.d.getMonth()].slice(0,3)}</span>
+              <span style={{fontSize:13,color:'#1e293b'}}>{f.n}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
+  const [form,setForm]=useState(false);
+  const [ed,setEd]=useState(null);
+  const [editT,setEditT]=useState(false);
+  const [tInput,setTInput]=useState('');
+  const [calYear,setCalYear]=useState(CY);
+  const [calMonth,setCalMonth]=useState(CM);
+  const [tipo,setTipo]=useState(()=>lsLoad('vac-tipo')||'laborables');
+  const [comunidad,setComunidad]=useState(()=>lsLoad('vac-comunidad')||'cataluna');
+  const [finCalc,setFinCalc]=useState('');
+  const [festUsados,setFestUsados]=useState(0);
+
+  const festivos=getFestivos(year,comunidad);
+  const festCal=getFestivos(calYear,comunidad);
+
+  const chMes=dir=>{
+    let m=calMonth+dir,y=calYear;
+    if(m>11){m=0;y++;}if(m<0){m=11;y--;}
+    setCalYear(y);setCalMonth(m);
+  };
+
+  const yKey=String(year);
+  const totalD=Number(totales[yKey]??0);
+  const ye=entries.filter(e=>yearOf(e.fecha)===year);
+  const hoy=new Date();hoy.setHours(23,59,59,0);
+
+  const usados=ye.reduce((acc,e)=>{
+    if(!e.fin)return acc+Number(e.dias||0);
+    let cur=new Date(e.fecha+'T00:00:00');
+    const fin=new Date(e.fin+'T00:00:00');
+    while(cur<=fin){
+      if(cur<=hoy){
+        const isF=isFest(cur,festivos),isW=isWE(cur);
+        if(tipo==='laborables'){if(!isF&&!isW)acc++;}
+        else{if(!isF)acc++;}
+      }
+      cur.setDate(cur.getDate()+1);
+    }
+    return acc;
+  },0);
+
+  const rest=totalD-usados;
+  const pct=totalD>0?Math.min(100,(usados/totalD)*100):0;
+  const futuras=entries.filter(e=>new Date(e.fecha+'T00:00:00')>new Date()).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const proximas=futuras[0]||null;
+  const countdown=proximas?weeksAndDays(proximas.fecha):null;
+
+  const abrirTotal=()=>{setTInput(String(totalD||''));setEditT(true);};
+  const guardarTotal=()=>{const n=parseInt(tInput,10);if(isNaN(n)||n<0){alert('Ingresá un número válido');return;}onUpdateT({...totales,[yKey]:n});setEditT(false);};
+
+  const onIniChange=(ini,dias)=>{
+    if(!ini||!dias)return;
+    const {fin,festUsados:fu}=calcFin(ini,parseInt(dias),tipo,festivos);
+    setFinCalc(fin);setFestUsados(fu);
+  };
+
+  const F=[
+    {name:'fecha',label:'Fecha de inicio',type:'date',req:true},
+    {name:'dias',label:'Cantidad de días ('+tipo+')',type:'number',min:'1',step:'1',req:true,ph:'Ej: 5'},
+    {name:'desc',label:'Nota (opcional)',type:'textarea',ph:'Ej: vacaciones de verano'},
+  ];
+
+  const save=e=>{
+    const dias=Number(e.dias)||0;
+    const {fin}=calcFin(e.fecha,dias,tipo,festivos);
+    const c={...e,dias,fin};
+    if(ed){onUpdateE(entries.map(i=>i.id===ed.id?{...c,id:ed.id}:i));setEd(null);}
+    else{onUpdateE([{...c,id:uid()},...entries]);setForm(false);}
+    setFinCalc('');setFestUsados(0);
+  };
+
+  const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:20,fontWeight:700,boxSizing:'border-box',outline:'none'};
+
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <SHead emoji="🌴" title="Vacaciones" sub={"Días para "+year} bg={ACCENT.emeraldL}/>
+
+      {/* Config */}
+      <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14,display:'flex',flexDirection:'column',gap:10}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div>
+            <div style={{fontSize:13,color:'#1e293b',fontWeight:600}}>Tipo de días</div>
+            <div style={{fontSize:11,color:'#94a3b8'}}>¿Cómo cuenta tu convenio?</div>
+          </div>
+          <select value={tipo} onChange={e=>{setTipo(e.target.value);lsSave('vac-tipo',e.target.value);}} style={{fontSize:13,padding:'6px 8px',borderRadius:8,border:'1px solid #e2e8f0',background:'#f8fafc',color:'#1e293b',cursor:'pointer'}}>
+            <option value="laborables">Laborables</option>
+            <option value="naturales">Naturales</option>
+          </select>
+        </div>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div>
+            <div style={{fontSize:13,color:'#1e293b',fontWeight:600}}>Comunidad autónoma</div>
+            <div style={{fontSize:11,color:'#94a3b8'}}>Para calcular festivos correctamente</div>
+          </div>
+          <select value={comunidad} onChange={e=>{setComunidad(e.target.value);lsSave('vac-comunidad',e.target.value);}} style={{fontSize:12,padding:'6px 8px',borderRadius:8,border:'1px solid #e2e8f0',background:'#f8fafc',color:'#1e293b',cursor:'pointer',maxWidth:130}}>
+            <option value="cataluna">Cataluña</option>
+            <option value="c-valenciana">C. Valenciana</option>
+            <option value="baleares">Baleares</option>
+            <option value="navarra">Navarra</option>
+            <option value="pais-vasco">País Vasco</option>
+            <option value="la-rioja">La Rioja</option>
+            <option value="murcia">Murcia</option>
+            <option value="otras">Resto de España</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Countdown próximas */}
+      {countdown&&(
+        <div style={{background:ACCENT.emeraldL,borderRadius:14,padding:16,border:'1px solid #6ee7b7'}}>
+          <div style={{fontSize:11,color:ACCENT.emerald,fontWeight:700,marginBottom:4,textTransform:'uppercase',letterSpacing:'0.05em'}}>⏳ Próximas vacaciones</div>
+          <div style={{fontWeight:700,color:'#065f46',fontSize:14,marginBottom:8}}>{proximas.desc||fmtFecha(proximas.fecha)}</div>
+          <div style={{display:'flex',alignItems:'baseline',gap:6,flexWrap:'wrap'}}>
+            {countdown.weeks>0&&<><span style={{fontSize:40,fontWeight:900,color:ACCENT.emerald,lineHeight:1}}>{countdown.weeks}</span><span style={{fontSize:15,color:ACCENT.emerald,fontWeight:600}}>semana{countdown.weeks!==1?'s':''}</span></>}
+            {countdown.days>0&&<><span style={{fontSize:40,fontWeight:900,color:'#065f46',lineHeight:1,marginLeft:countdown.weeks>0?8:0}}>{countdown.days}</span><span style={{fontSize:15,color:'#065f46',fontWeight:600}}>día{countdown.days!==1?'s':''}</span></>}
+            {countdown.weeks===0&&countdown.days===0&&<span style={{fontSize:20,fontWeight:800,color:ACCENT.emerald}}>¡Empiezan hoy! 🎉</span>}
+          </div>
+          <div style={{fontSize:12,color:'#047857',marginTop:4}}>Inician el {fmtFecha(proximas.fecha)}</div>
+        </div>
+      )}
+
+      {/* Total */}
+      <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+          <span style={{fontSize:11,textTransform:'uppercase',letterSpacing:'0.05em',color:'#94a3b8',fontWeight:700}}>Días totales del año</span>
+          {!editT&&<button onClick={abrirTotal} style={{background:'none',border:'none',cursor:'pointer',color:ACCENT.emerald,fontWeight:600,fontSize:12,display:'flex',alignItems:'center',gap:4,padding:4}}><IconEdit/>{totalD>0?'Cambiar':'Definir'}</button>}
+        </div>
+        {editT?(
+          <div style={{display:'flex',gap:8}}>
+            <input type="number" min="0" step="1" value={tInput} autoFocus onChange={e=>setTInput(e.target.value)} style={inp}/>
+            <button onClick={guardarTotal} style={{background:ACCENT.emerald,border:'none',borderRadius:8,padding:'0 12px',cursor:'pointer',color:'white',display:'flex',alignItems:'center'}}><IconChk/></button>
+            <button onClick={()=>setEditT(false)} style={{background:'#f1f5f9',border:'none',borderRadius:8,padding:'0 10px',cursor:'pointer',color:'#64748b',display:'flex',alignItems:'center'}}><IconX/></button>
+          </div>
+        ):(
+          <span style={{fontSize:30,fontWeight:800,color:'#1e293b'}}>{totalD} <span style={{fontSize:14,fontWeight:400,color:'#94a3b8'}}>días asignados</span></span>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div style={{display:'flex',gap:10}}>
+        <Stat label="Usados" value={usados} unit="días" color={ACCENT.amber}/>
+        <Stat label="Disponibles" value={rest} unit="días" color={rest<0?ACCENT.red:ACCENT.emerald}/>
+      </div>
+
+      {totalD>0&&(
+        <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:12}}>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'#94a3b8',marginBottom:6}}><span>Progreso</span><span>{usados} / {totalD} días</span></div>
+          <div style={{height:10,background:'#f1f5f9',borderRadius:99,overflow:'hidden'}}>
+            <div style={{height:'100%',width:pct+'%',background:ACCENT.emerald,borderRadius:99,transition:'width 0.3s'}}/>
+          </div>
+        </div>
+      )}
+
+      <AddBtn label="Registrar vacaciones" color={ACCENT.emerald} onClick={()=>{setEd(null);setForm(true);setFinCalc('');setFestUsados(0);}}/>
+
+      {(form||ed)&&(
+        <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <span style={{fontWeight:700,color:'#1e293b'}}>{ed?'Editar vacaciones':'Nuevas vacaciones'}</span>
+            <button onClick={()=>{setForm(false);setEd(null);}} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IconX/></button>
+          </div>
+          <VacForm initial={ed||{fecha:todayISO(),dias:'',desc:''}} tipo={tipo} festivos={festivos} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.emerald}/>
+        </div>
+      )}
+
+      {/* Calendario */}
+      <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14}}>
+        <CalendarioVac entries={entries} festivos={festCal} calYear={calYear} calMonth={calMonth} onChMes={chMes}/>
+      </div>
+
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {ye.length===0&&<Empty text="Sin vacaciones registradas este año"/>}
+        {[...ye].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(it=>{
+          const wd=weeksAndDays(it.fecha);
+          return(
+            <Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdateE(entries.filter(i=>i.id!==id))}>
+              <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8}}>
+                <span style={{fontSize:12,color:'#94a3b8'}}>{fmtFecha(it.fecha)}{it.fin&&it.fin!==it.fecha?' → '+fmtFecha(it.fin):''}</span>
+                <span style={{fontSize:18,fontWeight:800,color:ACCENT.emerald,flexShrink:0}}>{it.dias} {it.dias===1?'día':'días'}</span>
+              </div>
+              {it.desc&&<div style={{fontSize:13,color:'#475569',marginTop:3}}>{it.desc}</div>}
+              {wd&&<div style={{fontSize:12,color:ACCENT.emerald,marginTop:4,fontWeight:600}}>⏳ Faltan {wd.weeks>0?wd.weeks+' sem':''}{wd.weeks>0&&wd.days>0?' y ':''}{wd.days>0?wd.days+' día'+(wd.days!==1?'s':''):''} para empezar</div>}
+              {!wd&&<div style={{fontSize:12,color:'#94a3b8',marginTop:4}}>✅ Ya pasaron</div>}
+            </Item>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
   const [form,setForm]=useState(false);
   const [ed,setEd]=useState(null);
   const [editT,setEditT]=useState(false);
