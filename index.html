@@ -564,24 +564,9 @@ function FallosSection({fallos,incid,year,onUpdateF,onUpdateI}){
           {(formI||edI)&&<IncidForm initial={edI||{fecha:todayISO(),titulo:'',desc:'',fotos:[]}} onSave={saveI} onCancel={()=>{setFormI(false);setEdI(null);}} color={ACCENT.amber}/>}
           <div style={{display:'flex',flexDirection:'column',gap:8}}>
             {yi.length===0&&<Empty text="Sin incidencias este ano"/>}
-            {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>{
-              const [viewer,setViewer]=useState(null);
-              return(
-                <Item key={it.id} item={it} onEdit={i=>{setEdI(i);setFormI(false);}} onDelete={id=>onUpdateI(incid.filter(i=>i.id!==id))}>
-                  {viewer&&<FotoViewer src={viewer} onClose={()=>setViewer(null)}/>}
-                  <div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div>
-                  {it.titulo&&<div style={{fontSize:14,fontWeight:700,color:'#1e293b',marginTop:3}}>{it.titulo}</div>}
-                  <div style={{fontSize:13,color:'#475569',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>
-                  {it.fotos&&it.fotos.length>0&&(
-                    <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:8}}>
-                      {it.fotos.map((f,fi)=>(
-                        <img key={fi} src={f} onClick={()=>setViewer(f)} style={{width:60,height:60,borderRadius:6,objectFit:'cover',border:'1px solid #e2e8f0',cursor:'pointer'}}/>
-                      ))}
-                    </div>
-                  )}
-                </Item>
-              );
-            })}
+            {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
+              <IncidItem key={it.id} it={it} onEdit={i=>{setEdI(i);setFormI(false);}} onDelete={id=>onUpdateI(incid.filter(i=>i.id!==id))}/>
+            ))}
           </div>
         </div>
       )}
