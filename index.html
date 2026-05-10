@@ -35,7 +35,6 @@ const fmtLargo=iso=>{const d=new Date(iso+'T00:00:00');return d.getDate()+' de '
 const fmtISO=d=>d.toISOString().split('T')[0];
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const isWE=d=>{const dw=d.getDay();return dw===0||dw===6;};
-
 const lsLoad=k=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}};
 const lsSave=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
 
@@ -301,90 +300,7 @@ function IncidItem({it,onEdit,onDelete}){
   );
 }
 
-function ExportSection(){
-  const [msg,setMsg]=useState('');
-
-  const exportar=()=>{
-    const data={
-      version:1,
-      fecha:new Date().toISOString(),
-      fallos:lsLoad('fallos')||[],
-      horas:lsLoad('horas')||[],
-      vacE:lsLoad('vac-e')||[],
-      vacT:lsLoad('vac-t')||{},
-      incid:lsLoad('incid')||[],
-      ausencias:lsLoad('ausencias')||[],
-      cobroDia:lsLoad('cobro-dia')||28,
-      vacTipo:lsLoad('vac-tipo')||'laborables',
-      vacComunidad:lsLoad('vac-comunidad')||'cataluna',
-    };
-    const json=JSON.stringify(data,null,2);
-    const blob=new Blob([json],{type:'application/json'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;
-    a.download='labora-backup-'+new Date().toISOString().slice(0,10)+'.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    setMsg('Copia de seguridad descargada correctamente');
-    setTimeout(()=>setMsg(''),4000);
-  };
-
-  const importar=e=>{
-    const file=e.target.files[0];
-    if(!file)return;
-    const r=new FileReader();
-    r.onload=ev=>{
-      try{
-        const data=JSON.parse(ev.target.result);
-        if(!data.version){alert('Archivo no valido');return;}
-        if(Array.isArray(data.fallos))lsSave('fallos',data.fallos);
-        if(Array.isArray(data.horas))lsSave('horas',data.horas);
-        if(Array.isArray(data.vacE))lsSave('vac-e',data.vacE);
-        if(data.vacT)lsSave('vac-t',data.vacT);
-        if(Array.isArray(data.incid))lsSave('incid',data.incid);
-        if(Array.isArray(data.ausencias))lsSave('ausencias',data.ausencias);
-        if(data.cobroDia)lsSave('cobro-dia',data.cobroDia);
-        if(data.vacTipo)lsSave('vac-tipo',data.vacTipo);
-        if(data.vacComunidad)lsSave('vac-comunidad',data.vacComunidad);
-        setMsg('Datos restaurados correctamente. Recarga la app para ver los cambios.');
-      }catch{
-        alert('Error al leer el archivo. Asegurate de usar un backup de Labora.');
-      }
-    };
-    r.readAsText(file);
-    e.target.value='';
-  };
-
-  return(
-    <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <SHead emoji="💾" title="Copia de seguridad" sub="Exporta e importa tus datos" bg="#f0fdf4"/>
-
-      <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:10}}>
-        <div style={{fontSize:13,fontWeight:600,color:'#1e293b',marginBottom:2}}>Exportar datos</div>
-        <div style={{fontSize:12,color:'#64748b'}}>Descarga un archivo con todos tus datos. Guardalo en un lugar seguro para poder restaurarlos si cambias de movil o reinstalar la app.</div>
-        <button onClick={exportar} style={{width:'100%',background:ACCENT.emerald,color:'white',border:'none',borderRadius:10,padding:'13px 0',fontWeight:600,fontSize:15,cursor:'pointer',marginTop:4}}>
-          Descargar copia de seguridad
-        </button>
-      </div>
-
-      <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:10}}>
-        <div style={{fontSize:13,fontWeight:600,color:'#1e293b',marginBottom:2}}>Restaurar datos</div>
-        <div style={{fontSize:12,color:'#64748b'}}>Selecciona un archivo de backup de Labora para restaurar tus datos. Los datos actuales seran reemplazados.</div>
-        <label style={{width:'100%',background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:10,padding:'13px 0',fontWeight:600,fontSize:15,cursor:'pointer',textAlign:'center',color:ACCENT.blue,display:'block',marginTop:4}}>
-          Seleccionar archivo de backup
-          <input type="file" accept=".json" style={{display:'none'}} onChange={importar}/>
-        </label>
-      </div>
-
-      {msg&&(
-        <div style={{background:'#f0fdf4',border:'1px solid #6ee7b7',borderRadius:10,padding:'12px 14px',fontSize:13,color:'#065f46',fontWeight:600}}>
-          {msg}
-        </div>
-      )}
-    </div>
-  );
-}entries,festivos,calYear,calMonth,onChMes}){
+function Calendario({entries,festivos,calYear,calMonth,onChMes}){
   const vacDays=new Set();
   entries.forEach(e=>{
     if(!e.fin)return;
@@ -852,6 +768,76 @@ function HorasSection({items,year,onUpdate}){
   );
 }
 
+function BackupSection(){
+  const [msg,setMsg]=useState('');
+  const exportar=()=>{
+    const data={
+      version:1,
+      fecha:new Date().toISOString(),
+      fallos:lsLoad('fallos')||[],
+      horas:lsLoad('horas')||[],
+      vacE:lsLoad('vac-e')||[],
+      vacT:lsLoad('vac-t')||{},
+      incid:lsLoad('incid')||[],
+      ausencias:lsLoad('ausencias')||[],
+      cobroDia:lsLoad('cobro-dia')||28,
+      vacTipo:lsLoad('vac-tipo')||'laborables',
+      vacComunidad:lsLoad('vac-comunidad')||'cataluna',
+    };
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download='labora-backup-'+new Date().toISOString().slice(0,10)+'.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    setMsg('Copia de seguridad descargada correctamente');
+    setTimeout(()=>setMsg(''),4000);
+  };
+  const importar=e=>{
+    const file=e.target.files[0];
+    if(!file)return;
+    const r=new FileReader();
+    r.onload=ev=>{
+      try{
+        const data=JSON.parse(ev.target.result);
+        if(!data.version){alert('Archivo no valido');return;}
+        if(Array.isArray(data.fallos))lsSave('fallos',data.fallos);
+        if(Array.isArray(data.horas))lsSave('horas',data.horas);
+        if(Array.isArray(data.vacE))lsSave('vac-e',data.vacE);
+        if(data.vacT)lsSave('vac-t',data.vacT);
+        if(Array.isArray(data.incid))lsSave('incid',data.incid);
+        if(Array.isArray(data.ausencias))lsSave('ausencias',data.ausencias);
+        if(data.cobroDia)lsSave('cobro-dia',data.cobroDia);
+        if(data.vacTipo)lsSave('vac-tipo',data.vacTipo);
+        if(data.vacComunidad)lsSave('vac-comunidad',data.vacComunidad);
+        setMsg('Datos restaurados. Recarga la app para verlos.');
+      }catch{alert('Error al leer el archivo.');}
+    };
+    r.readAsText(file);
+    e.target.value='';
+  };
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <SHead emoji="💾" title="Copia de seguridad" sub="Exporta e importa tus datos" bg="#f0fdf4"/>
+      <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:10}}>
+        <div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Exportar datos</div>
+        <div style={{fontSize:12,color:'#64748b'}}>Descarga un archivo con todos tus datos. Guardalo en un lugar seguro para restaurarlos si cambias de movil o reinstalan la app.</div>
+        <button onClick={exportar} style={{width:'100%',background:ACCENT.emerald,color:'white',border:'none',borderRadius:10,padding:'13px 0',fontWeight:600,fontSize:15,cursor:'pointer'}}>Descargar copia de seguridad</button>
+      </div>
+      <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:10}}>
+        <div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Restaurar datos</div>
+        <div style={{fontSize:12,color:'#64748b'}}>Selecciona un archivo de backup de Labora. Los datos actuales seran reemplazados.</div>
+        <label style={{width:'100%',background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:10,padding:'13px 0',fontWeight:600,fontSize:15,cursor:'pointer',textAlign:'center',color:ACCENT.blue,display:'block'}}>
+          Seleccionar archivo de backup
+          <input type="file" accept=".json" style={{display:'none'}} onChange={importar}/>
+        </label>
+      </div>
+      {msg&&<div style={{background:'#f0fdf4',border:'1px solid #6ee7b7',borderRadius:10,padding:'12px 14px',fontSize:13,color:'#065f46',fontWeight:600}}>{msg}</div>}
+    </div>
+  );
+}
+
 function App(){
   const [tab,setTab]=useState('vacaciones');
   const [year,setYear]=useState(CY);
@@ -879,7 +865,7 @@ function App(){
   const sa=d=>{setAusencias(d);lsSave('ausencias',d);};
 
   const ys=[];for(let y=CY+1;y>=CY-4;y--)ys.push(y);
-  const showYear=tab!=='cobro';
+  const showYear=tab!=='cobro'&&tab!=='backup';
 
   const TABS=[
     {id:'vacaciones',label:'Vacaciones',emoji:'🌴'},
@@ -913,8 +899,9 @@ function App(){
         {tab==='fallos'&&<FallosSection fallos={fallos} incid={incid} year={year} onUpdateF={sf} onUpdateI={si}/>}
         {tab==='ausencias'&&<AusenciasSection items={ausencias} year={year} onUpdate={sa}/>}
         {tab==='horas'&&<HorasSection items={horas} year={year} onUpdate={sh}/>}
+        {tab==='backup'&&<BackupSection/>}
       </div>
-      <div style={{position:'fixed',bottom:0,left:0,right:0,background:'white',borderTop:'1px solid #e2e8f0',display:'grid',gridTemplateColumns:'repeat(5,1fr)',zIndex:99}}>
+      <div style={{position:'fixed',bottom:0,left:0,right:0,background:'white',borderTop:'1px solid #e2e8f0',display:'grid',gridTemplateColumns:'repeat(6,1fr)',zIndex:99}}>
         {TABS.map(({id,label,emoji})=>{
           const active=tab===id;
           return(
