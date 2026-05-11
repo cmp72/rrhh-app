@@ -867,10 +867,24 @@ function App(){
   useEffect(()=>{
     const f=lsLoad('fallos');if(Array.isArray(f))setFallos(f);
     const h=lsLoad('horas');if(Array.isArray(h))setHoras(h);
-    const ve=lsLoad('vac-e');if(Array.isArray(ve))setVacE(ve);
     const vt=lsLoad('vac-t');if(vt&&typeof vt==='object')setVacT(vt);
     const i=lsLoad('incid');if(Array.isArray(i))setIncid(i);
     const a=lsLoad('ausencias');if(Array.isArray(a))setAusencias(a);
+    const ve=lsLoad('vac-e');
+    if(Array.isArray(ve)){
+      const tipo=lsLoad('vac-tipo')||'laborables';
+      const comunidad=lsLoad('vac-comunidad')||'cataluna';
+      const corregidas=ve.map(e=>{
+        if(!e.dias||Number(e.dias)<1)return e;
+        const fests=getFestivos(yearOf(e.fecha),comunidad);
+        const finCorrecto=calcFin(e.fecha,Number(e.dias),tipo,fests).fin;
+        if(e.fin===finCorrecto)return e;
+        return{...e,fin:finCorrecto};
+      });
+      const hayDiferencias=corregidas.some((e,i)=>e.fin!==ve[i].fin);
+      if(hayDiferencias)lsSave('vac-e',corregidas);
+      setVacE(corregidas);
+    }
   },[]);
 
   const sf=d=>{setFallos(d);lsSave('fallos',d);};
