@@ -92,8 +92,20 @@ function getFestivos(year,comunidad){
   return f.sort((a,b)=>a.d-b.d);
 }
 
-function isFest(d,festivos){return festivos.some(f=>fmtISO(f.d)===fmtISO(d));}
+function isFest(d,festivos){
+  return festivos.some(function(f){
+    return f.d.getFullYear()===d.getFullYear()&&
+           f.d.getMonth()===d.getMonth()&&
+           f.d.getDate()===d.getDate();
+  });
+}
 
+function fmtISO(d){
+  var y=d.getFullYear();
+  var m=String(d.getMonth()+1).padStart(2,'0');
+  var dd=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+dd;
+}
 function calcFin(ini,dias,tipo,festivos){
   var cur=new Date(ini+'T00:00:00');
   var contados=0;
