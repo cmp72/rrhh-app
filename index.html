@@ -74,14 +74,14 @@ function getFestivos(year,comunidad){
   const js=new Date(e);js.setDate(e.getDate()-3);
   const conLunes=['cataluna','c-valenciana','baleares','navarra','pais-vasco','la-rioja','murcia'];
   const f=[
-    {d:new Date(year,0,1),n:'Ano Nuevo'},
+    {d:new Date(year,0,1),n:'Año Nuevo'},
     {d:new Date(year,0,6),n:'Reyes Magos'},
     {d:vs,n:'Viernes Santo'},
-    {d:new Date(year,4,1),n:'Dia del Trabajo'},
+    {d:new Date(year,4,1),n:'Día del Trabajo'},
     {d:new Date(year,9,12),n:'Fiesta Nacional'},
     {d:new Date(year,10,1),n:'Todos los Santos'},
-    {d:new Date(year,11,6),n:'Dia de la Constitucion'},
-    {d:new Date(year,11,8),n:'Inmaculada Concepcion'},
+    {d:new Date(year,11,6),n:'Día de la Constitución'},
+    {d:new Date(year,11,8),n:'Inmaculada Concepción'},
     {d:new Date(year,11,25),n:'Navidad'},
   ];
   if(conLunes.includes(comunidad))f.push({d:lp,n:'Lunes de Pascua'});
@@ -303,8 +303,6 @@ function IncidItem({it,onEdit,onDelete}){
   );
 }
 
-// REEMPLAZA este bloque dentro de función Calendario:
-
 function Calendario({entries,festivos,calYear,calMonth,onChMes,tipo,comunidad}){
   const vacDays=new Set();
   entries.forEach(e=>{
@@ -314,9 +312,7 @@ function Calendario({entries,festivos,calYear,calMonth,onChMes,tipo,comunidad}){
     const cur=new Date(e.fecha+'T12:00:00');
     const fin=new Date(r.fin+'T12:00:00');
     while(cur<=fin){
-      const isF=isFest(cur,fests);
-      const isW=isWE(cur);
-      // Solo marcar días que cuentan como vacaciones según el tipo
+      const isF=isFest(cur,fests),isW=isWE(cur);
       const cuenta=tipo==='laborables'?(!isF&&!isW):(!isF);
       if(cuenta)vacDays.add(dateToISO(cur));
       cur.setDate(cur.getDate()+1);
@@ -410,6 +406,134 @@ function VacForm({initial,tipo,festivos,onSave,onCancel,color}){
         <button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button>
         <button onClick={submit} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:color,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button>
       </div>
+    </div>
+  );
+}
+
+// ─── PANTALLA INICIO ───────────────────────────────────────────────
+function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,onNav}){
+  const tipo=lsLoad('vac-tipo')||'laborables';
+  const comunidad=lsLoad('vac-comunidad')||'cataluna';
+  const cobroDia=parseInt(lsLoad('cobro-dia')||'28');
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  const yKey=String(CY);
+  const totalVac=Number(vacT[yKey]??0);
+  const ye=vacE.filter(e=>yearOf(e.fecha)===CY);
+  const usadosVac=ye.reduce((acc,e)=>acc+diasUsados(e,tipo,comunidad,hoy),0);
+  const restVac=totalVac-usadosVac;
+  const pctVac=totalVac>0?Math.min(100,(usadosVac/totalVac)*100):0;
+  const now2=new Date();now2.setHours(0,0,0,0);
+  const futuras=vacE.filter(e=>new Date(e.fecha+'T12:00:00')>now2).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const proxVac=futuras[0]||null;
+  const cdVac=proxVac?weeksAndDays(proxVac.fecha):null;
+  const cobro=nextCobro(cobroDia);
+  const fallosMes=fallos.filter(i=>monthOf(i.fecha)===CM&&yearOf(i.fecha)===CY).length;
+  const incidMes=incid.filter(i=>monthOf(i.fecha)===CM&&yearOf(i.fecha)===CY).length;
+  const ausMes=ausencias.filter(i=>monthOf(i.fecha)===CM&&yearOf(i.fecha)===CY).length;
+  const ausPend=ausencias.filter(i=>i.estado==='Pendiente'&&yearOf(i.fecha)===CY).length;
+  const horasMes=horas.filter(i=>monthOf(i.fecha)===CM&&yearOf(i.fecha)===CY).reduce((s,i)=>s+Number(i.horas||0),0);
+  const d=new Date();
+  const diaSem=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][d.getDay()];
+  const fechaHoy=`${diaSem}, ${d.getDate()} de ${MESES[d.getMonth()]} ${d.getFullYear()}`;
+
+  const Card=({emoji,title,onClick,children,color})=>(
+    <div onClick={onClick} style={{background:'white',borderRadius:14,border:'1px solid #e2e8f0',padding:14,cursor:'pointer',WebkitTapHighlightColor:'transparent'}}>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+        <span style={{fontSize:18}}>{emoji}</span>
+        <span style={{fontWeight:700,fontSize:14,color:'#1e293b'}}>{title}</span>
+        <span style={{marginLeft:'auto',fontSize:11,color:color||'#94a3b8',fontWeight:600}}>Ver →</span>
+      </div>
+      {children}
+    </div>
+  );
+
+  const cdStr=cd=>{
+    if(!cd)return null;
+    const parts=[];
+    if(cd.weeks>0)parts.push(cd.weeks+' sem');
+    if(cd.days>0)parts.push(cd.days+' día'+(cd.days!==1?'s':''));
+    return parts.join(' y ')||'Hoy';
+  };
+
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      {/* Cabecera */}
+      <div style={{background:'#1e293b',borderRadius:16,padding:18,color:'white'}}>
+        <div style={{fontSize:12,color:'#94a3b8',marginBottom:4}}>{fechaHoy}</div>
+        <div style={{fontSize:22,fontWeight:800,marginBottom:2}}>¡Hola! 👋</div>
+        <div style={{fontSize:13,color:'#94a3b8'}}>Aquí tienes tu resumen de hoy</div>
+      </div>
+
+      {/* Vacaciones */}
+      <Card emoji="🌴" title="Vacaciones" onClick={()=>onNav('vacaciones')} color={ACCENT.emerald}>
+        {totalVac===0?(
+          <div style={{fontSize:13,color:'#94a3b8'}}>Sin días configurados este año</div>
+        ):(
+          <>
+            <div style={{display:'flex',gap:10,marginBottom:10}}>
+              <div style={{flex:1,textAlign:'center'}}>
+                <div style={{fontSize:28,fontWeight:900,color:ACCENT.amber,lineHeight:1}}>{usadosVac}</div>
+                <div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>usados</div>
+              </div>
+              <div style={{width:1,background:'#f1f5f9'}}/>
+              <div style={{flex:1,textAlign:'center'}}>
+                <div style={{fontSize:28,fontWeight:900,color:ACCENT.emerald,lineHeight:1}}>{restVac}</div>
+                <div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>disponibles</div>
+              </div>
+              <div style={{width:1,background:'#f1f5f9'}}/>
+              <div style={{flex:1,textAlign:'center'}}>
+                <div style={{fontSize:28,fontWeight:900,color:'#64748b',lineHeight:1}}>{totalVac}</div>
+                <div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>totales</div>
+              </div>
+            </div>
+            <div style={{height:6,background:'#f1f5f9',borderRadius:99,overflow:'hidden',marginBottom:8}}>
+              <div style={{height:'100%',width:pctVac+'%',background:ACCENT.emerald,borderRadius:99}}/>
+            </div>
+            {proxVac&&cdVac&&(
+              <div style={{fontSize:12,color:ACCENT.emerald,fontWeight:600}}>
+                🗓 Próximas en {cdStr(cdVac)} · {proxVac.desc||fmtLargo(proxVac.fecha)}
+              </div>
+            )}
+          </>
+        )}
+      </Card>
+
+      {/* Cobro */}
+      <Card emoji="💰" title="Próximo cobro" onClick={()=>onNav('cobro')} color={ACCENT.purple}>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,color:'#475569'}}>Día {cobroDia} de {cobro.date.toLocaleDateString('es-ES',{month:'long',year:'numeric'})}</div>
+          </div>
+          <div style={{textAlign:'right'}}>
+            <div style={{fontSize:22,fontWeight:900,color:ACCENT.purple,lineHeight:1}}>
+              {cobro.total===0?'¡Hoy!':cdStr({weeks:cobro.weeks,days:cobro.days})}
+            </div>
+            {cobro.total>0&&<div style={{fontSize:10,color:'#94a3b8'}}>{cobro.total} días</div>}
+          </div>
+        </div>
+      </Card>
+
+      {/* Fila fallos + ausencias */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        <Card emoji="⚠️" title="Fallos" onClick={()=>onNav('fallos')} color={ACCENT.red}>
+          <div style={{fontSize:28,fontWeight:900,color:fallosMes>0?ACCENT.red:'#94a3b8',lineHeight:1}}>{fallosMes}</div>
+          <div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>este mes</div>
+          {incidMes>0&&<div style={{fontSize:11,color:ACCENT.amber,marginTop:6,fontWeight:600}}>{incidMes} incidencia{incidMes!==1?'s':''}</div>}
+        </Card>
+        <Card emoji="🚫" title="Ausencias" onClick={()=>onNav('ausencias')} color={ausPend>0?ACCENT.amber:ACCENT.red}>
+          <div style={{fontSize:28,fontWeight:900,color:ausMes>0?ACCENT.red:'#94a3b8',lineHeight:1}}>{ausMes}</div>
+          <div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>este mes</div>
+          {ausPend>0&&<div style={{fontSize:11,color:ACCENT.amber,marginTop:6,fontWeight:600}}>{ausPend} pendiente{ausPend!==1?'s':''}</div>}
+        </Card>
+      </div>
+
+      {/* Horas extra */}
+      <Card emoji="⏱️" title="Horas extra" onClick={()=>onNav('horas')} color={ACCENT.blue}>
+        <div style={{display:'flex',alignItems:'baseline',gap:6}}>
+          <div style={{fontSize:34,fontWeight:900,color:horasMes>0?ACCENT.blue:'#94a3b8',lineHeight:1}}>{horasMes}</div>
+          <div style={{fontSize:15,color:'#94a3b8'}}>h este mes</div>
+        </div>
+      </Card>
     </div>
   );
 }
@@ -806,7 +930,7 @@ function BackupSection(){
 }
 
 function App(){
-  const [tab,setTab]=useState('vacaciones');
+  const [tab,setTab]=useState('inicio');
   const [year,setYear]=useState(CY);
   const [fallos,setFallos]=useState([]);
   const [horas,setHoras]=useState([]);
@@ -832,15 +956,15 @@ function App(){
   const sa=d=>{setAusencias(d);lsSave('ausencias',d);};
 
   const ys=[];for(let y=CY+1;y>=CY-4;y--)ys.push(y);
-  const showYear=tab!=='cobro'&&tab!=='backup';
+  const showYear=tab!=='cobro'&&tab!=='backup'&&tab!=='inicio';
 
   const TABS=[
+    {id:'inicio',label:'Inicio',emoji:'🏠'},
     {id:'vacaciones',label:'Vacaciones',emoji:'🌴'},
     {id:'cobro',label:'Cobro',emoji:'💰'},
     {id:'fallos',label:'Fallos',emoji:'⚠️'},
     {id:'ausencias',label:'Ausencias',emoji:'🚫'},
-    {id:'horas',label:'H.Extras',emoji:'⏱️'},
-    {id:'backup',label:'Backup',emoji:'💾'},
+    {id:'horas',label:'H.Extra',emoji:'⏱️'},
   ];
 
   return(
@@ -859,8 +983,12 @@ function App(){
             <span style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'#94a3b8',fontSize:10}}>▾</span>
           </div>
         )}
+        {tab==='inicio'&&(
+          <button onClick={()=>setTab('backup')} style={{background:'#334155',border:'none',borderRadius:8,padding:'6px 10px',color:'#94a3b8',cursor:'pointer',fontSize:16}}>💾</button>
+        )}
       </div>
       <div style={{flex:1,overflowY:'auto',padding:16,paddingBottom:80}}>
+        {tab==='inicio'&&<InicioSection vacE={vacE} vacT={vacT} fallos={fallos} incid={incid} ausencias={ausencias} horas={horas} onNav={setTab}/>}
         {tab==='vacaciones'&&<VacSection entries={vacE} totales={vacT} year={year} onUpdateE={sve} onUpdateT={svt}/>}
         {tab==='cobro'&&<CobroSection/>}
         {tab==='fallos'&&<FallosSection fallos={fallos} incid={incid} year={year} onUpdateF={sf} onUpdateI={si}/>}
