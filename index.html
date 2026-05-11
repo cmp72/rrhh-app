@@ -96,14 +96,14 @@ function isFest(d,festivos){return festivos.some(f=>fmtISO(f.d)===fmtISO(d));}
 
 function calcFin(ini,dias,tipo,festivos){
   let cur=new Date(ini+'T00:00:00'),contados=0,festUsados=0;
-  while(contados<dias){
+  while(true){
     const isF=isFest(cur,festivos),isW=isWE(cur);
     if(tipo==='laborables'){
-      if(!isF&&!isW)contados++;
-      else if(isF)festUsados++;
+      if(!isF&&!isW){contados++;if(contados>=dias)break;}
+      else{if(isF)festUsados++;cur.setDate(cur.getDate()+1);}
     } else {
-      if(!isF)contados++;
-      else festUsados++;
+      if(!isF){contados++;if(contados>=dias)break;}
+      else{festUsados++;cur.setDate(cur.getDate()+1);}
     }
     if(contados<dias)cur.setDate(cur.getDate()+1);
   }
