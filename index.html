@@ -527,7 +527,7 @@ function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
           return(
             <Item key={it.id} item={it} onEdit={i=>{setEd(i);setForm(false);}} onDelete={id=>onUpdateE(entries.filter(i=>i.id!==id))}>
               <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8}}>
-                <span style={{fontSize:12,color:'#94a3b8'}}>{fmtLargo(it.fecha)}{it.fin&&it.fin!==it.fecha?' a '+fmtLargo(it.fin):''}</span>
+                <span style={{fontSize:12,color:'#94a3b8'}}>{fmtLargo(it.fecha)}{it.fin&&it.fin!==it.fecha?' — '+fmtLargo(it.fin):''}</span>
                 <span style={{fontSize:18,fontWeight:800,color:ACCENT.emerald,flexShrink:0}}>{it.dias} {it.dias===1?'dia':'dias'}</span>
               </div>
               {it.desc&&<div style={{fontSize:13,color:'#475569',marginTop:3}}>{it.desc}</div>}
