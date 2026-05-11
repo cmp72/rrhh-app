@@ -95,19 +95,22 @@ function getFestivos(year,comunidad){
 function isFest(d,festivos){return festivos.some(f=>fmtISO(f.d)===fmtISO(d));}
 
 function calcFin(ini,dias,tipo,festivos){
-  let cur=new Date(ini+'T00:00:00'),contados=0,festUsados=0;
-  while(true){
-    const isF=isFest(cur,festivos),isW=isWE(cur);
-    if(tipo==='laborables'){
-      if(!isF&&!isW){contados++;if(contados>=dias)break;}
-      else{if(isF)festUsados++;cur.setDate(cur.getDate()+1);}
+  var cur=new Date(ini+'T00:00:00');
+  var contados=0;
+  var festUsados=0;
+  while(contados<dias){
+    var isF=isFest(cur,festivos);
+    var isW=isWE(cur);
+    var cuenta=tipo==='laborables'?(!isF&&!isW):(!isF);
+    if(cuenta){
+      contados++;
+      if(contados<dias)cur.setDate(cur.getDate()+1);
     } else {
-      if(!isF){contados++;if(contados>=dias)break;}
-      else{festUsados++;cur.setDate(cur.getDate()+1);}
+      if(isF)festUsados++;
+      cur.setDate(cur.getDate()+1);
     }
-    if(contados<dias)cur.setDate(cur.getDate()+1);
   }
-  return{fin:fmtISO(cur),festUsados};
+  return{fin:fmtISO(cur),festUsados:festUsados};
 }
 
 function diasUsados(e,tipo,comunidad,hoy){
