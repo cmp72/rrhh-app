@@ -330,12 +330,14 @@ function IncidItem({it,onEdit,onDelete}){
   );
 }
 
-function Calendario({entries,festivos,calYear,calMonth,onChMes}){
+function Calendario({entries,festivos,calYear,calMonth,onChMes,tipo,comunidad}){
   const vacDays=new Set();
   entries.forEach(e=>{
-    if(!e.fin)return;
+    if(!e.dias||Number(e.dias)<1)return;
+    const fests=getFestivos(yearOf(e.fecha),comunidad);
+    const r=calcFin(e.fecha,Number(e.dias),tipo,fests);
     let cur=new Date(e.fecha+'T00:00:00');
-    const fin=new Date(e.fin+'T00:00:00');
+    const fin=new Date(r.fin+'T00:00:00');
     while(cur<=fin){vacDays.add(fmtISO(cur));cur.setDate(cur.getDate()+1);}
   });
   const todayStr=todayISO();
@@ -539,7 +541,7 @@ function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
       <AddBtn label="Registrar vacaciones" color={ACCENT.emerald} onClick={()=>{setEd(null);setForm(true);}}/>
       {(form||ed)&&<VacForm initial={ed||{fecha:todayISO(),dias:'',desc:''}} tipo={tipo} festivos={festivos} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.emerald}/>}
       <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14}}>
-        <Calendario entries={ye} festivos={festCal} calYear={calYear} calMonth={calMonth} onChMes={chMes}/>
+        <Calendario entries={ye} festivos={festCal} calYear={calYear} calMonth={calMonth} onChMes={chMes} tipo={tipo} comunidad={comunidad}/>
       </div>
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
         {ye.length===0&&<Empty text="Sin vacaciones registradas este ano"/>}
