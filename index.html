@@ -98,17 +98,31 @@ function calcFin(ini,dias,tipo,festivos){
   let cur=new Date(ini+'T00:00:00'),contados=0,festUsados=0;
   while(true){
     const isF=isFest(cur,festivos),isW=isWE(cur);
-    if(tipo==='laborables'){
-      if(!isF&&!isW)contados++;
-      else if(isF)festUsados++;
-    } else {
-      if(!isF)contados++;
-      else festUsados++;
-    }
+    if(tipo==='laborables'){if(!isF&&!isW)contados++;else if(isF)festUsados++;}
+    else{if(!isF)contados++;else festUsados++;}
     if(contados>=dias)break;
     cur.setDate(cur.getDate()+1);
   }
   return{fin:fmtISO(cur),festUsados};
+}
+
+function diasUsados(e,tipo,comunidad,hoy){
+  const dias=Number(e.dias||0);
+  if(dias===0)return 0;
+  const fests=getFestivos(yearOf(e.fecha),comunidad);
+  const ini=new Date(e.fecha+'T00:00:00');
+  if(ini>hoy)return 0;
+  const finStr=(e.fin&&e.fin>e.fecha)?e.fin:calcFin(e.fecha,dias,tipo,fests).fin;
+  const fin=new Date(finStr+'T00:00:00');
+  let cur=new Date(ini);
+  let cnt=0;
+  while(cur<=fin&&cur<=hoy){
+    const isF=isFest(cur,fests),isW=isWE(cur);
+    if(tipo==='laborables'){if(!isF&&!isW)cnt++;}
+    else{if(!isF)cnt++;}
+    cur.setDate(cur.getDate()+1);
+  }
+  return cnt;
 }
 
 const ACCENT={
@@ -437,20 +451,7 @@ function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
   const totalD=Number(totales[yKey]??0);
   const ye=entries.filter(e=>yearOf(e.fecha)===year);
   const hoy=new Date();hoy.setHours(0,0,0,0);
-  const usados=ye.reduce((acc,e)=>{
-    const fests=getFestivos(yearOf(e.fecha),comunidad);
-    const ini=new Date(e.fecha+'T00:00:00');
-    if(ini>hoy)return acc;
-    const finStr=(e.fin&&e.fin!==e.fecha)?e.fin:calcFin(e.fecha,Number(e.dias||1),tipo,fests).fin;
-    let cur=new Date(e.fecha+'T00:00:00');
-    const fin=new Date(finStr+'T00:00:00');
-    while(cur<=fin&&cur<=hoy){
-      const isF=isFest(cur,fests),isW=isWE(cur);
-      if(tipo==='laborables'){if(!isF&&!isW)acc++;}else{if(!isF)acc++;}
-      cur.setDate(cur.getDate()+1);
-    }
-    return acc;
-  },0);
+  const usados=ye.reduce((acc,e)=>acc+diasUsados(e,tipo,comunidad,hoy),0);
   const rest=totalD-usados;
   const pct=totalD>0?Math.min(100,(usados/totalD)*100):0;
   const now=new Date();now.setHours(0,0,0,0);
