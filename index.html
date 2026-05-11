@@ -98,8 +98,13 @@ function calcFin(ini,dias,tipo,festivos){
   let cur=new Date(ini+'T00:00:00'),contados=0,festUsados=0;
   while(contados<dias){
     const isF=isFest(cur,festivos),isW=isWE(cur);
-    if(tipo==='laborables'){if(!isF&&!isW)contados++;else if(isF)festUsados++;}
-    else{if(!isF)contados++;else festUsados++;}
+    if(tipo==='laborables'){
+      if(!isF&&!isW)contados++;
+      else if(isF)festUsados++;
+    } else {
+      if(!isF)contados++;
+      else festUsados++;
+    }
     if(contados<dias)cur.setDate(cur.getDate()+1);
   }
   return{fin:fmtISO(cur),festUsados};
@@ -362,21 +367,27 @@ function Calendario({entries,festivos,calYear,calMonth,onChMes}){
 }
 
 function VacForm({initial,tipo,festivos,onSave,onCancel,color}){
-  const [d,setD]=useState({...initial});
+  const [fecha,setFecha]=useState(initial.fecha||'');
+  const [dias,setDias]=useState(initial.dias?String(initial.dias):'');
+  const [desc,setDesc]=useState(initial.desc||'');
   const [finCalc,setFinCalc]=useState('');
   const [festUsados,setFestUsados]=useState(0);
   const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
-  const calcular=(fecha,dias)=>{
-    if(!fecha||!dias||parseInt(dias)<1)return;
-    const r=calcFin(fecha,parseInt(dias),tipo,festivos);
-    setFinCalc(r.fin);setFestUsados(r.festUsados);
+
+  const calcular=(f,d)=>{
+    if(!f||!d||parseInt(d)<1){setFinCalc('');return;}
+    const r=calcFin(f,parseInt(d),tipo,festivos);
+    setFinCalc(r.fin);
+    setFestUsados(r.festUsados);
   };
+
   const submit=()=>{
-    if(!d.fecha){alert('Ingresa la fecha de inicio');return;}
-    if(!d.dias||parseInt(d.dias)<1){alert('Ingresa la cantidad de dias');return;}
-    const r=calcFin(d.fecha,parseInt(d.dias),tipo,festivos);
-    onSave({...d,dias:parseInt(d.dias),fin:r.fin});
+    if(!fecha){alert('Ingresa la fecha de inicio');return;}
+    if(!dias||parseInt(dias)<1){alert('Ingresa la cantidad de dias');return;}
+    const r=calcFin(fecha,parseInt(dias),tipo,festivos);
+    onSave({fecha,dias:parseInt(dias),fin:r.fin,desc});
   };
+
   return(
     <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -385,21 +396,21 @@ function VacForm({initial,tipo,festivos,onSave,onCancel,color}){
       </div>
       <div>
         <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha de inicio *</label>
-        <input type="date" value={d.fecha||''} onChange={e=>{const v=e.target.value;setD({...d,fecha:v});calcular(v,d.dias);}} style={inp}/>
+        <input type="date" value={fecha} onChange={e=>{setFecha(e.target.value);calcular(e.target.value,dias);}} style={inp}/>
       </div>
       <div>
         <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Dias de vacaciones ({tipo}) *</label>
-        <input type="number" min="1" step="1" placeholder="Ej: 5" value={d.dias||''} onChange={e=>{const v=e.target.value;setD({...d,dias:v});calcular(d.fecha,v);}} style={inp}/>
+        <input type="number" min="1" step="1" placeholder="Ej: 5" value={dias} onChange={e=>{setDias(e.target.value);calcular(fecha,e.target.value);}} style={inp}/>
       </div>
       {finCalc&&(
         <div style={{background:'#f0fdf4',border:'1px solid #6ee7b7',borderRadius:8,padding:'10px 12px',fontSize:13,color:'#065f46'}}>
-          Fin: {fmtLargo(finCalc)}
+          Fin: <strong>{fmtLargo(finCalc)}</strong>
           {festUsados>0&&<div style={{fontSize:12,marginTop:4,color:'#059669'}}>{festUsados} festivo{festUsados>1?'s':''} no contado{festUsados>1?'s':''}</div>}
         </div>
       )}
       <div>
         <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Nota (opcional)</label>
-        <textarea rows={2} placeholder="Ej: Vacaciones de verano" value={d.desc||''} onChange={e=>setD({...d,desc:e.target.value})} style={{...inp,resize:'none'}}/>
+        <textarea rows={2} placeholder="Ej: Vacaciones de verano" value={desc} onChange={e=>setDesc(e.target.value)} style={{...inp,resize:'none'}}/>
       </div>
       <div style={{display:'flex',gap:8}}>
         <button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button>
