@@ -114,22 +114,25 @@ function calcFin(ini,dias,tipo,festivos){
 }
 
 function diasUsados(e,tipo,comunidad,hoy){
-  const dias=Number(e.dias||0);
+  var dias=Number(e.dias||0);
   if(dias===0)return 0;
-  const fests=getFestivos(yearOf(e.fecha),comunidad);
-  const ini=new Date(e.fecha+'T00:00:00');
+  var ini=new Date(e.fecha+'T00:00:00');
   if(ini>hoy)return 0;
-  const finStr=(e.fin&&e.fin>e.fecha)?e.fin:calcFin(e.fecha,dias,tipo,fests).fin;
-  const fin=new Date(finStr+'T00:00:00');
-  let cur=new Date(ini);
-  let cnt=0;
-  while(cur<=fin&&cur<=hoy){
-    const isF=isFest(cur,fests),isW=isWE(cur);
-    if(tipo==='laborables'){if(!isF&&!isW)cnt++;}
-    else{if(!isF)cnt++;}
+  var fests=getFestivos(yearOf(e.fecha),comunidad);
+  var cur=new Date(ini);
+  var contados=0;
+  var usados=0;
+  while(cur<=hoy&&contados<dias){
+    var isF=isFest(cur,fests);
+    var isW=isWE(cur);
+    var cuenta=tipo==='laborables'?(!isF&&!isW):(!isF);
+    if(cuenta){
+      contados++;
+      usados++;
+    }
     cur.setDate(cur.getDate()+1);
   }
-  return cnt;
+  return usados;
 }
 
 const ACCENT={
