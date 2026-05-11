@@ -23,7 +23,7 @@
 <script type="text/babel">
 const {useState,useEffect}=React;
 
-const todayISO=()=>new Date().toISOString().split('T')[0];
+const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 const CY=new Date().getFullYear();
 const CM=new Date().getMonth();
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -31,16 +31,18 @@ const DIAS_S=['L','M','X','J','V','S','D'];
 const yearOf=iso=>parseInt(iso.slice(0,4),10);
 const monthOf=iso=>parseInt(iso.slice(5,7),10)-1;
 const fmt=iso=>new Date(iso+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});
-const fmtLargo=iso=>{const d=new Date(iso+'T00:00:00');return d.getDate()+' de '+MESES[d.getMonth()]+' '+d.getFullYear();};
-const fmtISO=d=>d.toISOString().split('T')[0];
+const fmtLargo=iso=>{const d=new Date(iso+'T12:00:00');return d.getDate()+' de '+MESES[d.getMonth()]+' '+d.getFullYear();};
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const isWE=d=>{const dw=d.getDay();return dw===0||dw===6;};
+const dateToISO=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const sameFecha=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+
 const lsLoad=k=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}};
 const lsSave=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
 
 function weeksAndDays(isoTarget){
   const now=new Date();now.setHours(0,0,0,0);
-  const tgt=new Date(isoTarget+'T00:00:00');
+  const tgt=new Date(isoTarget+'T12:00:00');
   const diff=Math.ceil((tgt-now)/86400000);
   if(diff<=0)return null;
   return{weeks:Math.floor(diff/7),days:diff%7,total:diff};
@@ -92,57 +94,33 @@ function getFestivos(year,comunidad){
   return f.sort((a,b)=>a.d-b.d);
 }
 
-function isFest(d,festivos){
-  return festivos.some(function(f){
-    return f.d.getFullYear()===d.getFullYear()&&
-           f.d.getMonth()===d.getMonth()&&
-           f.d.getDate()===d.getDate();
-  });
-}
+function isFest(d,festivos){return festivos.some(f=>sameFecha(f.d,d));}
 
-function fmtISO(d){
-  var y=d.getFullYear();
-  var m=String(d.getMonth()+1).padStart(2,'0');
-  var dd=String(d.getDate()).padStart(2,'0');
-  return y+'-'+m+'-'+dd;
-}
 function calcFin(ini,dias,tipo,festivos){
-  var cur=new Date(ini+'T00:00:00');
-  var contados=0;
-  var festUsados=0;
+  const cur=new Date(ini+'T12:00:00');
+  let contados=0,festUsados=0;
   while(true){
-    var isF=isFest(cur,festivos);
-    var isW=isWE(cur);
-    if(tipo==='laborables'){
-      if(!isF&&!isW) contados++;
-      else if(isF) festUsados++;
-    } else {
-      if(!isF) contados++;
-      else festUsados++;
-    }
-    if(contados>=dias) break;
+    const isF=isFest(cur,festivos),isW=isWE(cur);
+    if(tipo==='laborables'){if(!isF&&!isW)contados++;else if(isF)festUsados++;}
+    else{if(!isF)contados++;else festUsados++;}
+    if(contados>=dias)break;
     cur.setDate(cur.getDate()+1);
   }
-  return{fin:fmtISO(cur),festUsados:festUsados};
+  return{fin:dateToISO(cur),festUsados};
 }
 
 function diasUsados(e,tipo,comunidad,hoy){
-  var dias=Number(e.dias||0);
+  const dias=Number(e.dias||0);
   if(dias===0)return 0;
-  var ini=new Date(e.fecha+'T00:00:00');
+  const ini=new Date(e.fecha+'T12:00:00');
   if(ini>hoy)return 0;
-  var fests=getFestivos(yearOf(e.fecha),comunidad);
-  var cur=new Date(ini);
-  var contados=0;
-  var usados=0;
+  const fests=getFestivos(yearOf(e.fecha),comunidad);
+  const cur=new Date(ini);
+  let contados=0,usados=0;
   while(cur<=hoy&&contados<dias){
-    var isF=isFest(cur,fests);
-    var isW=isWE(cur);
-    var cuenta=tipo==='laborables'?(!isF&&!isW):(!isF);
-    if(cuenta){
-      contados++;
-      usados++;
-    }
+    const isF=isFest(cur,fests),isW=isWE(cur);
+    if(tipo==='laborables'){if(!isF&&!isW){contados++;usados++;}}
+    else{if(!isF){contados++;usados++;}}
     cur.setDate(cur.getDate()+1);
   }
   return usados;
@@ -256,11 +234,7 @@ function FotosPicker({fotos,onChange}){
   const [viewer,setViewer]=useState(null);
   const agregar=e=>{
     const files=Array.from(e.target.files).slice(0,3-fotos.length);
-    files.forEach(f=>{
-      const r=new FileReader();
-      r.onload=ev=>onChange([...fotos,ev.target.result]);
-      r.readAsDataURL(f);
-    });
+    files.forEach(f=>{const r=new FileReader();r.onload=ev=>onChange([...fotos,ev.target.result]);r.readAsDataURL(f);});
     e.target.value='';
   };
   const borrar=i=>onChange(fotos.filter((_,fi)=>fi!==i));
@@ -300,22 +274,10 @@ function IncidForm({initial,onSave,onCancel,color}){
         <span style={{fontWeight:700,color:'#1e293b'}}>{initial.id?'Editar incidencia':'Nueva incidencia'}</span>
         <button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IconX/></button>
       </div>
-      <div>
-        <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha *</label>
-        <input type="date" value={d.fecha||''} onChange={e=>setD({...d,fecha:e.target.value})} style={inp}/>
-      </div>
-      <div>
-        <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Titulo *</label>
-        <input type="text" placeholder="Ej: Fallo de maquina" value={d.titulo||''} onChange={e=>setD({...d,titulo:e.target.value})} style={inp}/>
-      </div>
-      <div>
-        <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Descripcion *</label>
-        <textarea rows={3} placeholder="Detalla la incidencia..." value={d.desc||''} onChange={e=>setD({...d,desc:e.target.value})} style={{...inp,resize:'none'}}/>
-      </div>
-      <div>
-        <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fotos (max. 3)</label>
-        <FotosPicker fotos={fotos} onChange={setFotos}/>
-      </div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha *</label><input type="date" value={d.fecha||''} onChange={e=>setD({...d,fecha:e.target.value})} style={inp}/></div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Titulo *</label><input type="text" placeholder="Ej: Fallo de maquina" value={d.titulo||''} onChange={e=>setD({...d,titulo:e.target.value})} style={inp}/></div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Descripcion *</label><textarea rows={3} placeholder="Detalla la incidencia..." value={d.desc||''} onChange={e=>setD({...d,desc:e.target.value})} style={{...inp,resize:'none'}}/></div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fotos (max. 3)</label><FotosPicker fotos={fotos} onChange={setFotos}/></div>
       <div style={{display:'flex',gap:8}}>
         <button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button>
         <button onClick={submit} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:color,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button>
@@ -334,9 +296,7 @@ function IncidItem({it,onEdit,onDelete}){
       <div style={{fontSize:13,color:'#475569',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>
       {it.fotos&&it.fotos.length>0&&(
         <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:8}}>
-          {it.fotos.map((f,fi)=>(
-            <img key={fi} src={f} onClick={()=>setViewer(f)} style={{width:60,height:60,borderRadius:6,objectFit:'cover',border:'1px solid #e2e8f0',cursor:'pointer'}}/>
-          ))}
+          {it.fotos.map((f,fi)=><img key={fi} src={f} onClick={()=>setViewer(f)} style={{width:60,height:60,borderRadius:6,objectFit:'cover',border:'1px solid #e2e8f0',cursor:'pointer'}}/>)}
         </div>
       )}
     </Item>
@@ -349,9 +309,9 @@ function Calendario({entries,festivos,calYear,calMonth,onChMes,tipo,comunidad}){
     if(!e.dias||Number(e.dias)<1)return;
     const fests=getFestivos(yearOf(e.fecha),comunidad);
     const r=calcFin(e.fecha,Number(e.dias),tipo,fests);
-    let cur=new Date(e.fecha+'T00:00:00');
-    const fin=new Date(r.fin+'T00:00:00');
-    while(cur<=fin){vacDays.add(fmtISO(cur));cur.setDate(cur.getDate()+1);}
+    const cur=new Date(e.fecha+'T12:00:00');
+    const fin=new Date(r.fin+'T12:00:00');
+    while(cur<=fin){vacDays.add(dateToISO(cur));cur.setDate(cur.getDate()+1);}
   });
   const todayStr=todayISO();
   const first=new Date(calYear,calMonth,1);
@@ -373,7 +333,7 @@ function Calendario({entries,festivos,calYear,calMonth,onChMes,tipo,comunidad}){
         {Array(daysInMonth).fill(null).map((_,i)=>{
           const d=i+1;
           const date=new Date(calYear,calMonth,d);
-          const ds=fmtISO(date);
+          const ds=dateToISO(date);
           const isF=isFest(date,festivos);
           const isV=vacDays.has(ds);
           const isT=ds===todayStr;
@@ -382,9 +342,7 @@ function Calendario({entries,festivos,calYear,calMonth,onChMes,tipo,comunidad}){
           if(isT){bg='#1e293b';color='white';fw='700';}
           else if(isF){bg='#dbeafe';color='#2563eb';fw='700';}
           else if(isV){bg='#d1fae5';color='#065f46';}
-          return(
-            <div key={d} style={{textAlign:'center',padding:'5px 1px',borderRadius:6,fontSize:12,background:bg,color,fontWeight:fw,minHeight:28,display:'flex',alignItems:'center',justifyContent:'center'}}>{d}</div>
-          );
+          return(<div key={d} style={{textAlign:'center',padding:'5px 1px',borderRadius:6,fontSize:12,background:bg,color,fontWeight:fw,minHeight:28,display:'flex',alignItems:'center',justifyContent:'center'}}>{d}</div>);
         })}
       </div>
       <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:8}}>
@@ -413,45 +371,32 @@ function VacForm({initial,tipo,festivos,onSave,onCancel,color}){
   const [finCalc,setFinCalc]=useState('');
   const [festUsados,setFestUsados]=useState(0);
   const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
-
   const calcular=(f,d)=>{
     if(!f||!d||parseInt(d)<1){setFinCalc('');return;}
     const r=calcFin(f,parseInt(d),tipo,festivos);
-    setFinCalc(r.fin);
-    setFestUsados(r.festUsados);
+    setFinCalc(r.fin);setFestUsados(r.festUsados);
   };
-
   const submit=()=>{
     if(!fecha){alert('Ingresa la fecha de inicio');return;}
     if(!dias||parseInt(dias)<1){alert('Ingresa la cantidad de dias');return;}
     const r=calcFin(fecha,parseInt(dias),tipo,festivos);
     onSave({fecha,dias:parseInt(dias),fin:r.fin,desc});
   };
-
   return(
     <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <span style={{fontWeight:700,color:'#1e293b'}}>Registrar vacaciones</span>
         <button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IconX/></button>
       </div>
-      <div>
-        <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha de inicio *</label>
-        <input type="date" value={fecha} onChange={e=>{setFecha(e.target.value);calcular(e.target.value,dias);}} style={inp}/>
-      </div>
-      <div>
-        <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Dias de vacaciones ({tipo}) *</label>
-        <input type="number" min="1" step="1" placeholder="Ej: 5" value={dias} onChange={e=>{setDias(e.target.value);calcular(fecha,e.target.value);}} style={inp}/>
-      </div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha de inicio *</label><input type="date" value={fecha} onChange={e=>{setFecha(e.target.value);calcular(e.target.value,dias);}} style={inp}/></div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Dias de vacaciones ({tipo}) *</label><input type="number" min="1" step="1" placeholder="Ej: 5" value={dias} onChange={e=>{setDias(e.target.value);calcular(fecha,e.target.value);}} style={inp}/></div>
       {finCalc&&(
         <div style={{background:'#f0fdf4',border:'1px solid #6ee7b7',borderRadius:8,padding:'10px 12px',fontSize:13,color:'#065f46'}}>
           Fin: <strong>{fmtLargo(finCalc)}</strong>
           {festUsados>0&&<div style={{fontSize:12,marginTop:4,color:'#059669'}}>{festUsados} festivo{festUsados>1?'s':''} no contado{festUsados>1?'s':''}</div>}
         </div>
       )}
-      <div>
-        <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Nota (opcional)</label>
-        <textarea rows={2} placeholder="Ej: Vacaciones de verano" value={desc} onChange={e=>setDesc(e.target.value)} style={{...inp,resize:'none'}}/>
-      </div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Nota (opcional)</label><textarea rows={2} placeholder="Ej: Vacaciones de verano" value={desc} onChange={e=>setDesc(e.target.value)} style={{...inp,resize:'none'}}/></div>
       <div style={{display:'flex',gap:8}}>
         <button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button>
         <button onClick={submit} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:color,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button>
@@ -480,7 +425,7 @@ function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
   const rest=totalD-usados;
   const pct=totalD>0?Math.min(100,(usados/totalD)*100):0;
   const now=new Date();now.setHours(0,0,0,0);
-  const futuras=entries.filter(e=>new Date(e.fecha+'T00:00:00')>now).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const futuras=entries.filter(e=>new Date(e.fecha+'T12:00:00')>now).sort((a,b)=>a.fecha.localeCompare(b.fecha));
   const proximas=futuras[0]||null;
   const countdown=proximas?weeksAndDays(proximas.fecha):null;
   const abrirTotal=()=>{setTInput(String(totalD||''));setEditT(true);};
@@ -719,10 +664,7 @@ function AusenciasSection({items,year,onUpdate}){
             <span style={{fontWeight:700,color:'#1e293b'}}>{ed?'Editar ausencia':'Nueva ausencia'}</span>
             <button onClick={()=>{setForm(false);setEd(null);}} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IconX/></button>
           </div>
-          <div>
-            <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha *</label>
-            <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={inp}/>
-          </div>
+          <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha *</label><input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={inp}/></div>
           <div>
             <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:6}}>Justificada? *</label>
             <div style={{display:'flex',gap:8}}>
@@ -730,14 +672,8 @@ function AusenciasSection({items,year,onUpdate}){
               <Rbtn val="Injustificada" cur={just} onSel={setJust} col={ACCENT.red}/>
             </div>
           </div>
-          <div>
-            <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Motivo</label>
-            <textarea rows={2} placeholder="Ej: Cita medica, enfermedad..." value={motivo} onChange={e=>setMotivo(e.target.value)} style={{...inp,resize:'none'}}/>
-          </div>
-          <div>
-            <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Horas faltantes (0 si fue dia completo)</label>
-            <input type="number" min="0" max="12" step="0.5" placeholder="0" value={horas} onChange={e=>setHoras(e.target.value)} style={inp}/>
-          </div>
+          <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Motivo</label><textarea rows={2} placeholder="Ej: Cita medica, enfermedad..." value={motivo} onChange={e=>setMotivo(e.target.value)} style={{...inp,resize:'none'}}/></div>
+          <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Horas faltantes (0 si fue dia completo)</label><input type="number" min="0" max="12" step="0.5" placeholder="0" value={horas} onChange={e=>setHoras(e.target.value)} style={inp}/></div>
           <div>
             <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:6}}>Estado</label>
             <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
@@ -812,32 +748,14 @@ function HorasSection({items,year,onUpdate}){
 function BackupSection(){
   const [msg,setMsg]=useState('');
   const exportar=()=>{
-    const data={
-      version:1,
-      fecha:new Date().toISOString(),
-      fallos:lsLoad('fallos')||[],
-      horas:lsLoad('horas')||[],
-      vacE:lsLoad('vac-e')||[],
-      vacT:lsLoad('vac-t')||{},
-      incid:lsLoad('incid')||[],
-      ausencias:lsLoad('ausencias')||[],
-      cobroDia:lsLoad('cobro-dia')||28,
-      vacTipo:lsLoad('vac-tipo')||'laborables',
-      vacComunidad:lsLoad('vac-comunidad')||'cataluna',
-    };
+    const data={version:1,fecha:new Date().toISOString(),fallos:lsLoad('fallos')||[],horas:lsLoad('horas')||[],vacE:lsLoad('vac-e')||[],vacT:lsLoad('vac-t')||{},incid:lsLoad('incid')||[],ausencias:lsLoad('ausencias')||[],cobroDia:lsLoad('cobro-dia')||28,vacTipo:lsLoad('vac-tipo')||'laborables',vacComunidad:lsLoad('vac-comunidad')||'cataluna'};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;
-    a.download='labora-backup-'+new Date().toISOString().slice(0,10)+'.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    setMsg('Copia de seguridad descargada correctamente');
-    setTimeout(()=>setMsg(''),4000);
+    const a=document.createElement('a');a.href=url;a.download='labora-backup-'+todayISO()+'.json';a.click();URL.revokeObjectURL(url);
+    setMsg('Copia de seguridad descargada correctamente');setTimeout(()=>setMsg(''),4000);
   };
   const importar=e=>{
-    const file=e.target.files[0];
-    if(!file)return;
+    const file=e.target.files[0];if(!file)return;
     const r=new FileReader();
     r.onload=ev=>{
       try{
@@ -855,15 +773,14 @@ function BackupSection(){
         setMsg('Datos restaurados. Recarga la app para verlos.');
       }catch{alert('Error al leer el archivo.');}
     };
-    r.readAsText(file);
-    e.target.value='';
+    r.readAsText(file);e.target.value='';
   };
   return(
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <SHead emoji="💾" title="Copia de seguridad" sub="Exporta e importa tus datos" bg="#f0fdf4"/>
       <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:10}}>
         <div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Exportar datos</div>
-        <div style={{fontSize:12,color:'#64748b'}}>Descarga un archivo con todos tus datos. Guardalo en un lugar seguro para restaurarlos si cambias de movil o reinstalan la app.</div>
+        <div style={{fontSize:12,color:'#64748b'}}>Descarga un archivo con todos tus datos para restaurarlos si cambias de movil.</div>
         <button onClick={exportar} style={{width:'100%',background:ACCENT.emerald,color:'white',border:'none',borderRadius:10,padding:'13px 0',fontWeight:600,fontSize:15,cursor:'pointer'}}>Descargar copia de seguridad</button>
       </div>
       <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:10}}>
@@ -895,21 +812,7 @@ function App(){
     const vt=lsLoad('vac-t');if(vt&&typeof vt==='object')setVacT(vt);
     const i=lsLoad('incid');if(Array.isArray(i))setIncid(i);
     const a=lsLoad('ausencias');if(Array.isArray(a))setAusencias(a);
-    const ve=lsLoad('vac-e');
-    if(Array.isArray(ve)){
-      const tipo=lsLoad('vac-tipo')||'laborables';
-      const comunidad=lsLoad('vac-comunidad')||'cataluna';
-      const corregidas=ve.map(e=>{
-        if(!e.dias||Number(e.dias)<1)return e;
-        const fests=getFestivos(yearOf(e.fecha),comunidad);
-        const finCorrecto=calcFin(e.fecha,Number(e.dias),tipo,fests).fin;
-        if(e.fin===finCorrecto)return e;
-        return{...e,fin:finCorrecto};
-      });
-      const hayDiferencias=corregidas.some((e,i)=>e.fin!==ve[i].fin);
-      if(hayDiferencias)lsSave('vac-e',corregidas);
-      setVacE(corregidas);
-    }
+    const ve=lsLoad('vac-e');if(Array.isArray(ve))setVacE(ve);
   },[]);
 
   const sf=d=>{setFallos(d);lsSave('fallos',d);};
