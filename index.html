@@ -438,14 +438,12 @@ function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
   const ye=entries.filter(e=>yearOf(e.fecha)===year);
   const hoy=new Date();hoy.setHours(0,0,0,0);
   const usados=ye.reduce((acc,e)=>{
-    if(!e.fin){
-      const ini=new Date(e.fecha+'T00:00:00');
-      if(ini<=hoy)return acc+Number(e.dias||0);
-      return acc;
-    }
-    let cur=new Date(e.fecha+'T00:00:00');
-    const fin=new Date(e.fin+'T00:00:00');
     const fests=getFestivos(yearOf(e.fecha),comunidad);
+    const ini=new Date(e.fecha+'T00:00:00');
+    if(ini>hoy)return acc;
+    const finStr=(e.fin&&e.fin!==e.fecha)?e.fin:calcFin(e.fecha,Number(e.dias||1),tipo,fests).fin;
+    let cur=new Date(e.fecha+'T00:00:00');
+    const fin=new Date(finStr+'T00:00:00');
     while(cur<=fin&&cur<=hoy){
       const isF=isFest(cur,fests),isW=isWE(cur);
       if(tipo==='laborables'){if(!isF&&!isW)acc++;}else{if(!isF)acc++;}
