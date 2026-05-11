@@ -98,17 +98,18 @@ function calcFin(ini,dias,tipo,festivos){
   var cur=new Date(ini+'T00:00:00');
   var contados=0;
   var festUsados=0;
-  while(contados<dias){
+  while(true){
     var isF=isFest(cur,festivos);
     var isW=isWE(cur);
-    var cuenta=tipo==='laborables'?(!isF&&!isW):(!isF);
-    if(cuenta){
-      contados++;
-      if(contados<dias)cur.setDate(cur.getDate()+1);
+    if(tipo==='laborables'){
+      if(!isF&&!isW) contados++;
+      else if(isF) festUsados++;
     } else {
-      if(isF)festUsados++;
-      cur.setDate(cur.getDate()+1);
+      if(!isF) contados++;
+      else festUsados++;
     }
+    if(contados>=dias) break;
+    cur.setDate(cur.getDate()+1);
   }
   return{fin:fmtISO(cur),festUsados:festUsados};
 }
