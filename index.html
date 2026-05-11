@@ -303,6 +303,8 @@ function IncidItem({it,onEdit,onDelete}){
   );
 }
 
+// REEMPLAZA este bloque dentro de función Calendario:
+
 function Calendario({entries,festivos,calYear,calMonth,onChMes,tipo,comunidad}){
   const vacDays=new Set();
   entries.forEach(e=>{
@@ -311,7 +313,14 @@ function Calendario({entries,festivos,calYear,calMonth,onChMes,tipo,comunidad}){
     const r=calcFin(e.fecha,Number(e.dias),tipo,fests);
     const cur=new Date(e.fecha+'T12:00:00');
     const fin=new Date(r.fin+'T12:00:00');
-    while(cur<=fin){vacDays.add(dateToISO(cur));cur.setDate(cur.getDate()+1);}
+    while(cur<=fin){
+      const isF=isFest(cur,fests);
+      const isW=isWE(cur);
+      // Solo marcar días que cuentan como vacaciones según el tipo
+      const cuenta=tipo==='laborables'?(!isF&&!isW):(!isF);
+      if(cuenta)vacDays.add(dateToISO(cur));
+      cur.setDate(cur.getDate()+1);
+    }
   });
   const todayStr=todayISO();
   const first=new Date(calYear,calMonth,1);
