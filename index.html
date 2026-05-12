@@ -16,17 +16,20 @@
     body{margin:0;background:#f8fafc;overscroll-behavior:none}
     input,textarea,select{font-size:16px!important;font-family:inherit}
     button{font-family:inherit}
+    .mes-scroll::-webkit-scrollbar{display:none}
+    .mes-scroll{-ms-overflow-style:none;scrollbar-width:none}
   </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState,useEffect}=React;
+const {useState,useEffect,useRef}=React;
 
 const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 const CY=new Date().getFullYear();
 const CM=new Date().getMonth();
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_C=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const DIAS_S=['L','M','X','J','V','S','D'];
 const yearOf=iso=>parseInt(iso.slice(0,4),10);
 const monthOf=iso=>parseInt(iso.slice(5,7),10)-1;
@@ -133,6 +136,42 @@ const ACCENT={
   amber:'#d97706',amberL:'#fef3c7',
   purple:'#7c3aed',purpleL:'#ede9fe',
 };
+
+// ─── FILTRO POR MES ───────────────────────────────────────────────
+function FiltroMes({year,items,mesActivo,onMes,color}){
+  const ref=useRef(null);
+  // Meses que tienen datos ese año
+  const mesesConDatos=new Set(
+    items.filter(i=>yearOf(i.fecha)===year).map(i=>monthOf(i.fecha))
+  );
+  useEffect(()=>{
+    // Scroll automático al mes activo
+    if(ref.current&&mesActivo!==null){
+      const btn=ref.current.querySelector(`[data-m="${mesActivo}"]`);
+      if(btn)btn.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+    }
+  },[mesActivo]);
+  return(
+    <div ref={ref} className="mes-scroll" style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:4}}>
+      <button
+        onClick={()=>onMes(null)}
+        style={{flexShrink:0,padding:'6px 14px',borderRadius:20,border:'1px solid '+(mesActivo===null?color:'#e2e8f0'),background:mesActivo===null?color:'white',color:mesActivo===null?'white':'#64748b',fontWeight:600,fontSize:12,cursor:'pointer'}}
+      >Todos</button>
+      {MESES_C.map((m,i)=>{
+        const activo=mesActivo===i;
+        const tiene=mesesConDatos.has(i);
+        return(
+          <button
+            key={i}
+            data-m={i}
+            onClick={()=>onMes(activo?null:i)}
+            style={{flexShrink:0,padding:'6px 12px',borderRadius:20,border:'1px solid '+(activo?color:tiene?'#e2e8f0':'#f1f5f9'),background:activo?color:'white',color:activo?'white':tiene?'#475569':'#cbd5e1',fontWeight:activo||tiene?600:400,fontSize:12,cursor:'pointer',opacity:tiene||activo?1:0.5}}
+          >{m}</button>
+        );
+      })}
+    </div>
+  );
+}
 
 function Stat({label,value,unit,color}){
   return(
@@ -410,7 +449,6 @@ function VacForm({initial,tipo,festivos,onSave,onCancel,color}){
   );
 }
 
-// ─── PANTALLA INICIO ───────────────────────────────────────────────
 function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,onNav}){
   const tipo=lsLoad('vac-tipo')||'laborables';
   const comunidad=lsLoad('vac-comunidad')||'cataluna';
@@ -437,7 +475,7 @@ function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,onNav}){
   const fechaHoy=`${diaSem}, ${d.getDate()} de ${MESES[d.getMonth()]} ${d.getFullYear()}`;
 
   const Card=({emoji,title,onClick,children,color})=>(
-    <div onClick={onClick} style={{background:'white',borderRadius:14,border:'1px solid #e2e8f0',padding:14,cursor:'pointer',WebkitTapHighlightColor:'transparent'}}>
+    <div onClick={onClick} style={{background:'white',borderRadius:14,border:'1px solid #e2e8f0',padding:14,cursor:'pointer'}}>
       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
         <span style={{fontSize:18}}>{emoji}</span>
         <span style={{fontWeight:700,fontSize:14,color:'#1e293b'}}>{title}</span>
@@ -457,14 +495,11 @@ function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,onNav}){
 
   return(
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      {/* Cabecera */}
       <div style={{background:'#1e293b',borderRadius:16,padding:18,color:'white'}}>
         <div style={{fontSize:12,color:'#94a3b8',marginBottom:4}}>{fechaHoy}</div>
         <div style={{fontSize:22,fontWeight:800,marginBottom:2}}>¡Hola! 👋</div>
         <div style={{fontSize:13,color:'#94a3b8'}}>Aquí tienes tu resumen de hoy</div>
       </div>
-
-      {/* Vacaciones */}
       <Card emoji="🌴" title="Vacaciones" onClick={()=>onNav('vacaciones')} color={ACCENT.emerald}>
         {totalVac===0?(
           <div style={{fontSize:13,color:'#94a3b8'}}>Sin días configurados este año</div>
@@ -497,8 +532,6 @@ function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,onNav}){
           </>
         )}
       </Card>
-
-      {/* Cobro */}
       <Card emoji="💰" title="Próximo cobro" onClick={()=>onNav('cobro')} color={ACCENT.purple}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
           <div style={{flex:1}}>
@@ -512,8 +545,6 @@ function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,onNav}){
           </div>
         </div>
       </Card>
-
-      {/* Fila fallos + ausencias */}
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
         <Card emoji="⚠️" title="Fallos" onClick={()=>onNav('fallos')} color={ACCENT.red}>
           <div style={{fontSize:28,fontWeight:900,color:fallosMes>0?ACCENT.red:'#94a3b8',lineHeight:1}}>{fallosMes}</div>
@@ -526,8 +557,6 @@ function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,onNav}){
           {ausPend>0&&<div style={{fontSize:11,color:ACCENT.amber,marginTop:6,fontWeight:600}}>{ausPend} pendiente{ausPend!==1?'s':''}</div>}
         </Card>
       </div>
-
-      {/* Horas extra */}
       <Card emoji="⏱️" title="Horas extra" onClick={()=>onNav('horas')} color={ACCENT.blue}>
         <div style={{display:'flex',alignItems:'baseline',gap:6}}>
           <div style={{fontSize:34,fontWeight:900,color:horasMes>0?ACCENT.blue:'#94a3b8',lineHeight:1}}>{horasMes}</div>
@@ -697,10 +726,17 @@ function FallosSection({fallos,incid,year,onUpdateF,onUpdateI}){
   const [edF,setEdF]=useState(null);
   const [formI,setFormI]=useState(false);
   const [edI,setEdI]=useState(null);
+  const [mesF,setMesF]=useState(null);
+  const [mesI,setMesI]=useState(null);
+
   const yf=fallos.filter(i=>yearOf(i.fecha)===year);
   const mf=yf.filter(i=>monthOf(i.fecha)===CM&&year===CY);
   const yi=incid.filter(i=>yearOf(i.fecha)===year);
   const mi=yi.filter(i=>monthOf(i.fecha)===CM&&year===CY);
+
+  const yfFilt=mesF!==null?yf.filter(i=>monthOf(i.fecha)===mesF):yf;
+  const yiFilt=mesI!==null?yi.filter(i=>monthOf(i.fecha)===mesI):yi;
+
   const FF=[{name:'fecha',label:'Fecha',type:'date',req:true},{name:'desc',label:'Descripcion',type:'textarea',req:true,ph:'Describe el fallo...'}];
   const saveF=e=>{if(edF){onUpdateF(fallos.map(i=>i.id===edF.id?{...e,id:edF.id}:i));setEdF(null);}else{onUpdateF([{...e,id:uid()},...fallos]);setFormF(false);}};
   const saveI=e=>{if(edI){onUpdateI(incid.map(i=>i.id===edI.id?{...e,id:edI.id}:i));setEdI(null);}else{onUpdateI([{...e,id:uid()},...incid]);setFormI(false);}};
@@ -711,17 +747,19 @@ function FallosSection({fallos,incid,year,onUpdateF,onUpdateI}){
         <button onClick={()=>setSubTab('fallos')} style={{flex:1,padding:'8px 0',borderRadius:8,border:'none',background:subTab==='fallos'?'#1e293b':'transparent',color:subTab==='fallos'?'white':'#64748b',fontWeight:600,fontSize:13,cursor:'pointer'}}>Fallos propios</button>
         <button onClick={()=>setSubTab('incid')} style={{flex:1,padding:'8px 0',borderRadius:8,border:'none',background:subTab==='incid'?'#1e293b':'transparent',color:subTab==='incid'?'white':'#64748b',fontWeight:600,fontSize:13,cursor:'pointer'}}>Incidencias</button>
       </div>
+
       {subTab==='fallos'&&(
         <div style={{display:'flex',flexDirection:'column',gap:14}}>
           <div style={{display:'flex',gap:10}}>
             <Stat label={MESES[CM]} value={mf.length} unit="este mes" color={ACCENT.red}/>
             <Stat label={"Ano "+year} value={yf.length} unit="en total" color={ACCENT.red}/>
           </div>
+          <FiltroMes year={year} items={fallos} mesActivo={mesF} onMes={setMesF} color={ACCENT.red}/>
           <AddBtn label="Anadir fallo" color={ACCENT.red} onClick={()=>{setEdF(null);setFormF(true);}}/>
           {(formF||edF)&&<Form title={edF?'Editar fallo':'Nuevo fallo'} fields={FF} initial={edF||{fecha:todayISO(),desc:''}} onSave={saveF} onCancel={()=>{setFormF(false);setEdF(null);}} color={ACCENT.red}/>}
           <div style={{display:'flex',flexDirection:'column',gap:8}}>
-            {yf.length===0&&<Empty text="Sin fallos registrados este ano"/>}
-            {[...yf].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
+            {yfFilt.length===0&&<Empty text={mesF!==null?'Sin fallos en '+MESES[mesF]:'Sin fallos registrados este ano'}/>}
+            {[...yfFilt].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
               <Item key={it.id} item={it} onEdit={setEdF} onDelete={id=>onUpdateF(fallos.filter(i=>i.id!==id))}>
                 <div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div>
                 <div style={{fontSize:14,color:'#1e293b',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>
@@ -730,17 +768,19 @@ function FallosSection({fallos,incid,year,onUpdateF,onUpdateI}){
           </div>
         </div>
       )}
+
       {subTab==='incid'&&(
         <div style={{display:'flex',flexDirection:'column',gap:14}}>
           <div style={{display:'flex',gap:10}}>
             <Stat label={MESES[CM]} value={mi.length} unit="este mes" color={ACCENT.amber}/>
             <Stat label={"Ano "+year} value={yi.length} unit="en total" color={ACCENT.amber}/>
           </div>
+          <FiltroMes year={year} items={incid} mesActivo={mesI} onMes={setMesI} color={ACCENT.amber}/>
           <AddBtn label="Anadir incidencia" color={ACCENT.amber} onClick={()=>{setEdI(null);setFormI(true);}}/>
           {(formI||edI)&&<IncidForm initial={edI||{fecha:todayISO(),titulo:'',desc:'',fotos:[]}} onSave={saveI} onCancel={()=>{setFormI(false);setEdI(null);}} color={ACCENT.amber}/>}
           <div style={{display:'flex',flexDirection:'column',gap:8}}>
-            {yi.length===0&&<Empty text="Sin incidencias este ano"/>}
-            {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
+            {yiFilt.length===0&&<Empty text={mesI!==null?'Sin incidencias en '+MESES[mesI]:'Sin incidencias este ano'}/>}
+            {[...yiFilt].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
               <IncidItem key={it.id} it={it} onEdit={i=>{setEdI(i);setFormI(false);}} onDelete={id=>onUpdateI(incid.filter(i=>i.id!==id))}/>
             ))}
           </div>
@@ -758,10 +798,14 @@ function AusenciasSection({items,year,onUpdate}){
   const [motivo,setMotivo]=useState('');
   const [horas,setHoras]=useState('');
   const [estado,setEstado]=useState('Pendiente');
+  const [mesActivo,setMesActivo]=useState(null);
+
   const yi=items.filter(i=>yearOf(i.fecha)===year);
   const mi=yi.filter(i=>monthOf(i.fecha)===CM&&year===CY);
   const hPendMes=mi.filter(i=>i.estado==='Pendiente').reduce((s,i)=>s+Number(i.horas||0),0);
   const hPendAnio=yi.filter(i=>i.estado==='Pendiente').reduce((s,i)=>s+Number(i.horas||0),0);
+  const yiFilt=mesActivo!==null?yi.filter(i=>monthOf(i.fecha)===mesActivo):yi;
+
   const reset=()=>{setFecha(todayISO());setJust('');setMotivo('');setHoras('');setEstado('Pendiente');};
   const abrir=()=>{reset();setEd(null);setForm(true);};
   const abrirEd=it=>{setFecha(it.fecha);setJust(it.just);setMotivo(it.motivo||'');setHoras(String(it.horas||''));setEstado(it.estado||'Pendiente');setEd(it);setForm(true);};
@@ -790,6 +834,7 @@ function AusenciasSection({items,year,onUpdate}){
           <Stat label="Horas pend. ano" value={hPendAnio+'h'} unit="pendientes" color={ACCENT.amber}/>
         </div>
       )}
+      <FiltroMes year={year} items={items} mesActivo={mesActivo} onMes={setMesActivo} color={ACCENT.red}/>
       <AddBtn label="Registrar ausencia" color={ACCENT.red} onClick={abrir}/>
       {form&&(
         <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
@@ -822,8 +867,8 @@ function AusenciasSection({items,year,onUpdate}){
         </div>
       )}
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
-        {yi.length===0&&<Empty text="Sin ausencias registradas este ano"/>}
-        {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>{
+        {yiFilt.length===0&&<Empty text={mesActivo!==null?'Sin ausencias en '+MESES[mesActivo]:'Sin ausencias registradas este ano'}/>}
+        {[...yiFilt].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>{
           const inj=it.just==='Injustificada';
           const estColor=it.estado==='Devueltas'?ACCENT.emerald:it.estado==='Descontadas'?'#475569':ACCENT.amber;
           return(
@@ -848,9 +893,13 @@ function AusenciasSection({items,year,onUpdate}){
 function HorasSection({items,year,onUpdate}){
   const [form,setForm]=useState(false);
   const [ed,setEd]=useState(null);
+  const [mesActivo,setMesActivo]=useState(null);
+
   const yi=items.filter(i=>yearOf(i.fecha)===year);
   const mi=yi.filter(i=>monthOf(i.fecha)===CM&&year===CY);
   const sum=a=>a.reduce((s,i)=>s+Number(i.horas||0),0);
+  const yiFilt=mesActivo!==null?yi.filter(i=>monthOf(i.fecha)===mesActivo):yi;
+
   const F=[{name:'fecha',label:'Fecha',type:'date',req:true},{name:'horas',label:'Horas',type:'number',step:'0.5',min:'0',req:true,ph:'Ej: 2.5'},{name:'desc',label:'Nota (opcional)',type:'textarea',ph:'Motivo...'}];
   const save=e=>{const c={...e,horas:Number(e.horas)||0};if(ed){onUpdate(items.map(i=>i.id===ed.id?{...c,id:ed.id}:i));setEd(null);}else{onUpdate([{...c,id:uid()},...items]);setForm(false);}};
   return(
@@ -860,11 +909,12 @@ function HorasSection({items,year,onUpdate}){
         <Stat label={MESES[CM]} value={sum(mi)} unit="horas este mes" color={ACCENT.blue}/>
         <Stat label={"Ano "+year} value={sum(yi)} unit="horas en total" color={ACCENT.blue}/>
       </div>
+      <FiltroMes year={year} items={items} mesActivo={mesActivo} onMes={setMesActivo} color={ACCENT.blue}/>
       <AddBtn label="Anadir horas extras" color={ACCENT.blue} onClick={()=>{setEd(null);setForm(true);}}/>
       {(form||ed)&&<Form title={ed?'Editar horas':'Nuevas horas extras'} fields={F} initial={ed||{fecha:todayISO(),horas:'',desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.blue}/>}
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
-        {yi.length===0&&<Empty text="Sin horas extras este ano"/>}
-        {[...yi].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
+        {yiFilt.length===0&&<Empty text={mesActivo!==null?'Sin horas en '+MESES[mesActivo]:'Sin horas extras este ano'}/>}
+        {[...yiFilt].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(
           <Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}>
             <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8}}>
               <span style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</span>
