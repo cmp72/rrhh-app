@@ -683,9 +683,83 @@ function HorasSection({items,year,onUpdate}){
   </div>);
 }
 
+// ─── GENERADOR INFORME ────────────────────────────────────────────
+function generarInforme(year){
+  const fallos=(lsLoad('fallos')||[]).filter(i=>yearOf(i.fecha)===year);
+  const horas=(lsLoad('horas')||[]).filter(i=>yearOf(i.fecha)===year);
+  const vacE=(lsLoad('vac-e')||[]).filter(i=>yearOf(i.fecha)===year);
+  const vacT=lsLoad('vac-t')||{};
+  const incid=(lsLoad('incid')||[]).filter(i=>yearOf(i.fecha)===year);
+  const ausencias=(lsLoad('ausencias')||[]).filter(i=>yearOf(i.fecha)===year);
+  const nominas=(lsLoad('nominas')||[]).filter(n=>n.year===year);
+  const tipo=lsLoad('vac-tipo')||'laborables';
+  const comunidad=lsLoad('vac-comunidad')||'cataluna';
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  const totalD=Number(vacT[String(year)]??0);
+  const usadosVac=vacE.reduce((acc,e)=>acc+diasUsados(e,tipo,comunidad,hoy),0);
+  const totalHoras=horas.reduce((s,i)=>s+Number(i.horas||0),0);
+  const totalNomina=nominas.reduce((s,n)=>s+Number(n.importe||0)+(MESES_EXTRA.includes(n.mes)?Number(n.extra||0):0),0);
+
+  const fmtD=iso=>new Date(iso+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  const seccion=(titulo,filas)=>filas.length===0?'':`
+    <h2>${titulo}</h2>
+    <table>
+      <thead><tr>${Object.keys(filas[0]).map(k=>`<th>${k}</th>`).join('')}</tr></thead>
+      <tbody>${filas.map(f=>`<tr>${Object.values(f).map(v=>`<td>${v}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table>`;
+
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>
+  <title>Labora — Informe ${year}</title>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:900px;margin:0 auto;padding:32px;color:#1e293b;font-size:13px}
+    h1{font-size:24px;color:#1e293b;margin-bottom:4px}
+    .sub{color:#94a3b8;font-size:13px;margin-bottom:32px}
+    h2{font-size:15px;font-weight:700;color:#1e293b;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-top:28px}
+    table{width:100%;border-collapse:collapse;margin-bottom:8px}
+    th{background:#f8fafc;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0}
+    td{padding:8px 10px;border-bottom:1px solid #f1f5f9;color:#475569}
+    .resumen{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+    .card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;min-width:140px}
+    .card-label{font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:600}
+    .card-val{font-size:22px;font-weight:800;color:#1e293b;margin-top:2px}
+    .card-unit{font-size:11px;color:#94a3b8}
+    @media print{body{padding:16px}}
+  </style></head><body>
+  <h1>💼 Labora — Informe anual</h1>
+  <div class="sub">Año ${year} · Generado el ${new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'})}</div>
+
+  <h2>Resumen</h2>
+  <div class="resumen">
+    <div class="card"><div class="card-label">Vacaciones usadas</div><div class="card-val">${usadosVac}</div><div class="card-unit">de ${totalD} días</div></div>
+    <div class="card"><div class="card-label">Horas extra</div><div class="card-val">${totalHoras}</div><div class="card-unit">horas en total</div></div>
+    <div class="card"><div class="card-label">Fallos</div><div class="card-val">${fallos.length}</div><div class="card-unit">registrados</div></div>
+    <div class="card"><div class="card-label">Ausencias</div><div class="card-val">${ausencias.length}</div><div class="card-unit">registradas</div></div>
+    ${nominas.length>0?`<div class="card"><div class="card-label">Total nóminas</div><div class="card-val">${totalNomina.toLocaleString('es-ES')}€</div><div class="card-unit">${nominas.length} meses</div></div>`:''}
+  </div>
+
+  ${seccion('🌴 Vacaciones',vacE.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(e=>({'Inicio':fmtD(e.fecha),'Fin':e.fin?fmtD(e.fin):'-','Días':e.dias,'Nota':e.desc||'-'})))}
+  ${seccion('💵 Nóminas',nominas.sort((a,b)=>a.mes-b.mes).map(n=>({'Mes':MESES[n.mes],'Nómina':Number(n.importe).toLocaleString('es-ES')+'€','Extra':MESES_EXTRA.includes(n.mes)&&n.extra>0?Number(n.extra).toLocaleString('es-ES')+'€':'-','Total':(Number(n.importe)+(MESES_EXTRA.includes(n.mes)?Number(n.extra||0):0)).toLocaleString('es-ES')+'€','Notas':n.notas||'-'})))}
+  ${seccion('⏱️ Horas extra',horas.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(h=>({'Fecha':fmtD(h.fecha),'Horas':h.horas,'Nota':h.desc||'-'})))}
+  ${seccion('🚫 Ausencias',ausencias.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(a=>({'Fecha':fmtD(a.fecha),'Tipo':a.just,'Motivo':a.motivo||'-','Horas':a.horas>0?a.horas+'h':'Día completo','Estado':a.estado})))}
+  ${seccion('⚠️ Fallos',fallos.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(f=>({'Fecha':fmtD(f.fecha),'Descripción':f.desc})))}
+  ${seccion('⚠️ Incidencias',incid.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(i=>({'Fecha':fmtD(i.fecha),'Título':i.titulo,'Descripción':i.desc})))}
+
+  <div style="margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center">Generado con Labora · labora.app</div>
+  </body></html>`;
+
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const w=window.open(url,'_blank');
+  if(w)w.onload=()=>{setTimeout(()=>w.print(),500);}
+  setTimeout(()=>URL.revokeObjectURL(url),10000);
+}
+
 // ─── BACKUP ───────────────────────────────────────────────────────
 function BackupSection(){
   const [msg,setMsg]=useState('');
+  const [yearInf,setYearInf]=useState(CY);
+  const ys=[];for(let y=CY+1;y>=CY-4;y--)ys.push(y);
   const exportar=()=>{
     const data={version:3,fecha:new Date().toISOString(),fallos:lsLoad('fallos')||[],horas:lsLoad('horas')||[],vacE:lsLoad('vac-e')||[],vacT:lsLoad('vac-t')||{},incid:lsLoad('incid')||[],ausencias:lsLoad('ausencias')||[],cobroDia:lsLoad('cobro-dia')||28,vacTipo:lsLoad('vac-tipo')||'laborables',vacComunidad:lsLoad('vac-comunidad')||'cataluna',turnos:lsLoad('turnos')||{},nominas:lsLoad('nominas')||[]};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
