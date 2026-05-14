@@ -685,9 +685,82 @@ function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,turnos,nominas,on
   </div>;
 }
 
+// ── DISCLAIMER ──
+function DisclaimerModal({onAcepto}){
+  const [scroll,setScroll]=useState(false);
+  const ref=useRef(null);
+  const onScroll=()=>{const el=ref.current;if(!el)return;if(el.scrollTop+el.clientHeight>=el.scrollHeight-20)setScroll(true);};
+  return <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:999,display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
+    <div style={{background:'white',borderRadius:'20px 20px 0 0',width:'100%',maxWidth:500,maxHeight:'90vh',display:'flex',flexDirection:'column'}}>
+      <div style={{padding:'20px 20px 0',flexShrink:0}}>
+        <div style={{width:40,height:4,background:'#e2e8f0',borderRadius:99,margin:'0 auto 16px'}}/>
+        <div style={{fontSize:18,fontWeight:800,color:'#1e293b',marginBottom:4}}>⚖️ Aviso legal importante</div>
+        <div style={{fontSize:12,color:'#94a3b8',marginBottom:12}}>Lee esto antes de usar Labora · desplázate hasta el final para aceptar</div>
+      </div>
+      <div ref={ref} onScroll={onScroll} style={{overflowY:'auto',padding:'0 20px',flex:1}}>
+        <div style={{fontSize:13,color:'#475569',lineHeight:1.7,display:'flex',flexDirection:'column',gap:14}}>
+          <div style={{background:'#fef3c7',border:'1px solid #fcd34d',borderRadius:10,padding:12}}>
+            <div style={{fontWeight:700,color:'#92400e',marginBottom:4}}>⚠️ Herramienta de apoyo, no asesoramiento legal</div>
+            <div>Labora es una aplicación de registro personal. Los cálculos que realiza (vacaciones, festivos, horas extra, etc.) son orientativos y pueden no coincidir con tu convenio colectivo, contrato o legislación aplicable.</div>
+          </div>
+          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>📋 Qué es Labora</div>Labora es una herramienta digital para que los trabajadores puedan llevar un registro personal de su vida laboral: vacaciones, turnos, nóminas, ausencias y horas extra. No es un sistema oficial de control de presencia ni está vinculado a ningún sistema de RRHH de ninguna empresa.</div>
+          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>🚫 Qué NO es Labora</div>
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              <div>• <strong>No es asesoramiento jurídico ni laboral.</strong> Si tienes dudas sobre tus derechos, consulta a un abogado laboralista o a tu sindicato.</div>
+              <div>• <strong>No garantiza exactitud legal.</strong> Los festivos, convenios y normativas varían por comunidad, sector y empresa. Verifica siempre con tu convenio colectivo.</div>
+              <div>• <strong>No reemplaza la documentación oficial</strong> de tu empresa (nóminas, contratos, partes de trabajo).</div>
+              <div>• <strong>No es válida como prueba legal</strong> en procedimientos judiciales o administrativos por sí sola.</div>
+            </div>
+          </div>
+          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>🔒 Tus datos y privacidad</div>Todos tus datos se almacenan <strong>únicamente en tu dispositivo</strong>. Labora no envía ningún dato a servidores externos, no tiene acceso a tu información y no comparte nada con terceros. Si desinstales la app o limpias el caché, los datos se pierden. Por eso existe la función de backup.</div>
+          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>⚖️ Limitación de responsabilidad</div>El desarrollador de Labora no se hace responsable de decisiones laborales, económicas o legales tomadas basándose en los datos o cálculos de la app. El uso de Labora es responsabilidad exclusiva del usuario.</div>
+          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>📅 Festivos y convenios</div>Los festivos nacionales y autonómicos se calculan de forma automática pero pueden no estar actualizados o pueden variar. Comprueba siempre el calendario oficial de tu comunidad y tu convenio colectivo.</div>
+          <div style={{background:'#f0fdf4',border:'1px solid #6ee7b7',borderRadius:10,padding:12,marginBottom:8}}>
+            <div style={{fontWeight:700,color:'#065f46',marginBottom:4}}>✅ Al aceptar, confirmas que</div>
+            <div style={{display:'flex',flexDirection:'column',gap:4}}>
+              <div>• Has leído y entendido este aviso legal.</div>
+              <div>• Usarás Labora como herramienta de apoyo personal.</div>
+              <div>• Verificarás cualquier dato importante con las fuentes oficiales.</div>
+              <div>• Entiendes que el desarrollador no tiene responsabilidad sobre el uso que hagas de la app.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style={{padding:20,flexShrink:0,borderTop:'1px solid #f1f5f9'}}>
+        {!scroll&&<div style={{fontSize:11,color:'#94a3b8',textAlign:'center',marginBottom:10}}>↓ Desplázate hasta el final para aceptar</div>}
+        <button onClick={scroll?onAcepto:null} style={{width:'100%',background:scroll?A.em:'#e2e8f0',color:scroll?'white':'#94a3b8',border:'none',borderRadius:12,padding:'14px 0',fontWeight:700,fontSize:15,cursor:scroll?'pointer':'not-allowed',transition:'all 0.3s'}}>
+          {scroll?'✓ Entendido, empezar a usar Labora':'Lee el aviso para continuar'}
+        </button>
+      </div>
+    </div>
+  </div>;
+}
+
+function DisclaimerInfo(){
+  const [open,setOpen]=useState(false);
+  return <>
+    {open&&<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:998,display:'flex',alignItems:'flex-end'}} onClick={()=>setOpen(false)}>
+      <div onClick={e=>e.stopPropagation()} style={{background:'white',borderRadius:'20px 20px 0 0',width:'100%',maxHeight:'80vh',display:'flex',flexDirection:'column'}}>
+        <div style={{padding:'20px 20px 0',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div style={{fontSize:16,fontWeight:800,color:'#1e293b'}}>⚖️ Aviso legal</div>
+          <button onClick={()=>setOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8'}}><IcoX/></button>
+        </div>
+        <div style={{overflowY:'auto',padding:'12px 20px 24px',fontSize:13,color:'#475569',lineHeight:1.7,display:'flex',flexDirection:'column',gap:12}}>
+          <div style={{background:'#fef3c7',border:'1px solid #fcd34d',borderRadius:10,padding:12}}><div style={{fontWeight:700,color:'#92400e',marginBottom:4}}>⚠️ Herramienta de apoyo, no asesoramiento legal</div>Los cálculos son orientativos. Verifica siempre con tu convenio colectivo y fuentes oficiales.</div>
+          <div>Labora almacena todos los datos <strong>solo en tu dispositivo</strong>. No envía nada a servidores externos.</div>
+          <div>El desarrollador no se hace responsable de decisiones tomadas basándose en los datos de la app.</div>
+          <div style={{fontSize:11,color:'#94a3b8'}}>Versión del aviso: 1.0 · {new Date().getFullYear()}</div>
+        </div>
+      </div>
+    </div>}
+    <button onClick={()=>setOpen(true)} style={{background:'none',border:'none',cursor:'pointer',fontSize:11,color:'#94a3b8',textDecoration:'underline',padding:0}}>⚖️ Aviso legal</button>
+  </>;
+}
+
 // ── APP ──
 function App(){
   const [tab,setTab]=useState('inicio');const [year,setYear]=useState(CY);
+  const [disclaimerOk,setDisclaimerOk]=useState(()=>ll('disclaimer-ok')||false);
   const [fallos,setFallos]=useState([]);const [horas,setHoras]=useState([]);
   const [vacE,setVacE]=useState([]);const [vacT,setVacT]=useState({});
   const [incid,setIncid]=useState([]);const [aus,setAus]=useState([]);
