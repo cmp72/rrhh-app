@@ -117,16 +117,19 @@ function diasUsados(e,tipo,comunidad,hoy){
 }
 
 const ACCENT={
-  red:'#dc2626',redL:'#fee2e2',
-  blue:'#2563eb',blueL:'#dbeafe',
-  emerald:'#059669',emeraldL:'#d1fae5',
-  amber:'#d97706',amberL:'#fef3c7',
-  purple:'#7c3aed',purpleL:'#ede9fe',
-  orange:'#ea580c',orangeL:'#ffedd5',
-  teal:'#0d9488',tealL:'#ccfbf1',
+  red:'#dc2626',redL:'#fee2e2',blue:'#2563eb',blueL:'#dbeafe',
+  emerald:'#059669',emeraldL:'#d1fae5',amber:'#d97706',amberL:'#fef3c7',
+  purple:'#7c3aed',purpleL:'#ede9fe',teal:'#0d9488',tealL:'#ccfbf1',
 };
 
-// ─── SHARED COMPONENTS ────────────────────────────────────────────
+const TURNO_COLORS={
+  'Mañana':{bg:'#fef3c7',color:'#92400e',border:'#fcd34d'},
+  'Tarde':{bg:'#dbeafe',color:'#1e3a8a',border:'#93c5fd'},
+  'Noche':{bg:'#ede9fe',color:'#4c1d95',border:'#c4b5fd'},
+};
+const tc=t=>TURNO_COLORS[t]||{bg:'#f0fdf4',color:'#065f46',border:'#6ee7b7'};
+
+// ─── SHARED ───────────────────────────────────────────────────────
 function FiltroMes({year,items,mesActivo,onMes,color}){
   const ref=useRef(null);
   const mesesConDatos=new Set(items.filter(i=>yearOf(i.fecha)===year).map(i=>monthOf(i.fecha)));
@@ -136,32 +139,14 @@ function FiltroMes({year,items,mesActivo,onMes,color}){
       if(btn)btn.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
     }
   },[mesActivo]);
-  return(
-    <div ref={ref} className="mes-scroll" style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:4}}>
-      <button onClick={()=>onMes(null)} style={{flexShrink:0,padding:'6px 14px',borderRadius:20,border:'1px solid '+(mesActivo===null?color:'#e2e8f0'),background:mesActivo===null?color:'white',color:mesActivo===null?'white':'#64748b',fontWeight:600,fontSize:12,cursor:'pointer'}}>Todos</button>
-      {MESES_C.map((m,i)=>{
-        const activo=mesActivo===i,tiene=mesesConDatos.has(i);
-        return(<button key={i} data-m={i} onClick={()=>onMes(activo?null:i)} style={{flexShrink:0,padding:'6px 12px',borderRadius:20,border:'1px solid '+(activo?color:tiene?'#e2e8f0':'#f1f5f9'),background:activo?color:'white',color:activo?'white':tiene?'#475569':'#cbd5e1',fontWeight:activo||tiene?600:400,fontSize:12,cursor:'pointer',opacity:tiene||activo?1:0.5}}>{m}</button>);
-      })}
-    </div>
-  );
-}
-function Stat({label,value,unit,color}){
-  return(<div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',flex:1,minWidth:0}}>
-    <div style={{fontSize:10,textTransform:'uppercase',letterSpacing:'0.05em',color:'#94a3b8',fontWeight:600}}>{label}</div>
-    <div style={{fontSize:26,fontWeight:800,color,marginTop:2,lineHeight:1}}>{value}</div>
-    <div style={{fontSize:11,color:'#94a3b8',marginTop:2}}>{unit}</div>
+  return(<div ref={ref} className="mes-scroll" style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:4}}>
+    <button onClick={()=>onMes(null)} style={{flexShrink:0,padding:'6px 14px',borderRadius:20,border:'1px solid '+(mesActivo===null?color:'#e2e8f0'),background:mesActivo===null?color:'white',color:mesActivo===null?'white':'#64748b',fontWeight:600,fontSize:12,cursor:'pointer'}}>Todos</button>
+    {MESES_C.map((m,i)=>{const activo=mesActivo===i,tiene=mesesConDatos.has(i);return(<button key={i} data-m={i} onClick={()=>onMes(activo?null:i)} style={{flexShrink:0,padding:'6px 12px',borderRadius:20,border:'1px solid '+(activo?color:tiene?'#e2e8f0':'#f1f5f9'),background:activo?color:'white',color:activo?'white':tiene?'#475569':'#cbd5e1',fontWeight:activo||tiene?600:400,fontSize:12,cursor:'pointer',opacity:tiene||activo?1:0.5}}>{m}</button>);})}
   </div>);
 }
-function SHead({emoji,title,sub,bg}){
-  return(<div style={{display:'flex',alignItems:'center',gap:10}}>
-    <div style={{width:40,height:40,borderRadius:12,background:bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>{emoji}</div>
-    <div><div style={{fontWeight:800,fontSize:16,color:'#1e293b'}}>{title}</div><div style={{fontSize:11,color:'#94a3b8'}}>{sub}</div></div>
-  </div>);
-}
-function AddBtn({label,color,onClick}){
-  return(<button onClick={onClick} style={{width:'100%',background:color,color:'white',border:'none',borderRadius:12,padding:'13px 0',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontWeight:600,fontSize:15,cursor:'pointer'}}><span style={{fontSize:20,lineHeight:1}}>+</span>{label}</button>);
-}
+function Stat({label,value,unit,color}){return(<div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',flex:1,minWidth:0}}><div style={{fontSize:10,textTransform:'uppercase',letterSpacing:'0.05em',color:'#94a3b8',fontWeight:600}}>{label}</div><div style={{fontSize:26,fontWeight:800,color,marginTop:2,lineHeight:1}}>{value}</div><div style={{fontSize:11,color:'#94a3b8',marginTop:2}}>{unit}</div></div>);}
+function SHead({emoji,title,sub,bg}){return(<div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:40,height:40,borderRadius:12,background:bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>{emoji}</div><div><div style={{fontWeight:800,fontSize:16,color:'#1e293b'}}>{title}</div><div style={{fontSize:11,color:'#94a3b8'}}>{sub}</div></div></div>);}
+function AddBtn({label,color,onClick}){return(<button onClick={onClick} style={{width:'100%',background:color,color:'white',border:'none',borderRadius:12,padding:'13px 0',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontWeight:600,fontSize:15,cursor:'pointer'}}><span style={{fontSize:20,lineHeight:1}}>+</span>{label}</button>);}
 function IconEdit(){return(<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>);}
 function IconTrash(){return(<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>);}
 function IconX({s=18}){return(<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>);}
@@ -171,13 +156,8 @@ function Item({item,onEdit,onDelete,children}){
   return(<div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:12,display:'flex',gap:8}}>
     <div style={{flex:1,minWidth:0}}>{children}</div>
     <div style={{display:'flex',flexDirection:'column',gap:4,flexShrink:0}}>
-      {!conf?<>
-        <button onClick={()=>onEdit(item)} style={{padding:8,background:'none',border:'none',borderRadius:8,cursor:'pointer',color:'#94a3b8'}}><IconEdit/></button>
-        <button onClick={()=>setConf(true)} style={{padding:8,background:'none',border:'none',borderRadius:8,cursor:'pointer',color:'#94a3b8'}}><IconTrash/></button>
-      </>:<>
-        <button onClick={()=>{onDelete(item.id);setConf(false);}} style={{padding:'6px 8px',background:'#dc2626',border:'none',borderRadius:8,cursor:'pointer',color:'white',fontWeight:800,fontSize:11}}>OK</button>
-        <button onClick={()=>setConf(false)} style={{padding:6,background:'#f1f5f9',border:'none',borderRadius:8,cursor:'pointer',color:'#64748b'}}><IconX s={14}/></button>
-      </>}
+      {!conf?<><button onClick={()=>onEdit(item)} style={{padding:8,background:'none',border:'none',borderRadius:8,cursor:'pointer',color:'#94a3b8'}}><IconEdit/></button><button onClick={()=>setConf(true)} style={{padding:8,background:'none',border:'none',borderRadius:8,cursor:'pointer',color:'#94a3b8'}}><IconTrash/></button></>
+      :<><button onClick={()=>{onDelete(item.id);setConf(false);}} style={{padding:'6px 8px',background:'#dc2626',border:'none',borderRadius:8,cursor:'pointer',color:'white',fontWeight:800,fontSize:11}}>OK</button><button onClick={()=>setConf(false)} style={{padding:6,background:'#f1f5f9',border:'none',borderRadius:8,cursor:'pointer',color:'#64748b'}}><IconX s={14}/></button></>}
     </div>
   </div>);
 }
@@ -187,18 +167,10 @@ function Form({title,fields,initial,onSave,onCancel,color}){
   const submit=()=>{for(const f of fields)if(f.req&&!String(d[f.name]||'').trim()){alert('Completa: '+f.label);return;}onSave(d);};
   const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
   return(<div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
-    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-      <span style={{fontWeight:700,color:'#1e293b'}}>{title}</span>
-      <button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IconX/></button>
-    </div>
-    {fields.map(f=>(<div key={f.name}>
-      <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>{f.label}{f.req&&<span style={{color:'#ef4444'}}> *</span>}</label>
-      {f.type==='textarea'
-        ?<textarea rows={3} value={d[f.name]||''} onChange={e=>setD({...d,[f.name]:e.target.value})} placeholder={f.ph||''} style={{...inp,resize:'none'}}/>
-        :f.type==='select'
-        ?<select value={d[f.name]||''} onChange={e=>setD({...d,[f.name]:e.target.value})} style={inp}>{f.options.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select>
-        :<input type={f.type||'text'} step={f.step} min={f.min} value={d[f.name]||''} onChange={e=>setD({...d,[f.name]:e.target.value})} placeholder={f.ph||''} style={inp}/>
-      }
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><span style={{fontWeight:700,color:'#1e293b'}}>{title}</span><button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IconX/></button></div>
+    {fields.map(f=>(<div key={f.name}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>{f.label}{f.req&&<span style={{color:'#ef4444'}}> *</span>}</label>
+      {f.type==='textarea'?<textarea rows={3} value={d[f.name]||''} onChange={e=>setD({...d,[f.name]:e.target.value})} placeholder={f.ph||''} style={{...inp,resize:'none'}}/>
+      :<input type={f.type||'text'} step={f.step} min={f.min} value={d[f.name]||''} onChange={e=>setD({...d,[f.name]:e.target.value})} placeholder={f.ph||''} style={inp}/>}
     </div>))}
     <div style={{display:'flex',gap:8,marginTop:4}}>
       <button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button>
@@ -206,28 +178,12 @@ function Form({title,fields,initial,onSave,onCancel,color}){
     </div>
   </div>);
 }
-function FotoViewer({src,onClose}){
-  return(<div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.92)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
-    <img src={src} style={{maxWidth:'100%',maxHeight:'90vh',borderRadius:8,objectFit:'contain'}}/>
-    <button onClick={onClose} style={{position:'absolute',top:16,right:16,background:'rgba(255,255,255,0.2)',border:'none',borderRadius:'50%',width:36,height:36,color:'white',fontSize:20,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>x</button>
-  </div>);
-}
+function FotoViewer({src,onClose}){return(<div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.92)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}><img src={src} style={{maxWidth:'100%',maxHeight:'90vh',borderRadius:8,objectFit:'contain'}}/><button onClick={onClose} style={{position:'absolute',top:16,right:16,background:'rgba(255,255,255,0.2)',border:'none',borderRadius:'50%',width:36,height:36,color:'white',fontSize:20,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>x</button></div>);}
 function FotosPicker({fotos,onChange}){
   const [viewer,setViewer]=useState(null);
   const agregar=e=>{const files=Array.from(e.target.files).slice(0,3-fotos.length);files.forEach(f=>{const r=new FileReader();r.onload=ev=>onChange([...fotos,ev.target.result]);r.readAsDataURL(f);});e.target.value='';};
   const borrar=i=>onChange(fotos.filter((_,fi)=>fi!==i));
-  return(<div>
-    {viewer&&<FotoViewer src={viewer} onClose={()=>setViewer(null)}/>}
-    <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:6}}>
-      {fotos.map((f,i)=>(<div key={i} style={{position:'relative'}}>
-        <img src={f} onClick={()=>setViewer(f)} style={{width:72,height:72,borderRadius:8,objectFit:'cover',border:'1px solid #e2e8f0',cursor:'pointer'}}/>
-        <button onClick={()=>borrar(i)} style={{position:'absolute',top:-6,right:-6,width:18,height:18,borderRadius:'50%',background:'#dc2626',border:'none',color:'white',fontSize:10,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>x</button>
-      </div>))}
-      {fotos.length<3&&(<label style={{width:72,height:72,borderRadius:8,border:'2px dashed #cbd5e1',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:24,color:'#94a3b8',background:'#f8fafc'}}>
-        +<input type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={agregar}/>
-      </label>)}
-    </div>
-  </div>);
+  return(<div>{viewer&&<FotoViewer src={viewer} onClose={()=>setViewer(null)}/>}<div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:6}}>{fotos.map((f,i)=>(<div key={i} style={{position:'relative'}}><img src={f} onClick={()=>setViewer(f)} style={{width:72,height:72,borderRadius:8,objectFit:'cover',border:'1px solid #e2e8f0',cursor:'pointer'}}/><button onClick={()=>borrar(i)} style={{position:'absolute',top:-6,right:-6,width:18,height:18,borderRadius:'50%',background:'#dc2626',border:'none',color:'white',fontSize:10,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>x</button></div>))}{fotos.length<3&&(<label style={{width:72,height:72,borderRadius:8,border:'2px dashed #cbd5e1',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:24,color:'#94a3b8',background:'#f8fafc'}}>+<input type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={agregar}/></label>)}</div></div>);
 }
 function IncidForm({initial,onSave,onCancel,color}){
   const [d,setD]=useState({...initial});const [fotos,setFotos]=useState(initial.fotos||[]);
@@ -239,26 +195,15 @@ function IncidForm({initial,onSave,onCancel,color}){
     <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Titulo *</label><input type="text" placeholder="Ej: Fallo de maquina" value={d.titulo||''} onChange={e=>setD({...d,titulo:e.target.value})} style={inp}/></div>
     <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Descripcion *</label><textarea rows={3} placeholder="Detalla la incidencia..." value={d.desc||''} onChange={e=>setD({...d,desc:e.target.value})} style={{...inp,resize:'none'}}/></div>
     <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fotos (max. 3)</label><FotosPicker fotos={fotos} onChange={setFotos}/></div>
-    <div style={{display:'flex',gap:8}}>
-      <button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button>
-      <button onClick={submit} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:color,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button>
-    </div>
+    <div style={{display:'flex',gap:8}}><button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button><button onClick={submit} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:color,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button></div>
   </div>);
 }
 function IncidItem({it,onEdit,onDelete}){
   const [viewer,setViewer]=useState(null);
-  return(<Item item={it} onEdit={onEdit} onDelete={onDelete}>
-    {viewer&&<FotoViewer src={viewer} onClose={()=>setViewer(null)}/>}
-    <div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div>
-    {it.titulo&&<div style={{fontSize:14,fontWeight:700,color:'#1e293b',marginTop:3}}>{it.titulo}</div>}
-    <div style={{fontSize:13,color:'#475569',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>
-    {it.fotos&&it.fotos.length>0&&(<div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:8}}>
-      {it.fotos.map((f,fi)=><img key={fi} src={f} onClick={()=>setViewer(f)} style={{width:60,height:60,borderRadius:6,objectFit:'cover',border:'1px solid #e2e8f0',cursor:'pointer'}}/>)}
-    </div>)}
-  </Item>);
+  return(<Item item={it} onEdit={onEdit} onDelete={onDelete}>{viewer&&<FotoViewer src={viewer} onClose={()=>setViewer(null)}/>}<div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div>{it.titulo&&<div style={{fontSize:14,fontWeight:700,color:'#1e293b',marginTop:3}}>{it.titulo}</div>}<div style={{fontSize:13,color:'#475569',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>{it.fotos&&it.fotos.length>0&&(<div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:8}}>{it.fotos.map((f,fi)=><img key={fi} src={f} onClick={()=>setViewer(f)} style={{width:60,height:60,borderRadius:6,objectFit:'cover',border:'1px solid #e2e8f0',cursor:'pointer'}}/>)}</div>)}</Item>);
 }
 
-// ─── CALENDARIO VACACIONES ────────────────────────────────────────
+// ─── CALENDARIO VAC ───────────────────────────────────────────────
 function Calendario({entries,festivos,calYear,calMonth,onChMes,tipo,comunidad}){
   const vacDays=new Set();
   entries.forEach(e=>{
@@ -266,24 +211,15 @@ function Calendario({entries,festivos,calYear,calMonth,onChMes,tipo,comunidad}){
     const fests=getFestivos(yearOf(e.fecha),comunidad);
     const r=calcFin(e.fecha,Number(e.dias),tipo,fests);
     const cur=new Date(e.fecha+'T12:00:00');const fin=new Date(r.fin+'T12:00:00');
-    while(cur<=fin){
-      const isF=isFest(cur,fests),isW=isWE(cur);
-      if(tipo==='laborables'?(!isF&&!isW):(!isF))vacDays.add(dateToISO(cur));
-      cur.setDate(cur.getDate()+1);
-    }
+    while(cur<=fin){const isF=isFest(cur,fests),isW=isWE(cur);if(tipo==='laborables'?(!isF&&!isW):(!isF))vacDays.add(dateToISO(cur));cur.setDate(cur.getDate()+1);}
   });
   const todayStr=todayISO();
-  const first=new Date(calYear,calMonth,1);
-  const startDay=(first.getDay()+6)%7;
-  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const first=new Date(calYear,calMonth,1);const startDay=(first.getDay()+6)%7;const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
   const festMes=festivos.filter(f=>f.d.getMonth()===calMonth&&f.d.getFullYear()===calYear);
   return(<div>
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
       <span style={{fontWeight:700,fontSize:15,color:'#1e293b'}}>{MESES[calMonth]} {calYear}</span>
-      <div style={{display:'flex',gap:8}}>
-        <button onClick={()=>onChMes(-1)} style={{width:30,height:30,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:16}}>&#8249;</button>
-        <button onClick={()=>onChMes(1)} style={{width:30,height:30,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:16}}>&#8250;</button>
-      </div>
+      <div style={{display:'flex',gap:8}}><button onClick={()=>onChMes(-1)} style={{width:30,height:30,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:16}}>&#8249;</button><button onClick={()=>onChMes(1)} style={{width:30,height:30,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:16}}>&#8250;</button></div>
     </div>
     <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2,marginBottom:8}}>
       {DIAS_S.map(d=><div key={d} style={{textAlign:'center',fontSize:10,fontWeight:600,color:'#94a3b8',padding:'4px 0'}}>{d}</div>)}
@@ -292,9 +228,7 @@ function Calendario({entries,festivos,calYear,calMonth,onChMes,tipo,comunidad}){
         const d=i+1,date=new Date(calYear,calMonth,d),ds=dateToISO(date);
         const isF=isFest(date,festivos),isV=vacDays.has(ds),isT=ds===todayStr,isW=isWE(date);
         let bg='transparent',color=isW?'#94a3b8':'#1e293b',fw='normal';
-        if(isT){bg='#1e293b';color='white';fw='700';}
-        else if(isF){bg='#dbeafe';color='#2563eb';fw='700';}
-        else if(isV){bg='#d1fae5';color='#065f46';}
+        if(isT){bg='#1e293b';color='white';fw='700';}else if(isF){bg='#dbeafe';color='#2563eb';fw='700';}else if(isV){bg='#d1fae5';color='#065f46';}
         return(<div key={d} style={{textAlign:'center',padding:'5px 1px',borderRadius:6,fontSize:12,background:bg,color,fontWeight:fw,minHeight:28,display:'flex',alignItems:'center',justifyContent:'center'}}>{d}</div>);
       })}
     </div>
@@ -303,121 +237,128 @@ function Calendario({entries,festivos,calYear,calMonth,onChMes,tipo,comunidad}){
       <div style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'#94a3b8'}}><div style={{width:8,height:8,borderRadius:'50%',background:'#059669'}}/> Vacaciones</div>
       <div style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'#94a3b8'}}><div style={{width:8,height:8,borderRadius:'50%',background:'#1e293b'}}/> Hoy</div>
     </div>
-    {festMes.length>0&&(<div style={{display:'flex',flexDirection:'column',gap:4}}>
-      {festMes.map((f,i)=>(<div key={i} style={{display:'flex',gap:10,background:'white',border:'1px solid #e2e8f0',borderRadius:8,padding:'8px 12px',alignItems:'center'}}>
-        <span style={{fontSize:11,fontWeight:600,color:'#2563eb',minWidth:64}}>{f.d.getDate()} {MESES[f.d.getMonth()].slice(0,3)}</span>
-        <span style={{fontSize:13,color:'#1e293b'}}>{f.n}</span>
-      </div>))}
-    </div>)}
+    {festMes.length>0&&(<div style={{display:'flex',flexDirection:'column',gap:4}}>{festMes.map((f,i)=>(<div key={i} style={{display:'flex',gap:10,background:'white',border:'1px solid #e2e8f0',borderRadius:8,padding:'8px 12px',alignItems:'center'}}><span style={{fontSize:11,fontWeight:600,color:'#2563eb',minWidth:64}}>{f.d.getDate()} {MESES[f.d.getMonth()].slice(0,3)}</span><span style={{fontSize:13,color:'#1e293b'}}>{f.n}</span></div>))}</div>)}
   </div>);
 }
 
 // ─── TURNOS ───────────────────────────────────────────────────────
-const TURNO_COLORS={
-  'Mañana':{bg:'#fef3c7',color:'#92400e',border:'#fcd34d'},
-  'Tarde':{bg:'#dbeafe',color:'#1e3a8a',border:'#93c5fd'},
-  'Noche':{bg:'#ede9fe',color:'#4c1d95',border:'#c4b5fd'},
-  'Libre':{bg:'#f1f5f9',color:'#64748b',border:'#cbd5e1'},
-};
-const TURNOS_DEFAULT=['Mañana','Tarde','Libre'];
+function calcTurnoAuto(monday,turnosList,frecuencia,anclaISO,anclaIdx){
+  if(!turnosList||turnosList.length===0||!anclaISO)return null;
+  const anclaMonday=getMondayOf(new Date(anclaISO+'T12:00:00'));
+  const diffSemanas=Math.round((getMondayOf(monday)-anclaMonday)/(7*86400000));
+  const bloque=Math.floor(diffSemanas/frecuencia);
+  const idx=((anclaIdx+bloque)%turnosList.length+turnosList.length)%turnosList.length;
+  return turnosList[idx];
+}
 
-function TurnosSection({turnos,onUpdate}){
-  // turnos = { 'YYYY-WW': 'Mañana' }  keyed by year-weekNum
+function TurnosSection({turnos:cfg,onUpdate}){
   const [calYear,setCalYear]=useState(CY);
   const [calMonth,setCalMonth]=useState(CM);
-  const [turnosConfig,setTurnosConfig]=useState(()=>lsLoad('turnos-config')||TURNOS_DEFAULT);
-  const [editConfig,setEditConfig]=useState(false);
-  const [nuevoTurno,setNuevoTurno]=useState('');
 
-  const getWeekKey=(monday)=>{
-    // ISO week key: YYYY-MM-DD of monday
-    return dateToISO(monday);
+  const turnosList=cfg.turnosList||[];
+  const frecuencia=cfg.frecuencia||1;
+  const anclaISO=cfg.anclaISO||null;
+  const anclaIdx=cfg.anclaIdx??0;
+  const overrides=cfg.overrides||{};
+  const configured=turnosList.length>=2&&anclaISO;
+
+  const PRESETS=[
+    {label:'Mañana / Tarde',turnos:['Mañana','Tarde']},
+    {label:'Mañana / Tarde / Noche',turnos:['Mañana','Tarde','Noche']},
+  ];
+  const FREQS=[
+    {label:'Cada semana',v:1},
+    {label:'Cada 2 semanas',v:2},
+    {label:'Cada 3 semanas',v:3},
+    {label:'Mensual (4 sem)',v:4},
+  ];
+
+  const getTurnoSemana=monday=>{
+    const k=dateToISO(monday);
+    if(overrides[k]!==undefined)return{turno:overrides[k],override:true};
+    return{turno:calcTurnoAuto(monday,turnosList,frecuencia,anclaISO,anclaIdx),override:false};
   };
 
-  const getTurnoSemana=(monday)=>turnos[getWeekKey(monday)]||null;
-
-  const setTurnoSemana=(monday,turno)=>{
-    const k=getWeekKey(monday);
-    const nuevo={...turnos};
-    if(turno===null)delete nuevo[k];
-    else nuevo[k]=turno;
-    onUpdate(nuevo);
+  const setOverride=(monday,turno)=>{
+    const k=dateToISO(monday);
+    const auto=calcTurnoAuto(monday,turnosList,frecuencia,anclaISO,anclaIdx);
+    const nov={...overrides};
+    if(turno===null||turno===auto)delete nov[k]; else nov[k]=turno;
+    onUpdate({...cfg,overrides:nov});
   };
 
   const chMes=dir=>{let m=calMonth+dir,y=calYear;if(m>11){m=0;y++;}if(m<0){m=11;y--;}setCalYear(y);setCalMonth(m);};
-
-  // Get all mondays that overlap with this month
   const getMondaysOfMonth=(y,m)=>{
-    const mondays=[];
-    const first=new Date(y,m,1);
-    const last=new Date(y,m+1,0);
-    // go back to monday of first week
-    const start=getMondayOf(first);
-    const cur=new Date(start);
-    while(cur<=last){
-      mondays.push(new Date(cur));
-      cur.setDate(cur.getDate()+7);
-    }
-    return mondays;
+    const res=[];const first=new Date(y,m,1);const last=new Date(y,m+1,0);
+    const cur=getMondayOf(first);
+    while(cur<=last){res.push(new Date(cur));cur.setDate(cur.getDate()+7);}
+    return res;
   };
-
   const mondays=getMondaysOfMonth(calYear,calMonth);
-  const todayStr=todayISO();
-  const todayMonday=getMondayOf(new Date());
-  const todayMondayStr=dateToISO(todayMonday);
+  const todayMondayStr=dateToISO(getMondayOf(new Date()));
+  const turnoActual=configured?getTurnoSemana(getMondayOf(new Date())).turno:null;
 
-  const turnoActual=getTurnoSemana(todayMonday);
-
-  const addTurno=()=>{
-    const t=nuevoTurno.trim();
-    if(!t)return;
-    if(turnosConfig.includes(t)){alert('Ya existe ese turno');return;}
-    const n=[...turnosConfig,t];
-    setTurnosConfig(n);lsSave('turnos-config',n);setNuevoTurno('');
-  };
-  const removeTurno=(t)=>{
-    const n=turnosConfig.filter(x=>x!==t);
-    setTurnosConfig(n);lsSave('turnos-config',n);
-  };
-
-  const tc=(t)=>TURNO_COLORS[t]||{bg:'#f0fdf4',color:'#065f46',border:'#6ee7b7'};
+  const presetActivo=PRESETS.findIndex(p=>JSON.stringify(p.turnos)===JSON.stringify(turnosList));
 
   return(<div style={{display:'flex',flexDirection:'column',gap:14}}>
-    <SHead emoji="🔄" title="Turnos" sub="Tu turno semanal" bg={ACCENT.amberL}/>
+    <SHead emoji="🔄" title="Turnos" sub="Rotación automática" bg={ACCENT.amberL}/>
 
-    {/* Turno actual */}
-    <div style={{background:turnoActual?tc(turnoActual).bg:'white',borderRadius:14,border:'1px solid '+(turnoActual?tc(turnoActual).border:'#e2e8f0'),padding:16,textAlign:'center'}}>
+    {/* Turno esta semana */}
+    <div style={{background:turnoActual?tc(turnoActual).bg:'#f8fafc',borderRadius:14,border:'2px solid '+(turnoActual?tc(turnoActual).border:'#e2e8f0'),padding:18,textAlign:'center'}}>
       <div style={{fontSize:11,color:'#94a3b8',fontWeight:600,textTransform:'uppercase',marginBottom:6}}>Esta semana</div>
-      {turnoActual
-        ?<div style={{fontSize:32,fontWeight:900,color:tc(turnoActual).color}}>{turnoActual}</div>
-        :<div style={{fontSize:15,color:'#94a3b8'}}>Sin turno asignado</div>
-      }
+      <div style={{fontSize:38,fontWeight:900,color:turnoActual?tc(turnoActual).color:'#cbd5e1'}}>{turnoActual||'—'}</div>
     </div>
 
-    {/* Config turnos */}
-    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-        <span style={{fontSize:13,fontWeight:700,color:'#1e293b'}}>Tipos de turno</span>
-        <button onClick={()=>setEditConfig(!editConfig)} style={{fontSize:12,color:ACCENT.amber,background:'none',border:'none',cursor:'pointer',fontWeight:600}}>{editConfig?'Cerrar':'Editar'}</button>
-      </div>
-      <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-        {turnosConfig.map(t=>(
-          <div key={t} style={{display:'flex',alignItems:'center',gap:4,padding:'4px 10px',borderRadius:20,background:tc(t).bg,border:'1px solid '+tc(t).border}}>
-            <span style={{fontSize:12,fontWeight:600,color:tc(t).color}}>{t}</span>
-            {editConfig&&t!=='Libre'&&<button onClick={()=>removeTurno(t)} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:0,lineHeight:1,fontSize:14}}>×</button>}
-          </div>
-        ))}
-      </div>
-      {editConfig&&(
-        <div style={{display:'flex',gap:8,marginTop:10}}>
-          <input value={nuevoTurno} onChange={e=>setNuevoTurno(e.target.value)} placeholder="Nuevo turno..." style={{flex:1,padding:'8px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:14,outline:'none'}}/>
-          <button onClick={addTurno} style={{background:ACCENT.amber,border:'none',borderRadius:8,padding:'0 14px',cursor:'pointer',color:'white',fontWeight:600,fontSize:13}}>Añadir</button>
+    {/* Configuración */}
+    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:16}}>
+
+      {/* Paso 1 */}
+      <div>
+        <div style={{fontSize:12,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:10}}>1. ¿Qué turnos tienes?</div>
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {PRESETS.map((p,i)=>{
+            const sel=presetActivo===i;
+            return(<button key={i} onClick={()=>onUpdate({...cfg,turnosList:p.turnos,anclaIdx:0,overrides:{}})}
+              style={{padding:'14px 16px',borderRadius:12,border:'2px solid '+(sel?ACCENT.amber:'#e2e8f0'),background:sel?'#fffbeb':'white',textAlign:'left',cursor:'pointer',fontWeight:700,fontSize:15,color:sel?ACCENT.amber:'#475569',display:'flex',alignItems:'center',gap:10}}>
+              <span style={{fontSize:20}}>{i===0?'☀️':'🌙'}</span>
+              <span>{p.label}</span>
+              {sel&&<span style={{marginLeft:'auto',fontSize:18}}>✓</span>}
+            </button>);
+          })}
         </div>
-      )}
+      </div>
+
+      {/* Paso 2 */}
+      {turnosList.length>=2&&<div>
+        <div style={{fontSize:12,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:10}}>2. ¿Cada cuánto cambia?</div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          {FREQS.map(f=>(
+            <button key={f.v} onClick={()=>onUpdate({...cfg,frecuencia:f.v,overrides:{}})}
+              style={{padding:'10px 14px',borderRadius:20,border:'2px solid '+(frecuencia===f.v?ACCENT.amber:'#e2e8f0'),background:frecuencia===f.v?'#fffbeb':'white',cursor:'pointer',fontWeight:600,fontSize:13,color:frecuencia===f.v?ACCENT.amber:'#475569'}}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>}
+
+      {/* Paso 3 */}
+      {turnosList.length>=2&&<div>
+        <div style={{fontSize:12,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:10}}>3. ¿Qué turno tienes esta semana?</div>
+        <div style={{display:'flex',gap:10}}>
+          {turnosList.map((t,i)=>(
+            <button key={i} onClick={()=>onUpdate({...cfg,anclaISO:dateToISO(getMondayOf(new Date())),anclaIdx:i,overrides:{}})}
+              style={{flex:1,padding:'16px 8px',borderRadius:12,border:'2px solid '+(anclaIdx===i&&anclaISO?tc(t).border:'#e2e8f0'),background:anclaIdx===i&&anclaISO?tc(t).bg:'white',cursor:'pointer',fontWeight:800,fontSize:18,color:anclaIdx===i&&anclaISO?tc(t).color:'#94a3b8',textAlign:'center'}}>
+              {t}
+              {anclaIdx===i&&anclaISO&&<div style={{fontSize:11,marginTop:4}}>✓ seleccionado</div>}
+            </button>
+          ))}
+        </div>
+        {configured&&<div style={{fontSize:11,color:ACCENT.emerald,marginTop:8,fontWeight:600,textAlign:'center'}}>✓ Rotación configurada — el calendario se calcula automáticamente</div>}
+      </div>}
     </div>
 
-    {/* Calendario semanal */}
-    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14}}>
+    {/* Calendario */}
+    {configured&&<div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
         <span style={{fontWeight:700,fontSize:15,color:'#1e293b'}}>{MESES[calMonth]} {calYear}</span>
         <div style={{display:'flex',gap:8}}>
@@ -428,199 +369,102 @@ function TurnosSection({turnos,onUpdate}){
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
         {mondays.map((mon,idx)=>{
           const fri=new Date(mon);fri.setDate(mon.getDate()+4);
-          const monStr=dateToISO(mon);
-          const isCurrentWeek=monStr===todayMondayStr;
-          const turno=getTurnoSemana(mon);
+          const isNow=dateToISO(mon)===todayMondayStr;
+          const {turno,override}=getTurnoSemana(mon);
           const tStyle=turno?tc(turno):{bg:'#f8fafc',color:'#94a3b8',border:'#e2e8f0'};
-          return(<div key={idx} style={{border:'2px solid '+(isCurrentWeek?ACCENT.amber:'#e2e8f0'),borderRadius:10,overflow:'hidden',background:isCurrentWeek?'#fffbeb':'white'}}>
+          return(<div key={idx} style={{border:'2px solid '+(isNow?ACCENT.amber:'#e2e8f0'),borderRadius:10,overflow:'hidden',background:isNow?'#fffbeb':'white'}}>
             <div style={{display:'flex',alignItems:'center',padding:'8px 12px',gap:8}}>
               <div style={{flex:1}}>
-                <div style={{fontSize:11,fontWeight:700,color:isCurrentWeek?ACCENT.amber:'#94a3b8'}}>
-                  {isCurrentWeek?'← Esta semana':''}
-                </div>
-                <div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>
-                  {mon.getDate()} {MESES_C[mon.getMonth()]} – {fri.getDate()} {MESES_C[fri.getMonth()]}
-                </div>
+                {isNow&&<div style={{fontSize:10,fontWeight:700,color:ACCENT.amber}}>← Esta semana</div>}
+                <div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>{mon.getDate()} {MESES_C[mon.getMonth()]} – {fri.getDate()} {MESES_C[fri.getMonth()]}</div>
               </div>
-              <div style={{fontSize:13,fontWeight:700,color:tStyle.color,background:tStyle.bg,border:'1px solid '+tStyle.border,borderRadius:20,padding:'4px 12px'}}>
-                {turno||'Sin asignar'}
+              <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:2}}>
+                <div style={{fontSize:13,fontWeight:700,color:tStyle.color,background:tStyle.bg,border:'1px solid '+tStyle.border,borderRadius:20,padding:'4px 12px'}}>{turno||'—'}</div>
+                {override&&<div style={{fontSize:9,color:ACCENT.amber,fontWeight:700}}>modificado</div>}
               </div>
             </div>
             <div className="mes-scroll" style={{display:'flex',gap:6,padding:'0 12px 10px',overflowX:'auto'}}>
-              {turnosConfig.map(t=>(
-                <button key={t} onClick={()=>setTurnoSemana(mon,turno===t?null:t)}
-                  style={{flexShrink:0,padding:'5px 12px',borderRadius:20,border:'2px solid '+(turno===t?tc(t).border:'#e2e8f0'),background:turno===t?tc(t).bg:'white',color:turno===t?tc(t).color:'#64748b',fontSize:12,fontWeight:600,cursor:'pointer'}}>
-                  {t}
-                </button>
-              ))}
+              {turnosList.map(t=>(<button key={t} onClick={()=>setOverride(mon,turno===t&&override?null:t)}
+                style={{flexShrink:0,padding:'5px 14px',borderRadius:20,border:'2px solid '+(turno===t?tc(t).border:'#e2e8f0'),background:turno===t?tc(t).bg:'white',color:turno===t?tc(t).color:'#64748b',fontSize:12,fontWeight:600,cursor:'pointer'}}>
+                {t}
+              </button>))}
+              {override&&<button onClick={()=>setOverride(mon,null)} style={{flexShrink:0,padding:'5px 10px',borderRadius:20,border:'1px solid #e2e8f0',background:'white',color:'#94a3b8',fontSize:11,cursor:'pointer'}}>↩ auto</button>}
             </div>
           </div>);
         })}
       </div>
-    </div>
+    </div>}
   </div>);
 }
 
 // ─── NÓMINA ───────────────────────────────────────────────────────
-const MESES_PAGA_EXTRA=[5,11]; // junio y diciembre
-
+const MESES_EXTRA=[5,11];
 function NominaSection({nominas,onUpdate}){
-  const [year,setYear]=useState(CY);
-  const [form,setForm]=useState(false);
-  const [ed,setEd]=useState(null);
-  const [mesSel,setMesSel]=useState(null);
-
+  const [year,setYear]=useState(CY);const [form,setForm]=useState(false);const [ed,setEd]=useState(null);
   const yn=nominas.filter(n=>n.year===year);
   const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
-
-  const totalAnio=yn.reduce((s,n)=>s+Number(n.importe||0)+(MESES_PAGA_EXTRA.includes(n.mes)?Number(n.extra||0):0),0);
-  const mediaAnio=yn.length>0?(totalAnio/yn.length).toFixed(0):0;
-
-  // Detectar diferencias respecto al mes anterior
-  const getDiff=(mes)=>{
-    const actual=yn.find(n=>n.mes===mes);
-    const anterior=yn.find(n=>n.mes===mes-1);
-    if(!actual||!anterior)return null;
-    return Number(actual.importe)-Number(anterior.importe);
-  };
-
-  const getNomina=(mes)=>yn.find(n=>n.mes===mes)||null;
-
-  const save=(data)=>{
+  const total=yn.reduce((s,n)=>s+Number(n.importe||0)+(MESES_EXTRA.includes(n.mes)?Number(n.extra||0):0),0);
+  const media=yn.length>0?(total/yn.length).toFixed(0):0;
+  const getDiff=mes=>{const a=yn.find(n=>n.mes===mes);const b=yn.find(n=>n.mes===mes-1);if(!a||!b)return null;return Number(a.importe)-Number(b.importe);};
+  const getNom=mes=>yn.find(n=>n.mes===mes)||null;
+  const save=data=>{
     const item={...data,year,mes:parseInt(data.mes),importe:parseFloat(data.importe)||0,extra:parseFloat(data.extra||0)||0};
-    if(ed){
-      onUpdate(nominas.map(n=>n.id===ed.id?{...item,id:ed.id}:n));setEd(null);
-    }else{
-      // reemplazar si ya existe ese mes/año
-      const existe=nominas.find(n=>n.year===year&&n.mes===parseInt(data.mes));
-      if(existe){onUpdate(nominas.map(n=>n.id===existe.id?{...item,id:existe.id}:n));}
-      else{onUpdate([...nominas,{...item,id:uid()}]);}
-      setForm(false);
-    }
+    if(ed){onUpdate(nominas.map(n=>n.id===ed.id?{...item,id:ed.id}:n));setEd(null);}
+    else{const ex=nominas.find(n=>n.year===year&&n.mes===parseInt(data.mes));if(ex)onUpdate(nominas.map(n=>n.id===ex.id?{...item,id:ex.id}:n));else onUpdate([...nominas,{...item,id:uid()}]);setForm(false);}
   };
-
-  const esPagaExtra=(mes)=>MESES_PAGA_EXTRA.includes(mes);
   const ys=[];for(let y=CY+1;y>=CY-4;y--)ys.push(y);
-
   return(<div style={{display:'flex',flexDirection:'column',gap:14}}>
     <SHead emoji="💵" title="Nómina" sub="Historial de cobros" bg={ACCENT.tealL}/>
-
-    {/* Selector año */}
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'12px 16px'}}>
       <span style={{fontWeight:700,color:'#1e293b'}}>Año</span>
-      <select value={year} onChange={e=>setYear(Number(e.target.value))} style={{appearance:'none',background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:8,padding:'6px 12px',fontWeight:600,fontSize:14,cursor:'pointer',color:'#1e293b'}}>
-        {ys.map(y=><option key={y} value={y}>{y}</option>)}
-      </select>
+      <select value={year} onChange={e=>setYear(Number(e.target.value))} style={{appearance:'none',background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:8,padding:'6px 12px',fontWeight:600,fontSize:14,cursor:'pointer',color:'#1e293b'}}>{ys.map(y=><option key={y} value={y}>{y}</option>)}</select>
     </div>
-
-    {/* Stats */}
-    {yn.length>0&&(
-      <div style={{display:'flex',gap:10}}>
-        <Stat label="Total año" value={totalAnio.toLocaleString('es-ES')+'€'} unit={yn.length+' nóminas'} color={ACCENT.teal}/>
-        <Stat label="Media mensual" value={Number(mediaAnio).toLocaleString('es-ES')+'€'} unit="por mes" color={ACCENT.teal}/>
-      </div>
-    )}
-
+    {yn.length>0&&<div style={{display:'flex',gap:10}}><Stat label="Total año" value={total.toLocaleString('es-ES')+'€'} unit={yn.length+' nóminas'} color={ACCENT.teal}/><Stat label="Media mensual" value={Number(media).toLocaleString('es-ES')+'€'} unit="por mes" color={ACCENT.teal}/></div>}
     <AddBtn label="Registrar nómina" color={ACCENT.teal} onClick={()=>{setEd(null);setForm(true);}}/>
-
-    {(form||ed)&&(
-      <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <span style={{fontWeight:700,color:'#1e293b'}}>{ed?'Editar nómina':'Nueva nómina'}</span>
-          <button onClick={()=>{setForm(false);setEd(null);}} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IconX/></button>
-        </div>
-        <NominaForm initial={ed||{mes:String(CM),importe:'',extra:'',notas:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.teal} inp={inp}/>
-      </div>
-    )}
-
-    {/* Grid de meses */}
+    {(form||ed)&&(<div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><span style={{fontWeight:700,color:'#1e293b'}}>{ed?'Editar nómina':'Nueva nómina'}</span><button onClick={()=>{setForm(false);setEd(null);}} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IconX/></button></div>
+      <NominaForm initial={ed||{mes:String(CM),importe:'',extra:'',notas:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.teal} inp={inp}/>
+    </div>)}
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
       {MESES.map((mes,i)=>{
-        const nom=getNomina(i);
-        const diff=getDiff(i);
-        const esExtra=esPagaExtra(i);
-        const esActual=i===CM&&year===CY;
-        return(<div key={i} onClick={()=>{if(nom){setEd(nom);setForm(false);}else{setEd(null);setForm(true);setMesSel(i);}}}
-          style={{background:nom?'white':'#f8fafc',borderRadius:12,border:'2px solid '+(esActual?ACCENT.teal:nom?'#e2e8f0':'#f1f5f9'),padding:12,cursor:'pointer',position:'relative'}}>
-          {esExtra&&<div style={{position:'absolute',top:6,right:8,fontSize:9,fontWeight:700,color:ACCENT.amber,textTransform:'uppercase'}}>+Extra</div>}
-          <div style={{fontSize:11,fontWeight:700,color:esActual?ACCENT.teal:'#94a3b8',marginBottom:4}}>{MESES_C[i]}</div>
-          {nom?(
-            <>
-              <div style={{fontSize:18,fontWeight:800,color:'#1e293b'}}>{Number(nom.importe).toLocaleString('es-ES')}€</div>
-              {esExtra&&nom.extra>0&&<div style={{fontSize:11,color:ACCENT.amber,fontWeight:600}}>+{Number(nom.extra).toLocaleString('es-ES')}€ extra</div>}
-              {diff!==null&&<div style={{fontSize:11,marginTop:2,fontWeight:600,color:diff>0?ACCENT.emerald:diff<0?ACCENT.red:'#94a3b8'}}>
-                {diff>0?'▲':'▼'} {Math.abs(diff).toLocaleString('es-ES')}€
-              </div>}
-              {nom.notas&&<div style={{fontSize:10,color:'#94a3b8',marginTop:4,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis'}}>{nom.notas}</div>}
-            </>
-          ):(
-            <div style={{fontSize:12,color:'#cbd5e1',marginTop:4}}>Toca para añadir</div>
-          )}
+        const nom=getNom(i);const diff=getDiff(i);const esE=MESES_EXTRA.includes(i);const esA=i===CM&&year===CY;
+        return(<div key={i} onClick={()=>{if(nom){setEd(nom);setForm(false);}else{setEd(null);setForm(true);}}} style={{background:nom?'white':'#f8fafc',borderRadius:12,border:'2px solid '+(esA?ACCENT.teal:nom?'#e2e8f0':'#f1f5f9'),padding:12,cursor:'pointer',position:'relative'}}>
+          {esE&&<div style={{position:'absolute',top:6,right:8,fontSize:9,fontWeight:700,color:ACCENT.amber}}>+Extra</div>}
+          <div style={{fontSize:11,fontWeight:700,color:esA?ACCENT.teal:'#94a3b8',marginBottom:4}}>{MESES_C[i]}</div>
+          {nom?(<>
+            <div style={{fontSize:18,fontWeight:800,color:'#1e293b'}}>{Number(nom.importe).toLocaleString('es-ES')}€</div>
+            {esE&&nom.extra>0&&<div style={{fontSize:11,color:ACCENT.amber,fontWeight:600}}>+{Number(nom.extra).toLocaleString('es-ES')}€</div>}
+            {diff!==null&&<div style={{fontSize:11,marginTop:2,fontWeight:600,color:diff>0?ACCENT.emerald:diff<0?ACCENT.red:'#94a3b8'}}>{diff>0?'▲':'▼'} {Math.abs(diff).toLocaleString('es-ES')}€</div>}
+          </>):(<div style={{fontSize:12,color:'#cbd5e1',marginTop:4}}>Toca para añadir</div>)}
         </div>);
       })}
     </div>
-
-    {/* Lista detallada */}
-    {yn.length>0&&(
-      <div style={{display:'flex',flexDirection:'column',gap:8}}>
-        <div style={{fontSize:12,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.05em'}}>Detalle</div>
-        {[...yn].sort((a,b)=>b.mes-a.mes).map(n=>{
-          const diff=getDiff(n.mes);
-          const esExtra=esPagaExtra(n.mes);
-          const total=Number(n.importe)+(esExtra?Number(n.extra||0):0);
-          return(<Item key={n.id} item={n} onEdit={i=>{setEd(i);setForm(false);}} onDelete={id=>onUpdate(nominas.filter(x=>x.id!==id))}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
-              <div>
-                <div style={{fontSize:13,fontWeight:700,color:'#1e293b'}}>{MESES[n.mes]} {year}</div>
-                {esExtra&&n.extra>0&&<div style={{fontSize:11,color:ACCENT.amber}}>Nómina + paga extra</div>}
-              </div>
-              <div style={{textAlign:'right'}}>
-                <div style={{fontSize:18,fontWeight:800,color:ACCENT.teal}}>{total.toLocaleString('es-ES')}€</div>
-                {diff!==null&&<div style={{fontSize:11,fontWeight:600,color:diff>0?ACCENT.emerald:diff<0?ACCENT.red:'#94a3b8'}}>
-                  {diff>0?'▲ +':'▼ '}{diff.toLocaleString('es-ES')}€ vs anterior
-                </div>}
-              </div>
-            </div>
-            {n.notas&&<div style={{fontSize:12,color:'#64748b',marginTop:4}}>{n.notas}</div>}
-          </Item>);
-        })}
-      </div>
-    )}
+    {yn.length>0&&(<div style={{display:'flex',flexDirection:'column',gap:8}}>
+      <div style={{fontSize:12,fontWeight:700,color:'#94a3b8',textTransform:'uppercase'}}>Detalle</div>
+      {[...yn].sort((a,b)=>b.mes-a.mes).map(n=>{
+        const diff=getDiff(n.mes);const esE=MESES_EXTRA.includes(n.mes);const tot=Number(n.importe)+(esE?Number(n.extra||0):0);
+        return(<Item key={n.id} item={n} onEdit={i=>{setEd(i);setForm(false);}} onDelete={id=>onUpdate(nominas.filter(x=>x.id!==id))}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+            <div><div style={{fontSize:13,fontWeight:700,color:'#1e293b'}}>{MESES[n.mes]} {year}</div>{esE&&n.extra>0&&<div style={{fontSize:11,color:ACCENT.amber}}>+ paga extra</div>}</div>
+            <div style={{textAlign:'right'}}><div style={{fontSize:18,fontWeight:800,color:ACCENT.teal}}>{tot.toLocaleString('es-ES')}€</div>{diff!==null&&<div style={{fontSize:11,fontWeight:600,color:diff>0?ACCENT.emerald:diff<0?ACCENT.red:'#94a3b8'}}>{diff>0?'▲ +':'▼ '}{diff.toLocaleString('es-ES')}€</div>}</div>
+          </div>
+          {n.notas&&<div style={{fontSize:12,color:'#64748b',marginTop:4}}>{n.notas}</div>}
+        </Item>);
+      })}
+    </div>)}
     {yn.length===0&&<Empty text="Sin nóminas registradas este año"/>}
   </div>);
 }
-
 function NominaForm({initial,onSave,onCancel,color,inp}){
-  const [mes,setMes]=useState(String(initial.mes||CM));
-  const [importe,setImporte]=useState(String(initial.importe||''));
-  const [extra,setExtra]=useState(String(initial.extra||''));
-  const [notas,setNotas]=useState(initial.notas||'');
-  const esExtra=MESES_PAGA_EXTRA.includes(parseInt(mes));
-  const submit=()=>{
-    if(!importe||parseFloat(importe)<0){alert('Ingresa el importe');return;}
-    onSave({mes,importe,extra:esExtra?extra:'0',notas});
-  };
+  const [mes,setMes]=useState(String(initial.mes||CM));const [importe,setImporte]=useState(String(initial.importe||''));const [extra,setExtra]=useState(String(initial.extra||''));const [notas,setNotas]=useState(initial.notas||'');
+  const esE=MESES_EXTRA.includes(parseInt(mes));
+  const submit=()=>{if(!importe||parseFloat(importe)<0){alert('Ingresa el importe');return;}onSave({mes,importe,extra:esE?extra:'0',notas});};
   return(<>
-    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Mes *</label>
-      <select value={mes} onChange={e=>setMes(e.target.value)} style={inp}>
-        {MESES.map((m,i)=><option key={i} value={i}>{m}</option>)}
-      </select>
-    </div>
-    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Importe nómina (€) *</label>
-      <input type="number" min="0" step="0.01" placeholder="Ej: 1850.00" value={importe} onChange={e=>setImporte(e.target.value)} style={inp}/>
-    </div>
-    {esExtra&&(<div style={{background:ACCENT.amberL,borderRadius:8,padding:'10px 12px',border:'1px solid #fcd34d'}}>
-      <div style={{fontSize:12,fontWeight:700,color:ACCENT.amber,marginBottom:6}}>🎉 Mes de paga extra ({MESES[parseInt(mes)]})</div>
-      <label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Importe paga extra (€)</label>
-      <input type="number" min="0" step="0.01" placeholder="Ej: 1850.00" value={extra} onChange={e=>setExtra(e.target.value)} style={inp}/>
-    </div>)}
-    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Notas (opcional)</label>
-      <textarea rows={2} placeholder="Ej: Incluye plus de transporte..." value={notas} onChange={e=>setNotas(e.target.value)} style={{...inp,resize:'none'}}/>
-    </div>
-    <div style={{display:'flex',gap:8}}>
-      <button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button>
-      <button onClick={submit} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:color,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button>
-    </div>
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Mes *</label><select value={mes} onChange={e=>setMes(e.target.value)} style={inp}>{MESES.map((m,i)=><option key={i} value={i}>{m}</option>)}</select></div>
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Importe (€) *</label><input type="number" min="0" step="0.01" placeholder="Ej: 1850.00" value={importe} onChange={e=>setImporte(e.target.value)} style={inp}/></div>
+    {esE&&(<div style={{background:ACCENT.amberL,borderRadius:8,padding:'10px 12px',border:'1px solid #fcd34d'}}><div style={{fontSize:12,fontWeight:700,color:ACCENT.amber,marginBottom:6}}>🎉 Mes de paga extra ({MESES[parseInt(mes)]})</div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Importe paga extra (€)</label><input type="number" min="0" step="0.01" placeholder="Ej: 1850.00" value={extra} onChange={e=>setExtra(e.target.value)} style={inp}/></div>)}
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Notas (opcional)</label><textarea rows={2} placeholder="Ej: Plus transporte..." value={notas} onChange={e=>setNotas(e.target.value)} style={{...inp,resize:'none'}}/></div>
+    <div style={{display:'flex',gap:8}}><button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button><button onClick={submit} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:color,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button></div>
   </>);
 }
 
@@ -629,17 +473,14 @@ function VacForm({initial,tipo,festivos,onSave,onCancel,color}){
   const [fecha,setFecha]=useState(initial.fecha||'');const [dias,setDias]=useState(initial.dias?String(initial.dias):'');const [desc,setDesc]=useState(initial.desc||'');const [finCalc,setFinCalc]=useState('');const [festUsados,setFestUsados]=useState(0);
   const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
   const calcular=(f,d)=>{if(!f||!d||parseInt(d)<1){setFinCalc('');return;}const r=calcFin(f,parseInt(d),tipo,festivos);setFinCalc(r.fin);setFestUsados(r.festUsados);};
-  const submit=()=>{if(!fecha){alert('Ingresa la fecha de inicio');return;}if(!dias||parseInt(dias)<1){alert('Ingresa la cantidad de dias');return;}const r=calcFin(fecha,parseInt(dias),tipo,festivos);onSave({fecha,dias:parseInt(dias),fin:r.fin,desc});};
+  const submit=()=>{if(!fecha){alert('Ingresa la fecha');return;}if(!dias||parseInt(dias)<1){alert('Ingresa los dias');return;}const r=calcFin(fecha,parseInt(dias),tipo,festivos);onSave({fecha,dias:parseInt(dias),fin:r.fin,desc});};
   return(<div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><span style={{fontWeight:700,color:'#1e293b'}}>Registrar vacaciones</span><button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IconX/></button></div>
-    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha de inicio *</label><input type="date" value={fecha} onChange={e=>{setFecha(e.target.value);calcular(e.target.value,dias);}} style={inp}/></div>
-    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Dias de vacaciones ({tipo}) *</label><input type="number" min="1" step="1" placeholder="Ej: 5" value={dias} onChange={e=>{setDias(e.target.value);calcular(fecha,e.target.value);}} style={inp}/></div>
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha inicio *</label><input type="date" value={fecha} onChange={e=>{setFecha(e.target.value);calcular(e.target.value,dias);}} style={inp}/></div>
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Días ({tipo}) *</label><input type="number" min="1" step="1" placeholder="Ej: 5" value={dias} onChange={e=>{setDias(e.target.value);calcular(fecha,e.target.value);}} style={inp}/></div>
     {finCalc&&(<div style={{background:'#f0fdf4',border:'1px solid #6ee7b7',borderRadius:8,padding:'10px 12px',fontSize:13,color:'#065f46'}}>Fin: <strong>{fmtLargo(finCalc)}</strong>{festUsados>0&&<div style={{fontSize:12,marginTop:4,color:'#059669'}}>{festUsados} festivo{festUsados>1?'s':''} no contado{festUsados>1?'s':''}</div>}</div>)}
-    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Nota (opcional)</label><textarea rows={2} placeholder="Ej: Vacaciones de verano" value={desc} onChange={e=>setDesc(e.target.value)} style={{...inp,resize:'none'}}/></div>
-    <div style={{display:'flex',gap:8}}>
-      <button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button>
-      <button onClick={submit} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:color,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button>
-    </div>
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Nota (opcional)</label><textarea rows={2} placeholder="Ej: Verano" value={desc} onChange={e=>setDesc(e.target.value)} style={{...inp,resize:'none'}}/></div>
+    <div style={{display:'flex',gap:8}}><button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button><button onClick={submit} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:color,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button></div>
   </div>);
 }
 function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
@@ -655,76 +496,57 @@ function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
   const futuras=entries.filter(e=>new Date(e.fecha+'T12:00:00')>now).sort((a,b)=>a.fecha.localeCompare(b.fecha));
   const proximas=futuras[0]||null;const countdown=proximas?weeksAndDays(proximas.fecha):null;
   const abrirTotal=()=>{setTInput(String(totalD||''));setEditT(true);};
-  const guardarTotal=()=>{const n=parseInt(tInput,10);if(isNaN(n)||n<0){alert('Ingresa un numero valido');return;}onUpdateT({...totales,[yKey]:n});setEditT(false);};
+  const guardarTotal=()=>{const n=parseInt(tInput,10);if(isNaN(n)||n<0){alert('Ingresa un número válido');return;}onUpdateT({...totales,[yKey]:n});setEditT(false);};
   const save=e=>{if(ed){onUpdateE(entries.map(i=>i.id===ed.id?{...e,id:ed.id}:i));setEd(null);}else{onUpdateE([{...e,id:uid()},...entries]);setForm(false);}};
   const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:20,fontWeight:700,boxSizing:'border-box',outline:'none'};
   return(<div style={{display:'flex',flexDirection:'column',gap:14}}>
-    <SHead emoji="🌴" title="Vacaciones" sub={"Dias para "+year} bg={ACCENT.emeraldL}/>
+    <SHead emoji="🌴" title="Vacaciones" sub={'Días para '+year} bg={ACCENT.emeraldL}/>
     <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14,display:'flex',flexDirection:'column',gap:10}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <div><div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Tipo de dias</div><div style={{fontSize:11,color:'#94a3b8'}}>Como cuenta tu convenio</div></div>
-        <select value={tipo} onChange={e=>{setTipo(e.target.value);lsSave('vac-tipo',e.target.value);}} style={{fontSize:13,padding:'6px 8px',borderRadius:8,border:'1px solid #e2e8f0',background:'#f8fafc',color:'#1e293b'}}>
-          <option value="laborables">Laborables</option><option value="naturales">Naturales</option>
-        </select>
+        <div><div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Tipo de días</div><div style={{fontSize:11,color:'#94a3b8'}}>Según convenio</div></div>
+        <select value={tipo} onChange={e=>{setTipo(e.target.value);lsSave('vac-tipo',e.target.value);}} style={{fontSize:13,padding:'6px 8px',borderRadius:8,border:'1px solid #e2e8f0',background:'#f8fafc',color:'#1e293b'}}><option value="laborables">Laborables</option><option value="naturales">Naturales</option></select>
       </div>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <div><div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Comunidad autonoma</div><div style={{fontSize:11,color:'#94a3b8'}}>Para calcular festivos</div></div>
+        <div><div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Comunidad</div><div style={{fontSize:11,color:'#94a3b8'}}>Para festivos</div></div>
         <select value={comunidad} onChange={e=>{setComunidad(e.target.value);lsSave('vac-comunidad',e.target.value);}} style={{fontSize:12,padding:'6px 8px',borderRadius:8,border:'1px solid #e2e8f0',background:'#f8fafc',color:'#1e293b',maxWidth:130}}>
-          <option value="cataluna">Cataluna</option><option value="c-valenciana">C. Valenciana</option>
-          <option value="baleares">Baleares</option><option value="navarra">Navarra</option>
-          <option value="pais-vasco">Pais Vasco</option><option value="la-rioja">La Rioja</option>
-          <option value="murcia">Murcia</option><option value="otras">Resto de Espana</option>
+          <option value="cataluna">Cataluña</option><option value="c-valenciana">C. Valenciana</option><option value="baleares">Baleares</option><option value="navarra">Navarra</option><option value="pais-vasco">País Vasco</option><option value="la-rioja">La Rioja</option><option value="murcia">Murcia</option><option value="otras">Resto España</option>
         </select>
       </div>
     </div>
     {countdown&&(<div style={{background:ACCENT.emeraldL,borderRadius:14,padding:16,border:'1px solid #6ee7b7'}}>
-      <div style={{fontSize:11,color:ACCENT.emerald,fontWeight:700,marginBottom:4,textTransform:'uppercase'}}>Proximas vacaciones</div>
+      <div style={{fontSize:11,color:ACCENT.emerald,fontWeight:700,marginBottom:4,textTransform:'uppercase'}}>Próximas vacaciones</div>
       <div style={{fontWeight:700,color:'#065f46',fontSize:14,marginBottom:8}}>{proximas.desc||fmtLargo(proximas.fecha)}</div>
       <div style={{display:'flex',alignItems:'baseline',gap:6,flexWrap:'wrap'}}>
         {countdown.weeks>0&&<><span style={{fontSize:40,fontWeight:900,color:ACCENT.emerald,lineHeight:1}}>{countdown.weeks}</span><span style={{fontSize:15,color:ACCENT.emerald,fontWeight:600}}>sem</span></>}
-        {countdown.days>0&&<><span style={{fontSize:40,fontWeight:900,color:'#065f46',lineHeight:1,marginLeft:countdown.weeks>0?8:0}}>{countdown.days}</span><span style={{fontSize:15,color:'#065f46',fontWeight:600}}>dia{countdown.days!==1?'s':''}</span></>}
-        {countdown.weeks===0&&countdown.days===0&&<span style={{fontSize:20,fontWeight:800,color:ACCENT.emerald}}>Empiezan hoy!</span>}
+        {countdown.days>0&&<><span style={{fontSize:40,fontWeight:900,color:'#065f46',lineHeight:1,marginLeft:countdown.weeks>0?8:0}}>{countdown.days}</span><span style={{fontSize:15,color:'#065f46',fontWeight:600}}>día{countdown.days!==1?'s':''}</span></>}
+        {countdown.weeks===0&&countdown.days===0&&<span style={{fontSize:20,fontWeight:800,color:ACCENT.emerald}}>¡Empiezan hoy!</span>}
       </div>
       <div style={{fontSize:12,color:'#047857',marginTop:4}}>Inician el {fmtLargo(proximas.fecha)}</div>
     </div>)}
     <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
-        <span style={{fontSize:11,textTransform:'uppercase',color:'#94a3b8',fontWeight:700}}>Dias totales del ano</span>
+        <span style={{fontSize:11,textTransform:'uppercase',color:'#94a3b8',fontWeight:700}}>Días totales del año</span>
         {!editT&&<button onClick={abrirTotal} style={{background:'none',border:'none',cursor:'pointer',color:ACCENT.emerald,fontWeight:600,fontSize:12,padding:4}}>{totalD>0?'Cambiar':'Definir'}</button>}
       </div>
-      {editT?(<div style={{display:'flex',gap:8}}>
-        <input type="number" min="0" step="1" value={tInput} autoFocus onChange={e=>setTInput(e.target.value)} style={inp}/>
-        <button onClick={guardarTotal} style={{background:ACCENT.emerald,border:'none',borderRadius:8,padding:'0 12px',cursor:'pointer',color:'white',display:'flex',alignItems:'center'}}><IconChk/></button>
-        <button onClick={()=>setEditT(false)} style={{background:'#f1f5f9',border:'none',borderRadius:8,padding:'0 10px',cursor:'pointer',color:'#64748b',display:'flex',alignItems:'center'}}><IconX/></button>
-      </div>):(<span style={{fontSize:30,fontWeight:800,color:'#1e293b'}}>{totalD} <span style={{fontSize:14,fontWeight:400,color:'#94a3b8'}}>dias asignados</span></span>)}
+      {editT?(<div style={{display:'flex',gap:8}}><input type="number" min="0" step="1" value={tInput} autoFocus onChange={e=>setTInput(e.target.value)} style={inp}/><button onClick={guardarTotal} style={{background:ACCENT.emerald,border:'none',borderRadius:8,padding:'0 12px',cursor:'pointer',color:'white',display:'flex',alignItems:'center'}}><IconChk/></button><button onClick={()=>setEditT(false)} style={{background:'#f1f5f9',border:'none',borderRadius:8,padding:'0 10px',cursor:'pointer',color:'#64748b',display:'flex',alignItems:'center'}}><IconX/></button></div>)
+      :(<span style={{fontSize:30,fontWeight:800,color:'#1e293b'}}>{totalD} <span style={{fontSize:14,fontWeight:400,color:'#94a3b8'}}>días asignados</span></span>)}
     </div>
-    <div style={{display:'flex',gap:10}}>
-      <Stat label="Usados" value={usados} unit="dias" color={ACCENT.amber}/>
-      <Stat label="Disponibles" value={rest} unit="dias" color={rest<0?ACCENT.red:ACCENT.emerald}/>
-    </div>
+    <div style={{display:'flex',gap:10}}><Stat label="Usados" value={usados} unit="días" color={ACCENT.amber}/><Stat label="Disponibles" value={rest} unit="días" color={rest<0?ACCENT.red:ACCENT.emerald}/></div>
     {totalD>0&&(<div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:12}}>
-      <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'#94a3b8',marginBottom:6}}><span>Progreso</span><span>{usados} / {totalD} dias</span></div>
+      <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'#94a3b8',marginBottom:6}}><span>Progreso</span><span>{usados} / {totalD} días</span></div>
       <div style={{height:10,background:'#f1f5f9',borderRadius:99,overflow:'hidden'}}><div style={{height:'100%',width:pct+'%',background:ACCENT.emerald,borderRadius:99,transition:'width 0.3s'}}/></div>
     </div>)}
     <AddBtn label="Registrar vacaciones" color={ACCENT.emerald} onClick={()=>{setEd(null);setForm(true);}}/>
     {(form||ed)&&<VacForm initial={ed||{fecha:todayISO(),dias:'',desc:''}} tipo={tipo} festivos={festivos} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.emerald}/>}
-    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14}}>
-      <Calendario entries={ye} festivos={festCal} calYear={calYear} calMonth={calMonth} onChMes={chMes} tipo={tipo} comunidad={comunidad}/>
-    </div>
+    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14}}><Calendario entries={ye} festivos={festCal} calYear={calYear} calMonth={calMonth} onChMes={chMes} tipo={tipo} comunidad={comunidad}/></div>
     <div style={{display:'flex',flexDirection:'column',gap:8}}>
-      {ye.length===0&&<Empty text="Sin vacaciones registradas este ano"/>}
-      {[...ye].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(it=>{
-        const wd=weeksAndDays(it.fecha);
-        return(<Item key={it.id} item={it} onEdit={i=>{setEd(i);setForm(false);}} onDelete={id=>onUpdateE(entries.filter(i=>i.id!==id))}>
-          <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8}}>
-            <span style={{fontSize:12,color:'#94a3b8'}}>{fmtLargo(it.fecha)}{it.fin&&it.fin!==it.fecha?' — '+fmtLargo(it.fin):''}</span>
-            <span style={{fontSize:18,fontWeight:800,color:ACCENT.emerald,flexShrink:0}}>{it.dias} {it.dias===1?'dia':'dias'}</span>
-          </div>
-          {it.desc&&<div style={{fontSize:13,color:'#475569',marginTop:3}}>{it.desc}</div>}
-          {wd&&<div style={{fontSize:12,color:ACCENT.emerald,marginTop:4,fontWeight:600}}>Faltan {wd.weeks>0?wd.weeks+' sem':''}{wd.weeks>0&&wd.days>0?' y ':''}{wd.days>0?wd.days+' dia'+(wd.days!==1?'s':''):''}</div>}
-          {!wd&&<div style={{fontSize:12,color:'#94a3b8',marginTop:4}}>Ya pasaron</div>}
-        </Item>);
-      })}
+      {ye.length===0&&<Empty text="Sin vacaciones registradas este año"/>}
+      {[...ye].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(it=>{const wd=weeksAndDays(it.fecha);return(<Item key={it.id} item={it} onEdit={i=>{setEd(i);setForm(false);}} onDelete={id=>onUpdateE(entries.filter(i=>i.id!==id))}>
+        <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8}}><span style={{fontSize:12,color:'#94a3b8'}}>{fmtLargo(it.fecha)}{it.fin&&it.fin!==it.fecha?' — '+fmtLargo(it.fin):''}</span><span style={{fontSize:18,fontWeight:800,color:ACCENT.emerald,flexShrink:0}}>{it.dias} {it.dias===1?'día':'días'}</span></div>
+        {it.desc&&<div style={{fontSize:13,color:'#475569',marginTop:3}}>{it.desc}</div>}
+        {wd&&<div style={{fontSize:12,color:ACCENT.emerald,marginTop:4,fontWeight:600}}>Faltan {wd.weeks>0?wd.weeks+' sem':''}{wd.weeks>0&&wd.days>0?' y ':''}{wd.days>0?wd.days+' día'+(wd.days!==1?'s':''):''}</div>}
+        {!wd&&<div style={{fontSize:12,color:'#94a3b8',marginTop:4}}>Ya pasaron</div>}
+      </Item>);})}
     </div>
   </div>);
 }
@@ -733,13 +555,13 @@ function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
 function CobroSection(){
   const [dia,setDia]=useState(()=>parseInt(lsLoad('cobro-dia')||'28'));const [editando,setEditando]=useState(false);const [input,setInput]=useState('');
   const cobro=nextCobro(dia);const mes=cobro.date.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
-  const guardar=()=>{const n=parseInt(input);if(isNaN(n)||n<1||n>31){alert('Ingresa un dia valido entre 1 y 31');return;}setDia(n);lsSave('cobro-dia',n);setEditando(false);};
+  const guardar=()=>{const n=parseInt(input);if(isNaN(n)||n<1||n>31){alert('Día inválido');return;}setDia(n);lsSave('cobro-dia',n);setEditando(false);};
   return(<div style={{display:'flex',flexDirection:'column',gap:14}}>
-    <SHead emoji="💰" title="Proximo cobro" sub="Configura tu dia de cobro" bg={ACCENT.purpleL}/>
+    <SHead emoji="💰" title="Próximo cobro" sub="Tu día de cobro" bg={ACCENT.purpleL}/>
     <div style={{background:'white',borderRadius:16,border:'1px solid #e2e8f0',padding:24,textAlign:'center'}}>
       <div style={{fontSize:13,color:'#94a3b8',marginBottom:4}}>Fecha de cobro</div>
-      <div style={{fontSize:22,fontWeight:800,color:'#1e293b',marginBottom:8}}>Dia {dia} de {mes}</div>
-      {!editando?(<button onClick={()=>{setInput(String(dia));setEditando(true);}} style={{fontSize:12,color:ACCENT.purple,background:'none',border:'none',cursor:'pointer',textDecoration:'underline',marginBottom:16}}>Cambiar dia de cobro</button>):(
+      <div style={{fontSize:22,fontWeight:800,color:'#1e293b',marginBottom:8}}>Día {dia} de {mes}</div>
+      {!editando?(<button onClick={()=>{setInput(String(dia));setEditando(true);}} style={{fontSize:12,color:ACCENT.purple,background:'none',border:'none',cursor:'pointer',textDecoration:'underline',marginBottom:16}}>Cambiar día de cobro</button>):(
         <div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:16}}>
           <input type="number" min="1" max="31" value={input} onChange={e=>setInput(e.target.value)} style={{width:80,padding:'8px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:18,fontWeight:700,textAlign:'center'}} autoFocus/>
           <button onClick={guardar} style={{background:ACCENT.purple,border:'none',borderRadius:8,padding:'0 14px',cursor:'pointer',color:'white',display:'flex',alignItems:'center'}}><IconChk/></button>
@@ -750,11 +572,11 @@ function CobroSection(){
         <div style={{fontSize:13,color:ACCENT.purple,fontWeight:600,marginBottom:8}}>Tiempo restante</div>
         <div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:6,flexWrap:'wrap'}}>
           {cobro.weeks>0&&<><span style={{fontSize:52,fontWeight:900,color:ACCENT.purple,lineHeight:1}}>{cobro.weeks}</span><span style={{fontSize:16,color:ACCENT.purple,fontWeight:600}}>sem</span></>}
-          {cobro.days>0&&<><span style={{fontSize:52,fontWeight:900,color:'#5b21b6',lineHeight:1,marginLeft:cobro.weeks>0?8:0}}>{cobro.days}</span><span style={{fontSize:16,color:'#5b21b6',fontWeight:600}}>dia{cobro.days!==1?'s':''}</span></>}
-          {cobro.weeks===0&&cobro.days===0&&<span style={{fontSize:28,fontWeight:800,color:ACCENT.emerald}}>Hoy cobras!</span>}
+          {cobro.days>0&&<><span style={{fontSize:52,fontWeight:900,color:'#5b21b6',lineHeight:1,marginLeft:cobro.weeks>0?8:0}}>{cobro.days}</span><span style={{fontSize:16,color:'#5b21b6',fontWeight:600}}>día{cobro.days!==1?'s':''}</span></>}
+          {cobro.weeks===0&&cobro.days===0&&<span style={{fontSize:28,fontWeight:800,color:ACCENT.emerald}}>¡Hoy cobras!</span>}
         </div>
       </div>
-      <div style={{fontSize:13,color:'#94a3b8'}}>{cobro.total===1?'Manana cobras!':`Faltan ${cobro.total} dias en total`}</div>
+      <div style={{fontSize:13,color:'#94a3b8'}}>{cobro.total===1?'¡Mañana cobras!':`Faltan ${cobro.total} días`}</div>
     </div>
   </div>);
 }
@@ -776,25 +598,22 @@ function FallosSection({fallos,incid,year,onUpdateF,onUpdateI}){
       <button onClick={()=>setSubTab('incid')} style={{flex:1,padding:'8px 0',borderRadius:8,border:'none',background:subTab==='incid'?'#1e293b':'transparent',color:subTab==='incid'?'white':'#64748b',fontWeight:600,fontSize:13,cursor:'pointer'}}>Incidencias</button>
     </div>
     {subTab==='fallos'&&(<div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <div style={{display:'flex',gap:10}}><Stat label={MESES[CM]} value={mf.length} unit="este mes" color={ACCENT.red}/><Stat label={"Ano "+year} value={yf.length} unit="en total" color={ACCENT.red}/></div>
+      <div style={{display:'flex',gap:10}}><Stat label={MESES[CM]} value={mf.length} unit="este mes" color={ACCENT.red}/><Stat label={'Año '+year} value={yf.length} unit="en total" color={ACCENT.red}/></div>
       <FiltroMes year={year} items={fallos} mesActivo={mesF} onMes={setMesF} color={ACCENT.red}/>
-      <AddBtn label="Anadir fallo" color={ACCENT.red} onClick={()=>{setEdF(null);setFormF(true);}}/>
+      <AddBtn label="Añadir fallo" color={ACCENT.red} onClick={()=>{setEdF(null);setFormF(true);}}/>
       {(formF||edF)&&<Form title={edF?'Editar fallo':'Nuevo fallo'} fields={FF} initial={edF||{fecha:todayISO(),desc:''}} onSave={saveF} onCancel={()=>{setFormF(false);setEdF(null);}} color={ACCENT.red}/>}
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
-        {yfFilt.length===0&&<Empty text={mesF!==null?'Sin fallos en '+MESES[mesF]:'Sin fallos registrados este ano'}/>}
-        {[...yfFilt].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(<Item key={it.id} item={it} onEdit={setEdF} onDelete={id=>onUpdateF(fallos.filter(i=>i.id!==id))}>
-          <div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div>
-          <div style={{fontSize:14,color:'#1e293b',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>
-        </Item>))}
+        {yfFilt.length===0&&<Empty text={mesF!==null?'Sin fallos en '+MESES[mesF]:'Sin fallos este año'}/>}
+        {[...yfFilt].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(<Item key={it.id} item={it} onEdit={setEdF} onDelete={id=>onUpdateF(fallos.filter(i=>i.id!==id))}><div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div><div style={{fontSize:14,color:'#1e293b',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div></Item>))}
       </div>
     </div>)}
     {subTab==='incid'&&(<div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <div style={{display:'flex',gap:10}}><Stat label={MESES[CM]} value={mi.length} unit="este mes" color={ACCENT.amber}/><Stat label={"Ano "+year} value={yi.length} unit="en total" color={ACCENT.amber}/></div>
+      <div style={{display:'flex',gap:10}}><Stat label={MESES[CM]} value={mi.length} unit="este mes" color={ACCENT.amber}/><Stat label={'Año '+year} value={yi.length} unit="en total" color={ACCENT.amber}/></div>
       <FiltroMes year={year} items={incid} mesActivo={mesI} onMes={setMesI} color={ACCENT.amber}/>
-      <AddBtn label="Anadir incidencia" color={ACCENT.amber} onClick={()=>{setEdI(null);setFormI(true);}}/>
+      <AddBtn label="Añadir incidencia" color={ACCENT.amber} onClick={()=>{setEdI(null);setFormI(true);}}/>
       {(formI||edI)&&<IncidForm initial={edI||{fecha:todayISO(),titulo:'',desc:'',fotos:[]}} onSave={saveI} onCancel={()=>{setFormI(false);setEdI(null);}} color={ACCENT.amber}/>}
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
-        {yiFilt.length===0&&<Empty text={mesI!==null?'Sin incidencias en '+MESES[mesI]:'Sin incidencias este ano'}/>}
+        {yiFilt.length===0&&<Empty text={mesI!==null?'Sin incidencias en '+MESES[mesI]:'Sin incidencias este año'}/>}
         {[...yiFilt].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(<IncidItem key={it.id} it={it} onEdit={i=>{setEdI(i);setFormI(false);}} onDelete={id=>onUpdateI(incid.filter(i=>i.id!==id))}/>))}
       </div>
     </div>)}
@@ -811,46 +630,32 @@ function AusenciasSection({items,year,onUpdate}){
   const reset=()=>{setFecha(todayISO());setJust('');setMotivo('');setHoras('');setEstado('Pendiente');};
   const abrir=()=>{reset();setEd(null);setForm(true);};
   const abrirEd=it=>{setFecha(it.fecha);setJust(it.just);setMotivo(it.motivo||'');setHoras(String(it.horas||''));setEstado(it.estado||'Pendiente');setEd(it);setForm(true);};
-  const guardar=()=>{
-    if(!fecha){alert('Ingresa la fecha');return;}if(!just){alert('Indica si es justificada o no');return;}
-    const item={fecha,just,motivo,horas:parseFloat(horas)||0,estado};
-    if(ed){onUpdate(items.map(i=>i.id===ed.id?{...item,id:ed.id}:i));setEd(null);}else{onUpdate([{...item,id:uid()},...items]);}
-    setForm(false);reset();
-  };
+  const guardar=()=>{if(!fecha){alert('Ingresa la fecha');return;}if(!just){alert('Indica si es justificada');return;}const item={fecha,just,motivo,horas:parseFloat(horas)||0,estado};if(ed){onUpdate(items.map(i=>i.id===ed.id?{...item,id:ed.id}:i));setEd(null);}else{onUpdate([{...item,id:uid()},...items]);}setForm(false);reset();};
   const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
   const Rbtn=({val,cur,onSel,col})=>(<button onClick={()=>onSel(val)} style={{padding:'8px 14px',borderRadius:20,border:'1px solid '+(cur===val?(col||ACCENT.blue):'#e2e8f0'),background:cur===val?(col||ACCENT.blue):'white',color:cur===val?'white':'#475569',fontSize:13,fontWeight:600,cursor:'pointer'}}>{val}</button>);
   return(<div style={{display:'flex',flexDirection:'column',gap:14}}>
-    <SHead emoji="🚫" title="Ausencias" sub="Dias no trabajados" bg={ACCENT.redL}/>
-    <div style={{display:'flex',gap:10}}><Stat label={MESES[CM]} value={mi.length} unit="este mes" color={ACCENT.red}/><Stat label={"Ano "+year} value={yi.length} unit="en total" color={ACCENT.red}/></div>
-    {(hPendMes>0||hPendAnio>0)&&(<div style={{display:'flex',gap:10}}><Stat label="Horas pend. mes" value={hPendMes+'h'} unit="pendientes" color={ACCENT.amber}/><Stat label="Horas pend. ano" value={hPendAnio+'h'} unit="pendientes" color={ACCENT.amber}/></div>)}
+    <SHead emoji="🚫" title="Ausencias" sub="Días no trabajados" bg={ACCENT.redL}/>
+    <div style={{display:'flex',gap:10}}><Stat label={MESES[CM]} value={mi.length} unit="este mes" color={ACCENT.red}/><Stat label={'Año '+year} value={yi.length} unit="en total" color={ACCENT.red}/></div>
+    {(hPendMes>0||hPendAnio>0)&&(<div style={{display:'flex',gap:10}}><Stat label="Horas pend. mes" value={hPendMes+'h'} unit="pendientes" color={ACCENT.amber}/><Stat label="Horas pend. año" value={hPendAnio+'h'} unit="pendientes" color={ACCENT.amber}/></div>)}
     <FiltroMes year={year} items={items} mesActivo={mesActivo} onMes={setMesActivo} color={ACCENT.red}/>
     <AddBtn label="Registrar ausencia" color={ACCENT.red} onClick={abrir}/>
     {form&&(<div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><span style={{fontWeight:700,color:'#1e293b'}}>{ed?'Editar ausencia':'Nueva ausencia'}</span><button onClick={()=>{setForm(false);setEd(null);}} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IconX/></button></div>
       <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha *</label><input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={inp}/></div>
-      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:6}}>Justificada? *</label><div style={{display:'flex',gap:8}}><Rbtn val="Justificada" cur={just} onSel={setJust} col={ACCENT.emerald}/><Rbtn val="Injustificada" cur={just} onSel={setJust} col={ACCENT.red}/></div></div>
-      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Motivo</label><textarea rows={2} placeholder="Ej: Cita medica, enfermedad..." value={motivo} onChange={e=>setMotivo(e.target.value)} style={{...inp,resize:'none'}}/></div>
-      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Horas faltantes (0 si fue dia completo)</label><input type="number" min="0" max="12" step="0.5" placeholder="0" value={horas} onChange={e=>setHoras(e.target.value)} style={inp}/></div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:6}}>¿Justificada? *</label><div style={{display:'flex',gap:8}}><Rbtn val="Justificada" cur={just} onSel={setJust} col={ACCENT.emerald}/><Rbtn val="Injustificada" cur={just} onSel={setJust} col={ACCENT.red}/></div></div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Motivo</label><textarea rows={2} placeholder="Ej: Cita médica..." value={motivo} onChange={e=>setMotivo(e.target.value)} style={{...inp,resize:'none'}}/></div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Horas faltantes (0 = día completo)</label><input type="number" min="0" max="12" step="0.5" placeholder="0" value={horas} onChange={e=>setHoras(e.target.value)} style={inp}/></div>
       <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:6}}>Estado</label><div style={{display:'flex',gap:8,flexWrap:'wrap'}}><Rbtn val="Pendiente" cur={estado} onSel={setEstado} col={ACCENT.amber}/><Rbtn val="Devueltas" cur={estado} onSel={setEstado} col={ACCENT.emerald}/><Rbtn val="Descontadas" cur={estado} onSel={setEstado} col='#475569'/></div></div>
-      <div style={{display:'flex',gap:8}}>
-        <button onClick={()=>{setForm(false);setEd(null);}} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button>
-        <button onClick={guardar} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:ACCENT.red,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button>
-      </div>
+      <div style={{display:'flex',gap:8}}><button onClick={()=>{setForm(false);setEd(null);}} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button><button onClick={guardar} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:ACCENT.red,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button></div>
     </div>)}
     <div style={{display:'flex',flexDirection:'column',gap:8}}>
-      {yiFilt.length===0&&<Empty text={mesActivo!==null?'Sin ausencias en '+MESES[mesActivo]:'Sin ausencias registradas este ano'}/>}
+      {yiFilt.length===0&&<Empty text={mesActivo!==null?'Sin ausencias en '+MESES[mesActivo]:'Sin ausencias este año'}/>}
       {[...yiFilt].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>{
         const inj=it.just==='Injustificada';const estColor=it.estado==='Devueltas'?ACCENT.emerald:it.estado==='Descontadas'?'#475569':ACCENT.amber;
         return(<Item key={it.id} item={it} onEdit={abrirEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginBottom:4}}>
-            <span style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</span>
-            <span style={{fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:20,background:inj?ACCENT.redL:ACCENT.emeraldL,color:inj?ACCENT.red:ACCENT.emerald}}>{it.just}</span>
-          </div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginBottom:4}}><span style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</span><span style={{fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:20,background:inj?ACCENT.redL:ACCENT.emeraldL,color:inj?ACCENT.red:ACCENT.emerald}}>{it.just}</span></div>
           {it.motivo&&<div style={{fontSize:13,color:'#475569',marginBottom:4,wordBreak:'break-word'}}>{it.motivo}</div>}
-          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-            {it.horas>0&&<span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:ACCENT.amberL,color:ACCENT.amber}}>{it.horas}h faltantes</span>}
-            <span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:'#f1f5f9',color:estColor}}>{it.estado}</span>
-          </div>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{it.horas>0&&<span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:ACCENT.amberL,color:ACCENT.amber}}>{it.horas}h</span>}<span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:'#f1f5f9',color:estColor}}>{it.estado}</span></div>
         </Item>);
       })}
     </div>
@@ -866,20 +671,14 @@ function HorasSection({items,year,onUpdate}){
   const F=[{name:'fecha',label:'Fecha',type:'date',req:true},{name:'horas',label:'Horas',type:'number',step:'0.5',min:'0',req:true,ph:'Ej: 2.5'},{name:'desc',label:'Nota (opcional)',type:'textarea',ph:'Motivo...'}];
   const save=e=>{const c={...e,horas:Number(e.horas)||0};if(ed){onUpdate(items.map(i=>i.id===ed.id?{...c,id:ed.id}:i));setEd(null);}else{onUpdate([{...c,id:uid()},...items]);setForm(false);}};
   return(<div style={{display:'flex',flexDirection:'column',gap:14}}>
-    <SHead emoji="⏱️" title="Horas extras" sub="Horas fuera de horario" bg={ACCENT.blueL}/>
-    <div style={{display:'flex',gap:10}}><Stat label={MESES[CM]} value={sum(mi)} unit="horas este mes" color={ACCENT.blue}/><Stat label={"Ano "+year} value={sum(yi)} unit="horas en total" color={ACCENT.blue}/></div>
+    <SHead emoji="⏱️" title="Horas extra" sub="Fuera de horario" bg={ACCENT.blueL}/>
+    <div style={{display:'flex',gap:10}}><Stat label={MESES[CM]} value={sum(mi)} unit="horas este mes" color={ACCENT.blue}/><Stat label={'Año '+year} value={sum(yi)} unit="horas en total" color={ACCENT.blue}/></div>
     <FiltroMes year={year} items={items} mesActivo={mesActivo} onMes={setMesActivo} color={ACCENT.blue}/>
-    <AddBtn label="Anadir horas extras" color={ACCENT.blue} onClick={()=>{setEd(null);setForm(true);}}/>
-    {(form||ed)&&<Form title={ed?'Editar horas':'Nuevas horas extras'} fields={F} initial={ed||{fecha:todayISO(),horas:'',desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.blue}/>}
+    <AddBtn label="Añadir horas extra" color={ACCENT.blue} onClick={()=>{setEd(null);setForm(true);}}/>
+    {(form||ed)&&<Form title={ed?'Editar horas':'Nuevas horas extra'} fields={F} initial={ed||{fecha:todayISO(),horas:'',desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={ACCENT.blue}/>}
     <div style={{display:'flex',flexDirection:'column',gap:8}}>
-      {yiFilt.length===0&&<Empty text={mesActivo!==null?'Sin horas en '+MESES[mesActivo]:'Sin horas extras este ano'}/>}
-      {[...yiFilt].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(<Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}>
-        <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8}}>
-          <span style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</span>
-          <span style={{fontSize:20,fontWeight:800,color:ACCENT.blue}}>{it.horas} h</span>
-        </div>
-        {it.desc&&<div style={{fontSize:13,color:'#475569',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>}
-      </Item>))}
+      {yiFilt.length===0&&<Empty text={mesActivo!==null?'Sin horas en '+MESES[mesActivo]:'Sin horas extra este año'}/>}
+      {[...yiFilt].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>(<Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}><div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8}}><span style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</span><span style={{fontSize:20,fontWeight:800,color:ACCENT.blue}}>{it.horas} h</span></div>{it.desc&&<div style={{fontSize:13,color:'#475569',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>}</Item>))}
     </div>
   </div>);
 }
@@ -888,25 +687,25 @@ function HorasSection({items,year,onUpdate}){
 function BackupSection(){
   const [msg,setMsg]=useState('');
   const exportar=()=>{
-    const data={version:2,fecha:new Date().toISOString(),fallos:lsLoad('fallos')||[],horas:lsLoad('horas')||[],vacE:lsLoad('vac-e')||[],vacT:lsLoad('vac-t')||{},incid:lsLoad('incid')||[],ausencias:lsLoad('ausencias')||[],cobroDia:lsLoad('cobro-dia')||28,vacTipo:lsLoad('vac-tipo')||'laborables',vacComunidad:lsLoad('vac-comunidad')||'cataluna',turnos:lsLoad('turnos')||{},turnosConfig:lsLoad('turnos-config')||TURNOS_DEFAULT,nominas:lsLoad('nominas')||[]};
+    const data={version:3,fecha:new Date().toISOString(),fallos:lsLoad('fallos')||[],horas:lsLoad('horas')||[],vacE:lsLoad('vac-e')||[],vacT:lsLoad('vac-t')||{},incid:lsLoad('incid')||[],ausencias:lsLoad('ausencias')||[],cobroDia:lsLoad('cobro-dia')||28,vacTipo:lsLoad('vac-tipo')||'laborables',vacComunidad:lsLoad('vac-comunidad')||'cataluna',turnos:lsLoad('turnos')||{},nominas:lsLoad('nominas')||[]};
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='labora-backup-'+todayISO()+'.json';a.click();URL.revokeObjectURL(url);
-    setMsg('Copia de seguridad descargada correctamente');setTimeout(()=>setMsg(''),4000);
+    setMsg('Backup descargado');setTimeout(()=>setMsg(''),4000);
   };
   const importar=e=>{
     const file=e.target.files[0];if(!file)return;
     const r=new FileReader();
     r.onload=ev=>{
       try{
-        const data=JSON.parse(ev.target.result);if(!data.version){alert('Archivo no valido');return;}
+        const data=JSON.parse(ev.target.result);if(!data.version){alert('Archivo no válido');return;}
         if(Array.isArray(data.fallos))lsSave('fallos',data.fallos);if(Array.isArray(data.horas))lsSave('horas',data.horas);
         if(Array.isArray(data.vacE))lsSave('vac-e',data.vacE);if(data.vacT)lsSave('vac-t',data.vacT);
         if(Array.isArray(data.incid))lsSave('incid',data.incid);if(Array.isArray(data.ausencias))lsSave('ausencias',data.ausencias);
         if(data.cobroDia)lsSave('cobro-dia',data.cobroDia);if(data.vacTipo)lsSave('vac-tipo',data.vacTipo);
         if(data.vacComunidad)lsSave('vac-comunidad',data.vacComunidad);
-        if(data.turnos)lsSave('turnos',data.turnos);if(data.turnosConfig)lsSave('turnos-config',data.turnosConfig);
+        if(data.turnos)lsSave('turnos',data.turnos);
         if(Array.isArray(data.nominas))lsSave('nominas',data.nominas);
-        setMsg('Datos restaurados. Recarga la app para verlos.');
+        setMsg('Datos restaurados. Recarga la app.');
       }catch{alert('Error al leer el archivo.');}
     };
     r.readAsText(file);e.target.value='';
@@ -916,14 +715,12 @@ function BackupSection(){
     <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:10}}>
       <div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Exportar datos</div>
       <div style={{fontSize:12,color:'#64748b'}}>Descarga un archivo con todos tus datos.</div>
-      <button onClick={exportar} style={{width:'100%',background:ACCENT.emerald,color:'white',border:'none',borderRadius:10,padding:'13px 0',fontWeight:600,fontSize:15,cursor:'pointer'}}>Descargar copia de seguridad</button>
+      <button onClick={exportar} style={{width:'100%',background:ACCENT.emerald,color:'white',border:'none',borderRadius:10,padding:'13px 0',fontWeight:600,fontSize:15,cursor:'pointer'}}>Descargar backup</button>
     </div>
     <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:10}}>
       <div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Restaurar datos</div>
       <div style={{fontSize:12,color:'#64748b'}}>Los datos actuales serán reemplazados.</div>
-      <label style={{width:'100%',background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:10,padding:'13px 0',fontWeight:600,fontSize:15,cursor:'pointer',textAlign:'center',color:ACCENT.blue,display:'block'}}>
-        Seleccionar archivo de backup<input type="file" accept=".json" style={{display:'none'}} onChange={importar}/>
-      </label>
+      <label style={{width:'100%',background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:10,padding:'13px 0',fontWeight:600,fontSize:15,cursor:'pointer',textAlign:'center',color:ACCENT.blue,display:'block'}}>Seleccionar archivo<input type="file" accept=".json" style={{display:'none'}} onChange={importar}/></label>
     </div>
     {msg&&<div style={{background:'#f0fdf4',border:'1px solid #6ee7b7',borderRadius:10,padding:'12px 14px',fontSize:13,color:'#065f46',fontWeight:600}}>{msg}</div>}
   </div>);
@@ -947,26 +744,27 @@ function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,turnos,nominas,on
   const ausMes=ausencias.filter(i=>monthOf(i.fecha)===CM&&yearOf(i.fecha)===CY).length;
   const ausPend=ausencias.filter(i=>i.estado==='Pendiente'&&yearOf(i.fecha)===CY).length;
   const horasMes=horas.filter(i=>monthOf(i.fecha)===CM&&yearOf(i.fecha)===CY).reduce((s,i)=>s+Number(i.horas||0),0);
-  const turnoActual=turnos[dateToISO(getMondayOf(new Date()))]||null;
+  // Turno: ahora viene del nuevo formato con turnosList
+  const turnoActual=(()=>{
+    const tl=turnos.turnosList||[];const f=turnos.frecuencia||1;const a=turnos.anclaISO||null;const ai=turnos.anclaIdx??0;const ov=turnos.overrides||{};
+    const mon=getMondayOf(new Date());const k=dateToISO(mon);
+    if(ov[k]!==undefined)return ov[k];
+    return calcTurnoAuto(mon,tl,f,a,ai);
+  })();
   const nominaMes=nominas.find(n=>n.year===CY&&n.mes===CM);
   const d=new Date();
   const diaSem=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][d.getDay()];
   const fechaHoy=`${diaSem}, ${d.getDate()} de ${MESES[d.getMonth()]} ${d.getFullYear()}`;
-  const tc=(t)=>TURNO_COLORS[t]||{bg:'#f0fdf4',color:'#065f46',border:'#6ee7b7'};
   const Card=({emoji,title,onClick,children,color})=>(<div onClick={onClick} style={{background:'white',borderRadius:14,border:'1px solid #e2e8f0',padding:14,cursor:'pointer'}}>
-    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
-      <span style={{fontSize:18}}>{emoji}</span><span style={{fontWeight:700,fontSize:14,color:'#1e293b'}}>{title}</span>
-      <span style={{marginLeft:'auto',fontSize:11,color:color||'#94a3b8',fontWeight:600}}>Ver →</span>
-    </div>{children}
+    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}><span style={{fontSize:18}}>{emoji}</span><span style={{fontWeight:700,fontSize:14,color:'#1e293b'}}>{title}</span><span style={{marginLeft:'auto',fontSize:11,color:color||'#94a3b8',fontWeight:600}}>Ver →</span></div>{children}
   </div>);
   const cdStr=cd=>{if(!cd)return null;const parts=[];if(cd.weeks>0)parts.push(cd.weeks+' sem');if(cd.days>0)parts.push(cd.days+' día'+(cd.days!==1?'s':''));return parts.join(' y ')||'Hoy';};
   return(<div style={{display:'flex',flexDirection:'column',gap:14}}>
     <div style={{background:'#1e293b',borderRadius:16,padding:18,color:'white'}}>
       <div style={{fontSize:12,color:'#94a3b8',marginBottom:4}}>{fechaHoy}</div>
       <div style={{fontSize:22,fontWeight:800,marginBottom:2}}>¡Hola! 👋</div>
-      <div style={{fontSize:13,color:'#94a3b8'}}>Aquí tienes tu resumen de hoy</div>
+      <div style={{fontSize:13,color:'#94a3b8'}}>Tu resumen de hoy</div>
     </div>
-    {/* Turno actual destacado */}
     {turnoActual&&(<div onClick={()=>onNav('turnos')} style={{background:tc(turnoActual).bg,borderRadius:14,border:'2px solid '+tc(turnoActual).border,padding:'12px 16px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
       <div><div style={{fontSize:11,fontWeight:700,color:tc(turnoActual).color,textTransform:'uppercase'}}>Turno esta semana</div><div style={{fontSize:26,fontWeight:900,color:tc(turnoActual).color}}>{turnoActual}</div></div>
       <span style={{fontSize:11,color:tc(turnoActual).color,fontWeight:600}}>Ver →</span>
@@ -985,32 +783,14 @@ function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,turnos,nominas,on
       </>)}
     </Card>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-      <Card emoji="💰" title="Cobro" onClick={()=>onNav('cobro')} color={ACCENT.purple}>
-        <div style={{fontSize:20,fontWeight:900,color:ACCENT.purple,lineHeight:1}}>{cobro.total===0?'¡Hoy!':cdStr({weeks:cobro.weeks,days:cobro.days})}</div>
-        <div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>para cobrar</div>
-      </Card>
-      <Card emoji="💵" title="Nómina" onClick={()=>onNav('nomina')} color={ACCENT.teal}>
-        {nominaMes?<><div style={{fontSize:20,fontWeight:900,color:ACCENT.teal}}>{Number(nominaMes.importe).toLocaleString('es-ES')}€</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>{MESES[CM]}</div></>:<div style={{fontSize:12,color:'#cbd5e1',marginTop:4}}>Sin registrar</div>}
-      </Card>
+      <Card emoji="💰" title="Cobro" onClick={()=>onNav('cobro')} color={ACCENT.purple}><div style={{fontSize:20,fontWeight:900,color:ACCENT.purple,lineHeight:1}}>{cobro.total===0?'¡Hoy!':cdStr({weeks:cobro.weeks,days:cobro.days})}</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>para cobrar</div></Card>
+      <Card emoji="💵" title="Nómina" onClick={()=>onNav('nomina')} color={ACCENT.teal}>{nominaMes?<><div style={{fontSize:20,fontWeight:900,color:ACCENT.teal}}>{Number(nominaMes.importe).toLocaleString('es-ES')}€</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>{MESES[CM]}</div></>:<div style={{fontSize:12,color:'#cbd5e1',marginTop:4}}>Sin registrar</div>}</Card>
     </div>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-      <Card emoji="⚠️" title="Fallos" onClick={()=>onNav('fallos')} color={ACCENT.red}>
-        <div style={{fontSize:28,fontWeight:900,color:fallosMes>0?ACCENT.red:'#94a3b8',lineHeight:1}}>{fallosMes}</div>
-        <div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>este mes</div>
-        {incidMes>0&&<div style={{fontSize:11,color:ACCENT.amber,marginTop:6,fontWeight:600}}>{incidMes} incidencia{incidMes!==1?'s':''}</div>}
-      </Card>
-      <Card emoji="🚫" title="Ausencias" onClick={()=>onNav('ausencias')} color={ausPend>0?ACCENT.amber:ACCENT.red}>
-        <div style={{fontSize:28,fontWeight:900,color:ausMes>0?ACCENT.red:'#94a3b8',lineHeight:1}}>{ausMes}</div>
-        <div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>este mes</div>
-        {ausPend>0&&<div style={{fontSize:11,color:ACCENT.amber,marginTop:6,fontWeight:600}}>{ausPend} pendiente{ausPend!==1?'s':''}</div>}
-      </Card>
+      <Card emoji="⚠️" title="Fallos" onClick={()=>onNav('fallos')} color={ACCENT.red}><div style={{fontSize:28,fontWeight:900,color:fallosMes>0?ACCENT.red:'#94a3b8',lineHeight:1}}>{fallosMes}</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>este mes</div>{incidMes>0&&<div style={{fontSize:11,color:ACCENT.amber,marginTop:6,fontWeight:600}}>{incidMes} incidencia{incidMes!==1?'s':''}</div>}</Card>
+      <Card emoji="🚫" title="Ausencias" onClick={()=>onNav('ausencias')} color={ausPend>0?ACCENT.amber:ACCENT.red}><div style={{fontSize:28,fontWeight:900,color:ausMes>0?ACCENT.red:'#94a3b8',lineHeight:1}}>{ausMes}</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>este mes</div>{ausPend>0&&<div style={{fontSize:11,color:ACCENT.amber,marginTop:6,fontWeight:600}}>{ausPend} pendiente{ausPend!==1?'s':''}</div>}</Card>
     </div>
-    <Card emoji="⏱️" title="Horas extra" onClick={()=>onNav('horas')} color={ACCENT.blue}>
-      <div style={{display:'flex',alignItems:'baseline',gap:6}}>
-        <div style={{fontSize:34,fontWeight:900,color:horasMes>0?ACCENT.blue:'#94a3b8',lineHeight:1}}>{horasMes}</div>
-        <div style={{fontSize:15,color:'#94a3b8'}}>h este mes</div>
-      </div>
-    </Card>
+    <Card emoji="⏱️" title="Horas extra" onClick={()=>onNav('horas')} color={ACCENT.blue}><div style={{display:'flex',alignItems:'baseline',gap:6}}><div style={{fontSize:34,fontWeight:900,color:horasMes>0?ACCENT.blue:'#94a3b8',lineHeight:1}}>{horasMes}</div><div style={{fontSize:15,color:'#94a3b8'}}>h este mes</div></div></Card>
   </div>);
 }
 
@@ -1055,12 +835,7 @@ function App(){
     <div style={{background:'#1e293b',color:'white',padding:'12px 16px',display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
       <span style={{fontSize:20}}>💼</span>
       <div style={{flex:1}}><div style={{fontWeight:700,fontSize:15}}>Labora</div><div style={{fontSize:11,color:'#94a3b8'}}>Tu gestor laboral</div></div>
-      {showYear&&(<div style={{position:'relative'}}>
-        <select value={year} onChange={e=>setYear(Number(e.target.value))} style={{appearance:'none',background:'#334155',color:'white',border:'none',borderRadius:8,padding:'6px 28px 6px 10px',fontWeight:600,fontSize:14,cursor:'pointer'}}>
-          {ys.map(y=><option key={y} value={y}>{y}</option>)}
-        </select>
-        <span style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'#94a3b8',fontSize:10}}>▾</span>
-      </div>)}
+      {showYear&&(<div style={{position:'relative'}}><select value={year} onChange={e=>setYear(Number(e.target.value))} style={{appearance:'none',background:'#334155',color:'white',border:'none',borderRadius:8,padding:'6px 28px 6px 10px',fontWeight:600,fontSize:14,cursor:'pointer'}}>{ys.map(y=><option key={y} value={y}>{y}</option>)}</select><span style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'#94a3b8',fontSize:10}}>▾</span></div>)}
       {tab==='inicio'&&(<button onClick={()=>setTab('backup')} style={{background:'#334155',border:'none',borderRadius:8,padding:'6px 10px',color:'#94a3b8',cursor:'pointer',fontSize:16}}>💾</button>)}
     </div>
     <div style={{flex:1,overflowY:'auto',padding:16,paddingBottom:90}}>
@@ -1075,13 +850,7 @@ function App(){
       {tab==='backup'&&<BackupSection/>}
     </div>
     <div style={{position:'fixed',bottom:0,left:0,right:0,background:'white',borderTop:'1px solid #e2e8f0',display:'grid',gridTemplateColumns:'repeat(7,1fr)',zIndex:99}}>
-      {TABS.map(({id,label,emoji})=>{
-        const active=tab===id;
-        return(<button key={id} onClick={()=>setTab(id)} style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'7px 2px',background:active?'#f8fafc':'white',border:'none',cursor:'pointer'}}>
-          <span style={{fontSize:18,lineHeight:1}}>{emoji}</span>
-          <span style={{fontSize:8,fontWeight:600,marginTop:2,color:active?'#1e293b':'#94a3b8',whiteSpace:'nowrap'}}>{label}</span>
-        </button>);
-      })}
+      {TABS.map(({id,label,emoji})=>{const active=tab===id;return(<button key={id} onClick={()=>setTab(id)} style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'7px 2px',background:active?'#f8fafc':'white',border:'none',cursor:'pointer'}}><span style={{fontSize:18,lineHeight:1}}>{emoji}</span><span style={{fontSize:8,fontWeight:600,marginTop:2,color:active?'#1e293b':'#94a3b8',whiteSpace:'nowrap'}}>{label}</span></button>);})}
     </div>
   </div>);
 }
