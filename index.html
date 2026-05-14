@@ -784,8 +784,44 @@ function BackupSection(){
     };
     r.readAsText(file);e.target.value='';
   };
+  const exportar=()=>{
+    const data={version:3,fecha:new Date().toISOString(),fallos:lsLoad('fallos')||[],horas:lsLoad('horas')||[],vacE:lsLoad('vac-e')||[],vacT:lsLoad('vac-t')||{},incid:lsLoad('incid')||[],ausencias:lsLoad('ausencias')||[],cobroDia:lsLoad('cobro-dia')||28,vacTipo:lsLoad('vac-tipo')||'laborables',vacComunidad:lsLoad('vac-comunidad')||'cataluna',turnos:lsLoad('turnos')||{},nominas:lsLoad('nominas')||[]};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='labora-backup-'+todayISO()+'.json';a.click();URL.revokeObjectURL(url);
+    setMsg('Backup descargado');setTimeout(()=>setMsg(''),4000);
+  };
+  const importar=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const r=new FileReader();
+    r.onload=ev=>{
+      try{
+        const data=JSON.parse(ev.target.result);if(!data.version){alert('Archivo no válido');return;}
+        if(Array.isArray(data.fallos))lsSave('fallos',data.fallos);if(Array.isArray(data.horas))lsSave('horas',data.horas);
+        if(Array.isArray(data.vacE))lsSave('vac-e',data.vacE);if(data.vacT)lsSave('vac-t',data.vacT);
+        if(Array.isArray(data.incid))lsSave('incid',data.incid);if(Array.isArray(data.ausencias))lsSave('ausencias',data.ausencias);
+        if(data.cobroDia)lsSave('cobro-dia',data.cobroDia);if(data.vacTipo)lsSave('vac-tipo',data.vacTipo);
+        if(data.vacComunidad)lsSave('vac-comunidad',data.vacComunidad);
+        if(data.turnos)lsSave('turnos',data.turnos);
+        if(Array.isArray(data.nominas))lsSave('nominas',data.nominas);
+        setMsg('Datos restaurados. Recarga la app.');
+      }catch{alert('Error al leer el archivo.');}
+    };
+    r.readAsText(file);e.target.value='';
+  };
   return(<div style={{display:'flex',flexDirection:'column',gap:14}}>
     <SHead emoji="💾" title="Copia de seguridad" sub="Exporta e importa tus datos" bg="#f0fdf4"/>
+
+    {/* Informe PDF */}
+    <div style={{background:'white',borderRadius:12,border:'2px solid '+ACCENT.teal,padding:16,display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{fontSize:13,fontWeight:700,color:'#1e293b'}}>📄 Exportar informe anual</div>
+      <div style={{fontSize:12,color:'#64748b'}}>Se abre una página con todos tus datos. Desde ahí usá <strong>Imprimir → Guardar como PDF</strong>.</div>
+      <div style={{display:'flex',gap:8,alignItems:'center'}}>
+        <select value={yearInf} onChange={e=>setYearInf(Number(e.target.value))} style={{flex:1,padding:'10px 12px',border:'1px solid #e2e8f0',borderRadius:8,fontSize:15,fontWeight:700,color:'#1e293b',background:'#f8fafc'}}>{ys.map(y=><option key={y} value={y}>{y}</option>)}</select>
+        <button onClick={()=>generarInforme(yearInf)} style={{flex:2,background:ACCENT.teal,color:'white',border:'none',borderRadius:10,padding:'13px 0',fontWeight:700,fontSize:15,cursor:'pointer'}}>📄 Ver informe {yearInf}</button>
+      </div>
+    </div>
+
+    {/* Backup */}
     <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:10}}>
       <div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Exportar datos</div>
       <div style={{fontSize:12,color:'#64748b'}}>Descarga un archivo con todos tus datos.</div>
