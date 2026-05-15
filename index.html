@@ -692,6 +692,18 @@ function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,turnos,nominas,on
       <Card emoji="🚫" title="Ausencias" onClick={()=>onNav('ausencias')} color={aP>0?A.amb:A.red}><div style={{fontSize:28,fontWeight:900,color:aM>0?A.red:'#94a3b8',lineHeight:1}}>{aM}</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>este mes</div>{aP>0&&<div style={{fontSize:11,color:A.amb,marginTop:6,fontWeight:600}}>{aP} pendiente{aP!==1?'s':''}</div>}</Card>
     </div>
     <Card emoji="⏱️" title="Horas extra" onClick={()=>onNav('horas')} color={A.blue}><div style={{display:'flex',alignItems:'baseline',gap:6}}><div style={{fontSize:34,fontWeight:900,color:hM>0?A.blue:'#94a3b8',lineHeight:1}}>{hM}</div><div style={{fontSize:15,color:'#94a3b8'}}>h este mes</div></div></Card>
+
+    {/* Ko-fi */}
+    <div style={{background:'linear-gradient(135deg,#fff5f0,#fff0eb)',borderRadius:14,border:'1px solid #fcd34d',padding:16,display:'flex',alignItems:'center',gap:12}}>
+      <span style={{fontSize:32,flexShrink:0}}>☕</span>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontWeight:700,fontSize:14,color:'#1e293b',marginBottom:2}}>¿Te es útil Labora?</div>
+        <div style={{fontSize:12,color:'#64748b'}}>Es gratis y sin anuncios. Si quieres apoyar el proyecto, invítame a un café 🙏</div>
+      </div>
+      <button onClick={()=>window.open('https://ko-fi.com/laboraapp','_blank')} style={{flexShrink:0,background:'#FF5E5B',color:'white',border:'none',borderRadius:10,padding:'10px 14px',fontWeight:700,fontSize:13,cursor:'pointer'}}>
+        Apoyar
+      </button>
+    </div>
   </div>;
 }
 
