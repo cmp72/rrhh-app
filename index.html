@@ -116,7 +116,6 @@ const TC={'Mañana':{bg:'#fef3c7',c:'#92400e',b:'#fcd34d'},'Tarde':{bg:'#dbeafe'
 const tc=t=>TC[t]||{bg:'#f0fdf4',c:'#065f46',b:'#6ee7b7'};
 const ME=[5,11];
 
-// ── UI ──
 function Stat({label,value,unit,color}){return <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',flex:1,minWidth:0}}><div style={{fontSize:10,textTransform:'uppercase',color:'#94a3b8',fontWeight:600}}>{label}</div><div style={{fontSize:26,fontWeight:800,color,marginTop:2,lineHeight:1}}>{value}</div><div style={{fontSize:11,color:'#94a3b8',marginTop:2}}>{unit}</div></div>;}
 function SHead({emoji,title,sub,bg}){return <div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:40,height:40,borderRadius:12,background:bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>{emoji}</div><div><div style={{fontWeight:800,fontSize:16,color:'#1e293b'}}>{title}</div><div style={{fontSize:11,color:'#94a3b8'}}>{sub}</div></div></div>;}
 function AddBtn({label,color,onClick}){return <button onClick={onClick} style={{width:'100%',background:color,color:'white',border:'none',borderRadius:12,padding:'13px 0',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontWeight:600,fontSize:15,cursor:'pointer'}}><span style={{fontSize:20,lineHeight:1}}>+</span>{label}</button>;}
@@ -172,7 +171,7 @@ function FotosPicker({fotos,onChange}){
 function IncidForm({initial,onSave,onCancel,color}){
   const [d,setD]=useState({...initial});const [fotos,setFotos]=useState(initial.fotos||[]);
   const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
-  const sub=()=>{if(!d.fecha){alert('Fecha requerida');return;}if(!String(d.titulo||'').trim()){alert('Título requerido');return;}if(!String(d.desc||'').trim()){alert('Descripción requerida');return;}onSave({...d,fotos});};
+  const sub=()=>{if(!d.fecha||!String(d.titulo||'').trim()||!String(d.desc||'').trim()){alert('Completa todos los campos');return;}onSave({...d,fotos});};
   return <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><span style={{fontWeight:700,color:'#1e293b'}}>{initial.id?'Editar':'Nueva incidencia'}</span><button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IcoX/></button></div>
     <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha *</label><input type="date" value={d.fecha||''} onChange={e=>setD({...d,fecha:e.target.value})} style={inp}/></div>
@@ -188,7 +187,6 @@ function IncidItem({it,onEdit,onDelete}){
   return <Item item={it} onEdit={onEdit} onDelete={onDelete}>{v&&<FotoV src={v} onClose={()=>setV(null)}/>}<div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div>{it.titulo&&<div style={{fontSize:14,fontWeight:700,color:'#1e293b',marginTop:3}}>{it.titulo}</div>}<div style={{fontSize:13,color:'#475569',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>{it.fotos&&it.fotos.length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:8}}>{it.fotos.map((f,i)=><img key={i} src={f} onClick={()=>setV(f)} style={{width:60,height:60,borderRadius:6,objectFit:'cover',border:'1px solid #e2e8f0',cursor:'pointer'}}/>)}</div>}</Item>;
 }
 
-// ── INFORME ──
 function generarInforme(year){
   const fals=(ll('fallos')||[]).filter(i=>yOf(i.fecha)===year);
   const hrs=(ll('horas')||[]).filter(i=>yOf(i.fecha)===year);
@@ -197,8 +195,7 @@ function generarInforme(year){
   const inc=(ll('incid')||[]).filter(i=>yOf(i.fecha)===year);
   const aus=(ll('ausencias')||[]).filter(i=>yOf(i.fecha)===year);
   const nom=(ll('nominas')||[]).filter(n=>n.year===year);
-  const tipo=ll('vac-tipo')||'laborables';
-  const com=ll('vac-comunidad')||'cataluna';
+  const tipo=ll('vac-tipo')||'laborables';const com=ll('vac-comunidad')||'cataluna';
   const hoy=new Date();hoy.setHours(0,0,0,0);
   const totalD=Number(vacT[String(year)]??0);
   const usVac=vac.reduce((a,e)=>a+dUsados(e,tipo,com,hoy),0);
@@ -206,7 +203,7 @@ function generarInforme(year){
   const totNom=nom.reduce((s,n)=>s+Number(n.importe||0)+(ME.includes(n.mes)?Number(n.extra||0):0),0);
   const fD=s=>new Date(s+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});
   const tbl=(titulo,rows)=>rows.length===0?'':(`<h2>${titulo}</h2><table><thead><tr>${Object.keys(rows[0]).map(k=>`<th>${k}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${Object.values(r).map(v=>`<td>${v}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
-  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>Labora ${year}</title><style>body{font-family:system-ui,sans-serif;max-width:900px;margin:0 auto;padding:32px;color:#1e293b;font-size:13px}h1{font-size:24px;margin-bottom:4px}.sub{color:#94a3b8;margin-bottom:32px}h2{font-size:15px;font-weight:700;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-top:28px}table{width:100%;border-collapse:collapse;margin-bottom:8px}th{background:#f8fafc;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0}td{padding:8px 10px;border-bottom:1px solid #f1f5f9;color:#475569}.res{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px}.card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;min-width:120px}.cl{font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600}.cv{font-size:22px;font-weight:800;color:#1e293b;margin-top:2px}.cu{font-size:11px;color:#94a3b8}footer{margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center}@media print{body{padding:16px}}</style></head><body><h1>💼 Labora — Informe anual ${year}</h1><div class="sub">Generado el ${new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'})}</div><h2>Resumen</h2><div class="res"><div class="card"><div class="cl">Vacaciones usadas</div><div class="cv">${usVac}</div><div class="cu">de ${totalD} días</div></div><div class="card"><div class="cl">Horas extra</div><div class="cv">${totHrs}</div><div class="cu">horas total</div></div><div class="card"><div class="cl">Fallos</div><div class="cv">${fals.length}</div><div class="cu">registrados</div></div><div class="card"><div class="cl">Ausencias</div><div class="cv">${aus.length}</div><div class="cu">registradas</div></div>${nom.length>0?`<div class="card"><div class="cl">Total nóminas</div><div class="cv">${totNom.toLocaleString('es-ES')}€</div><div class="cu">${nom.length} meses</div></div>`:''}</div>${tbl('🌴 Vacaciones',[...vac].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(e=>({'Inicio':fD(e.fecha),'Fin':e.fin?fD(e.fin):'-','Días':e.dias,'Nota':e.desc||'-'})))}${tbl('💵 Nóminas',[...nom].sort((a,b)=>a.mes-b.mes).map(n=>({'Mes':MESES[n.mes],'Nómina':Number(n.importe).toLocaleString('es-ES')+'€','Extra':ME.includes(n.mes)&&n.extra>0?Number(n.extra).toLocaleString('es-ES')+'€':'-','Total':(Number(n.importe)+(ME.includes(n.mes)?Number(n.extra||0):0)).toLocaleString('es-ES')+'€','Notas':n.notas||'-'})))}${tbl('⏱️ Horas extra',[...hrs].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(h=>({'Fecha':fD(h.fecha),'Horas':h.horas,'Nota':h.desc||'-'})))}${tbl('🚫 Ausencias',[...aus].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(a=>({'Fecha':fD(a.fecha),'Tipo':a.just,'Motivo':a.motivo||'-','Horas':a.horas>0?a.horas+'h':'Día completo','Estado':a.estado})))}${tbl('⚠️ Fallos',[...fals].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(f=>({'Fecha':fD(f.fecha),'Descripción':f.desc})))}${tbl('⚠️ Incidencias',[...inc].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(i=>({'Fecha':fD(i.fecha),'Título':i.titulo,'Descripción':i.desc})))}<footer>Generado con Labora</footer></body></html>`;
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>Labora ${year}</title><style>body{font-family:system-ui,sans-serif;max-width:900px;margin:0 auto;padding:32px;color:#1e293b;font-size:13px}h1{font-size:24px;margin-bottom:4px}.sub{color:#94a3b8;margin-bottom:32px}h2{font-size:15px;font-weight:700;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-top:28px}table{width:100%;border-collapse:collapse;margin-bottom:8px}th{background:#f8fafc;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0}td{padding:8px 10px;border-bottom:1px solid #f1f5f9;color:#475569}.res{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px}.card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;min-width:120px}.cl{font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600}.cv{font-size:22px;font-weight:800;color:#1e293b;margin-top:2px}.cu{font-size:11px;color:#94a3b8}footer{margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center}@media print{body{padding:16px}}</style></head><body><h1>💼 Labora — Informe ${year}</h1><div class="sub">Generado el ${new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'})}</div><h2>Resumen</h2><div class="res"><div class="card"><div class="cl">Vacaciones usadas</div><div class="cv">${usVac}</div><div class="cu">de ${totalD} días</div></div><div class="card"><div class="cl">Horas extra</div><div class="cv">${totHrs}</div><div class="cu">horas total</div></div><div class="card"><div class="cl">Fallos</div><div class="cv">${fals.length}</div><div class="cu">registrados</div></div><div class="card"><div class="cl">Ausencias</div><div class="cv">${aus.length}</div><div class="cu">registradas</div></div>${nom.length>0?`<div class="card"><div class="cl">Total nóminas</div><div class="cv">${totNom.toLocaleString('es-ES')}€</div><div class="cu">${nom.length} meses</div></div>`:''}</div>${tbl('🌴 Vacaciones',[...vac].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(e=>({'Inicio':fD(e.fecha),'Fin':e.fin?fD(e.fin):'-','Días':e.dias,'Nota':e.desc||'-'})))}${tbl('💵 Nóminas',[...nom].sort((a,b)=>a.mes-b.mes).map(n=>({'Mes':MESES[n.mes],'Nómina':Number(n.importe).toLocaleString('es-ES')+'€','Extra':ME.includes(n.mes)&&n.extra>0?Number(n.extra).toLocaleString('es-ES')+'€':'-','Total':(Number(n.importe)+(ME.includes(n.mes)?Number(n.extra||0):0)).toLocaleString('es-ES')+'€','Notas':n.notas||'-'})))}${tbl('⏱️ Horas extra',[...hrs].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(h=>({'Fecha':fD(h.fecha),'Horas':h.horas,'Nota':h.desc||'-'})))}${tbl('🚫 Ausencias',[...aus].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(a=>({'Fecha':fD(a.fecha),'Tipo':a.just,'Motivo':a.motivo||'-','Horas':a.horas>0?a.horas+'h':'Día completo','Estado':a.estado})))}${tbl('⚠️ Fallos',[...fals].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(f=>({'Fecha':fD(f.fecha),'Descripción':f.desc})))}${tbl('⚠️ Incidencias',[...inc].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(i=>({'Fecha':fD(i.fecha),'Título':i.titulo,'Descripción':i.desc})))}<footer>Generado con Labora</footer></body></html>`;
   const blob=new Blob([html],{type:'text/html'});
   const url=URL.createObjectURL(blob);
   const w=window.open(url,'_blank');
@@ -214,44 +211,105 @@ function generarInforme(year){
   setTimeout(()=>URL.revokeObjectURL(url),15000);
 }
 
-// ── AVISOS ──
-function Avisos({vacE,turnos}){
-  const avisos=[];
-  const hoy=new Date();hoy.setHours(0,0,0,0);
-  const en7=new Date(hoy);en7.setDate(hoy.getDate()+7);
-
-  // Vacaciones próximas
-  const proxVac=vacE.filter(e=>{const f=new Date(e.fecha+'T12:00:00');return f>hoy&&f<=en7;}).sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  if(proxVac.length>0){
-    const v=proxVac[0];const dias=Math.ceil((new Date(v.fecha+'T12:00:00')-hoy)/86400000);
-    avisos.push({emoji:'🌴',texto:`Tus vacaciones empiezan en ${dias} día${dias!==1?'s':''}`,color:'#065f46',bg:A.emL,border:'#6ee7b7'});
-  }
-
-  // Cambio de turno la semana que viene
-  if(turnos.turnosList&&turnos.turnosList.length>=2&&turnos.anclaISO){
-    const monActual=monOf(hoy);
-    const monSig=new Date(monActual);monSig.setDate(monActual.getDate()+7);
-    const tActual=cTurno(monActual,turnos.turnosList,turnos.frecuencia||1,turnos.anclaISO,turnos.anclaIdx??0);
-    const tSig=cTurno(monSig,turnos.turnosList,turnos.frecuencia||1,turnos.anclaISO,turnos.anclaIdx??0);
-    if(tActual&&tSig&&tActual!==tSig){
-      avisos.push({emoji:'🔄',texto:`La semana que viene cambias a turno de ${tSig}`,color:'#92400e',bg:A.ambL,border:'#fcd34d'});
-    }
-  }
-
-  if(avisos.length===0)return null;
-  return <div style={{display:'flex',flexDirection:'column',gap:8}}>
-    {avisos.map((a,i)=><div key={i} style={{background:a.bg,border:'1px solid '+a.border,borderRadius:12,padding:'10px 14px',display:'flex',alignItems:'center',gap:10}}>
-      <span style={{fontSize:20,flexShrink:0}}>{a.emoji}</span>
-      <span style={{fontSize:13,fontWeight:600,color:a.color}}>{a.texto}</span>
-    </div>)}
-  </div>;
-}
 function cTurno(mon,list,frec,ancla,idx){
   if(!list||!list.length||!ancla)return null;
   const am=monOf(new Date(ancla+'T12:00:00'));
   const dif=Math.round((monOf(mon)-am)/(7*86400000));
   const bl=Math.floor(dif/frec);
   return list[((idx+bl)%list.length+list.length)%list.length];
+}
+
+function Avisos({vacE,turnos}){
+  const avisos=[];
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  const en7=new Date(hoy);en7.setDate(hoy.getDate()+7);
+  const proxVac=vacE.filter(e=>{const f=new Date(e.fecha+'T12:00:00');return f>hoy&&f<=en7;}).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  if(proxVac.length>0){
+    const v=proxVac[0];const dias=Math.ceil((new Date(v.fecha+'T12:00:00')-hoy)/86400000);
+    avisos.push({emoji:'🌴',texto:`Tus vacaciones empiezan en ${dias} día${dias!==1?'s':''}`,color:'#065f46',bg:A.emL,border:'#6ee7b7'});
+  }
+  if(turnos.turnosList&&turnos.turnosList.length>=2&&turnos.anclaISO){
+    const monActual=monOf(hoy);const monSig=new Date(monActual);monSig.setDate(monActual.getDate()+7);
+    const tA=cTurno(monActual,turnos.turnosList,turnos.frecuencia||1,turnos.anclaISO,turnos.anclaIdx??0);
+    const tS=cTurno(monSig,turnos.turnosList,turnos.frecuencia||1,turnos.anclaISO,turnos.anclaIdx??0);
+    if(tA&&tS&&tA!==tS)avisos.push({emoji:'🔄',texto:`La semana que viene cambias a turno de ${tS}`,color:'#92400e',bg:A.ambL,border:'#fcd34d'});
+  }
+  if(!avisos.length)return null;
+  return <div style={{display:'flex',flexDirection:'column',gap:6}}>
+    {avisos.map((a,i)=><div key={i} style={{background:a.bg,border:'1px solid '+a.border,borderRadius:10,padding:'8px 12px',display:'flex',alignItems:'center',gap:8}}>
+      <span style={{fontSize:16}}>{a.emoji}</span><span style={{fontSize:12,fontWeight:600,color:a.color}}>{a.texto}</span>
+    </div>)}
+  </div>;
+}
+
+function DisclaimerModal({onAcepto}){
+  const [scroll,setScroll]=useState(false);
+  const ref=useRef(null);
+  const onScroll=()=>{const el=ref.current;if(!el)return;if(el.scrollTop+el.clientHeight>=el.scrollHeight-20)setScroll(true);};
+  return <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:999,display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
+    <div style={{background:'white',borderRadius:'20px 20px 0 0',width:'100%',maxWidth:500,maxHeight:'90vh',display:'flex',flexDirection:'column'}}>
+      <div style={{padding:'20px 20px 0',flexShrink:0}}>
+        <div style={{width:40,height:4,background:'#e2e8f0',borderRadius:99,margin:'0 auto 16px'}}/>
+        <div style={{fontSize:18,fontWeight:800,color:'#1e293b',marginBottom:4}}>⚖️ Aviso legal importante</div>
+        <div style={{fontSize:12,color:'#94a3b8',marginBottom:12}}>Lee esto antes de usar Labora · desplázate hasta el final para aceptar</div>
+      </div>
+      <div ref={ref} onScroll={onScroll} style={{overflowY:'auto',padding:'0 20px',flex:1}}>
+        <div style={{fontSize:13,color:'#475569',lineHeight:1.7,display:'flex',flexDirection:'column',gap:14}}>
+          <div style={{background:'#fef3c7',border:'1px solid #fcd34d',borderRadius:10,padding:12}}>
+            <div style={{fontWeight:700,color:'#92400e',marginBottom:4}}>⚠️ Herramienta de apoyo, no asesoramiento legal</div>
+            <div>Labora es una aplicación de registro personal. Los cálculos que realiza son orientativos y pueden no coincidir con tu convenio colectivo, contrato o legislación aplicable.</div>
+          </div>
+          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>📋 Qué es Labora</div>Labora es una herramienta digital para que los trabajadores puedan llevar un registro personal de su vida laboral. No es un sistema oficial de control de presencia ni está vinculado a ningún sistema de RRHH.</div>
+          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>🚫 Qué NO es Labora</div>
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              <div>• <strong>No es asesoramiento jurídico ni laboral.</strong> Si tienes dudas sobre tus derechos, consulta a un abogado laboralista o a tu sindicato.</div>
+              <div>• <strong>No garantiza exactitud legal.</strong> Los festivos, convenios y normativas varían. Verifica siempre con tu convenio colectivo.</div>
+              <div>• <strong>No reemplaza la documentación oficial</strong> de tu empresa.</div>
+              <div>• <strong>No es válida como prueba legal</strong> en procedimientos judiciales o administrativos por sí sola.</div>
+            </div>
+          </div>
+          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>🔒 Tus datos y privacidad</div>Todos tus datos se almacenan <strong>únicamente en tu dispositivo</strong>. Labora no envía ningún dato a servidores externos, no tiene acceso a tu información y no comparte nada con terceros.</div>
+          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>⚖️ Limitación de responsabilidad</div>El desarrollador de Labora no se hace responsable de decisiones laborales, económicas o legales tomadas basándose en los datos o cálculos de la app.</div>
+          <div style={{background:'#f0fdf4',border:'1px solid #6ee7b7',borderRadius:10,padding:12,marginBottom:8}}>
+            <div style={{fontWeight:700,color:'#065f46',marginBottom:4}}>✅ Al aceptar, confirmas que</div>
+            <div style={{display:'flex',flexDirection:'column',gap:4}}>
+              <div>• Has leído y entendido este aviso legal.</div>
+              <div>• Usarás Labora como herramienta de apoyo personal.</div>
+              <div>• Verificarás cualquier dato importante con las fuentes oficiales.</div>
+              <div>• Entiendes que el desarrollador no tiene responsabilidad sobre el uso que hagas de la app.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style={{padding:20,flexShrink:0,borderTop:'1px solid #f1f5f9'}}>
+        {!scroll&&<div style={{fontSize:11,color:'#94a3b8',textAlign:'center',marginBottom:10}}>↓ Desplázate hasta el final para aceptar</div>}
+        <button onClick={scroll?onAcepto:null} style={{width:'100%',background:scroll?A.em:'#e2e8f0',color:scroll?'white':'#94a3b8',border:'none',borderRadius:12,padding:'14px 0',fontWeight:700,fontSize:15,cursor:scroll?'pointer':'not-allowed',transition:'all 0.3s'}}>
+          {scroll?'✓ Entendido, empezar a usar Labora':'Lee el aviso para continuar'}
+        </button>
+      </div>
+    </div>
+  </div>;
+}
+
+function DisclaimerInfo(){
+  const [open,setOpen]=useState(false);
+  return <>
+    {open&&<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:998,display:'flex',alignItems:'flex-end'}} onClick={()=>setOpen(false)}>
+      <div onClick={e=>e.stopPropagation()} style={{background:'white',borderRadius:'20px 20px 0 0',width:'100%',maxHeight:'80vh',display:'flex',flexDirection:'column'}}>
+        <div style={{padding:'20px 20px 0',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div style={{fontSize:16,fontWeight:800,color:'#1e293b'}}>⚖️ Aviso legal</div>
+          <button onClick={()=>setOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8'}}><IcoX/></button>
+        </div>
+        <div style={{overflowY:'auto',padding:'12px 20px 24px',fontSize:13,color:'#475569',lineHeight:1.7,display:'flex',flexDirection:'column',gap:12}}>
+          <div style={{background:'#fef3c7',border:'1px solid #fcd34d',borderRadius:10,padding:12}}><div style={{fontWeight:700,color:'#92400e',marginBottom:4}}>⚠️ Herramienta de apoyo, no asesoramiento legal</div>Los cálculos son orientativos. Verifica siempre con tu convenio colectivo y fuentes oficiales.</div>
+          <div>Labora almacena todos los datos <strong>solo en tu dispositivo</strong>. No envía nada a servidores externos.</div>
+          <div>El desarrollador no se hace responsable de decisiones tomadas basándose en los datos de la app.</div>
+          <div style={{fontSize:11,color:'#94a3b8'}}>Versión del aviso: 1.0 · {new Date().getFullYear()}</div>
+        </div>
+      </div>
+    </div>}
+    <button onClick={()=>setOpen(true)} style={{background:'none',border:'none',cursor:'pointer',fontSize:11,color:'#94a3b8',textDecoration:'underline',padding:0}}>⚖️ Aviso legal</button>
+  </>;
 }
 
 function TurnosSection({turnos:cfg,onUpdate}){
@@ -285,7 +343,7 @@ function TurnosSection({turnos:cfg,onUpdate}){
       {list.length>=2&&<div>
         <div style={{fontSize:12,fontWeight:700,color:'#64748b',textTransform:'uppercase',marginBottom:10}}>3. ¿Qué turno tienes esta semana?</div>
         <div style={{display:'flex',gap:10}}>{list.map((t,i)=><button key={i} onClick={()=>onUpdate({...cfg,anclaISO:d2s(monOf(new Date())),anclaIdx:i,overrides:{}})} style={{flex:1,padding:'16px 8px',borderRadius:12,border:'2px solid '+(idx===i&&ancla?tc(t).b:'#e2e8f0'),background:idx===i&&ancla?tc(t).bg:'white',cursor:'pointer',fontWeight:800,fontSize:18,color:idx===i&&ancla?tc(t).c:'#94a3b8',textAlign:'center'}}>{t}{idx===i&&ancla&&<div style={{fontSize:11,marginTop:4}}>✓</div>}</button>)}</div>
-        {configured&&<div style={{fontSize:11,color:A.em,marginTop:8,fontWeight:600,textAlign:'center'}}>✓ Rotación activa — el calendario se completa solo</div>}
+        {configured&&<div style={{fontSize:11,color:A.em,marginTop:8,fontWeight:600,textAlign:'center'}}>✓ Rotación activa</div>}
       </div>}
     </div>
     {configured&&<div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14}}>
@@ -295,8 +353,7 @@ function TurnosSection({turnos:cfg,onUpdate}){
       </div>
       <div style={{display:'flex',flexDirection:'column',gap:8}}>{mons.map((mon,i)=>{
         const fri=new Date(mon);fri.setDate(mon.getDate()+4);
-        const isNow=d2s(mon)===todStr;
-        const {t,ov:isOv}=getSem(mon);
+        const isNow=d2s(mon)===todStr;const {t,ov:isOv}=getSem(mon);
         const ts=t?tc(t):{bg:'#f8fafc',c:'#94a3b8',b:'#e2e8f0'};
         return <div key={i} style={{border:'2px solid '+(isNow?A.amb:'#e2e8f0'),borderRadius:10,overflow:'hidden',background:isNow?'#fffbeb':'white'}}>
           <div style={{display:'flex',alignItems:'center',padding:'8px 12px',gap:8}}>
@@ -316,7 +373,6 @@ function TurnosSection({turnos:cfg,onUpdate}){
   </div>;
 }
 
-// ── NÓMINA ──
 function NominaSection({nominas,onUpdate}){
   const [year,setYear]=useState(CY);const [form,setForm]=useState(false);const [ed,setEd]=useState(null);
   const yn=nominas.filter(n=>n.year===year);
@@ -371,7 +427,6 @@ function NomForm({initial,onSave,onCancel,color,inp}){
   </>;
 }
 
-// ── VACACIONES ──
 function Calendario({entries,fests,cy,cm,onCh,tipo,com}){
   const vacD=new Set();
   entries.forEach(e=>{
@@ -411,7 +466,7 @@ function VacForm({initial,tipo,fs,onSave,onCancel,color}){
   const [fecha,setFecha]=useState(initial.fecha||'');const [dias,setDias]=useState(initial.dias?String(initial.dias):'');const [desc,setDesc]=useState(initial.desc||'');const [fin,setFin]=useState('');const [fu,setFu]=useState(0);
   const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
   const calc=(f,d)=>{if(!f||!d||parseInt(d)<1){setFin('');return;}const r=calcFin(f,parseInt(d),tipo,fs);setFin(r.fin);setFu(r.fu);};
-  const sub=()=>{if(!fecha){alert('Fecha requerida');return;}if(!dias||parseInt(dias)<1){alert('Días requeridos');return;}const r=calcFin(fecha,parseInt(dias),tipo,fs);onSave({fecha,dias:parseInt(dias),fin:r.fin,desc});};
+  const sub=()=>{if(!fecha||!dias||parseInt(dias)<1){alert('Completa los campos');return;}const r=calcFin(fecha,parseInt(dias),tipo,fs);onSave({fecha,dias:parseInt(dias),fin:r.fin,desc});};
   return <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><span style={{fontWeight:700,color:'#1e293b'}}>Registrar vacaciones</span><button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IcoX/></button></div>
     <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha inicio *</label><input type="date" value={fecha} onChange={e=>{setFecha(e.target.value);calc(e.target.value,dias);}} style={inp}/></div>
@@ -475,7 +530,6 @@ function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
   </div>;
 }
 
-// ── COBRO ──
 function CobroSection(){
   const [dia,setDia]=useState(()=>parseInt(ll('cobro-dia')||'28'));const [ed,setEd]=useState(false);const [inp2,setInp2]=useState('');
   const c=nxtCobro(dia);const mes=c.date.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
@@ -500,7 +554,6 @@ function CobroSection(){
   </div>;
 }
 
-// ── FALLOS ──
 function FallosSection({fallos,incid,year,onUpdateF,onUpdateI}){
   const [sub,setSub]=useState('fallos');const [fF,setFF]=useState(false);const [edF,setEdF]=useState(null);const [fI,setFI]=useState(false);const [edI,setEdI]=useState(null);const [mF,setMF]=useState(null);const [mI,setMI]=useState(null);
   const yf=fallos.filter(i=>yOf(i.fecha)===year);const mf=yf.filter(i=>mOf(i.fecha)===CM&&year===CY);
@@ -539,7 +592,6 @@ function FallosSection({fallos,incid,year,onUpdateF,onUpdateI}){
   </div>;
 }
 
-// ── AUSENCIAS ──
 function AusenciasSection({items,year,onUpdate}){
   const [form,setForm]=useState(false);const [ed,setEd]=useState(null);const [fecha,setFecha]=useState(todayISO());const [just,setJust]=useState('');const [mot,setMot]=useState('');const [hrs,setHrs]=useState('');const [est,setEst]=useState('Pendiente');const [mes,setMes]=useState(null);
   const yi=items.filter(i=>yOf(i.fecha)===year);const mi=yi.filter(i=>mOf(i.fecha)===CM&&year===CY);
@@ -579,7 +631,6 @@ function AusenciasSection({items,year,onUpdate}){
   </div>;
 }
 
-// ── HORAS ──
 function HorasSection({items,year,onUpdate}){
   const [form,setForm]=useState(false);const [ed,setEd]=useState(null);const [mes,setMes]=useState(null);
   const yi=items.filter(i=>yOf(i.fecha)===year);const mi=yi.filter(i=>mOf(i.fecha)===CM&&year===CY);
@@ -600,10 +651,8 @@ function HorasSection({items,year,onUpdate}){
   </div>;
 }
 
-// ── BACKUP ──
 function BackupSection(){
-  const [msg,setMsg]=useState('');
-  const [yInf,setYInf]=useState(CY);
+  const [msg,setMsg]=useState('');const [yInf,setYInf]=useState(CY);
   const ys=[];for(let y=CY+1;y>=CY-4;y--)ys.push(y);
   const exp=()=>{
     const data={version:3,fecha:new Date().toISOString(),fallos:ll('fallos')||[],horas:ll('horas')||[],vacE:ll('vac-e')||[],vacT:ll('vac-t')||{},incid:ll('incid')||[],ausencias:ll('ausencias')||[],cobroDia:ll('cobro-dia')||28,vacTipo:ll('vac-tipo')||'laborables',vacComunidad:ll('vac-comunidad')||'cataluna',turnos:ll('turnos')||{},nominas:ll('nominas')||[]};
@@ -622,8 +671,7 @@ function BackupSection(){
         if(Array.isArray(data.incid))ls('incid',data.incid);if(Array.isArray(data.ausencias))ls('ausencias',data.ausencias);
         if(data.cobroDia)ls('cobro-dia',data.cobroDia);if(data.vacTipo)ls('vac-tipo',data.vacTipo);
         if(data.vacComunidad)ls('vac-comunidad',data.vacComunidad);
-        if(data.turnos)ls('turnos',data.turnos);
-        if(Array.isArray(data.nominas))ls('nominas',data.nominas);
+        if(data.turnos)ls('turnos',data.turnos);if(Array.isArray(data.nominas))ls('nominas',data.nominas);
         setMsg('Datos restaurados. Recarga la app.');
       }catch{alert('Error al leer el archivo.');}
     };
@@ -631,53 +679,31 @@ function BackupSection(){
   };
   return <div style={{display:'flex',flexDirection:'column',gap:14}}>
     <SHead emoji="💾" title="Backup y reportes" sub="Exporta e importa tus datos" bg="#f0fdf4"/>
-
     <div style={{background:'white',borderRadius:12,border:'2px solid '+A.teal,padding:16,display:'flex',flexDirection:'column',gap:12}}>
       <div style={{fontWeight:700,fontSize:14,color:'#1e293b'}}>📄 Informe anual</div>
-      <div style={{fontSize:12,color:'#64748b'}}>Se abre una página con todos tus datos del año. Desde ahí: <strong>Imprimir → Guardar como PDF</strong>.</div>
-      <div style={{display:'flex',gap:8}}>
-        <select value={yInf} onChange={e=>setYInf(Number(e.target.value))} style={{flex:1,padding:'11px 12px',border:'1px solid #e2e8f0',borderRadius:8,fontSize:15,fontWeight:700,color:'#1e293b',background:'#f8fafc'}}>{ys.map(y=><option key={y} value={y}>{y}</option>)}</select>
-        <button onClick={()=>generarInforme(yInf)} style={{flex:2,background:A.teal,color:'white',border:'none',borderRadius:10,padding:'11px 0',fontWeight:700,fontSize:15,cursor:'pointer'}}>📄 Ver informe {yInf}</button>
-      </div>
+      <div style={{fontSize:12,color:'#64748b'}}>Se abre una página con todos tus datos. Desde ahí: <strong>Imprimir → Guardar como PDF</strong>.</div>
+      <div style={{display:'flex',gap:8}}><select value={yInf} onChange={e=>setYInf(Number(e.target.value))} style={{flex:1,padding:'11px 12px',border:'1px solid #e2e8f0',borderRadius:8,fontSize:15,fontWeight:700,color:'#1e293b',background:'#f8fafc'}}>{ys.map(y=><option key={y} value={y}>{y}</option>)}</select><button onClick={()=>generarInforme(yInf)} style={{flex:2,background:A.teal,color:'white',border:'none',borderRadius:10,padding:'11px 0',fontWeight:700,fontSize:15,cursor:'pointer'}}>📄 Ver informe {yInf}</button></div>
     </div>
-
     <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:10}}>
       <div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Exportar datos</div>
       <div style={{fontSize:12,color:'#64748b'}}>Descarga todos tus datos en un archivo.</div>
       <button onClick={exp} style={{width:'100%',background:A.em,color:'white',border:'none',borderRadius:10,padding:'13px 0',fontWeight:600,fontSize:15,cursor:'pointer'}}>Descargar backup</button>
     </div>
-
     <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:10}}>
       <div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Restaurar datos</div>
       <div style={{fontSize:12,color:'#64748b'}}>Los datos actuales serán reemplazados.</div>
       <label style={{width:'100%',background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:10,padding:'13px 0',fontWeight:600,fontSize:15,cursor:'pointer',textAlign:'center',color:A.blue,display:'block'}}>Seleccionar archivo<input type="file" accept=".json" style={{display:'none'}} onChange={imp}/></label>
     </div>
-
     {msg&&<div style={{background:'#f0fdf4',border:'1px solid #6ee7b7',borderRadius:10,padding:'12px 14px',fontSize:13,color:'#065f46',fontWeight:600}}>{msg}</div>}
-
-    {/* Apoya Labora */}
-    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:10}}>
-      <div style={{fontSize:13,fontWeight:700,color:'#1e293b'}}>☕ Apoya Labora</div>
-      <div style={{fontSize:12,color:'#64748b'}}>Labora es gratuita y sin anuncios. Si te resulta útil, puedes invitarme a un café — me ayuda a seguir mejorándola.</div>
-      <button onClick={()=>window.open('https://ko-fi.com/laboraapp','_blank')} style={{width:'100%',background:'#FF5E5B',color:'white',border:'none',borderRadius:10,padding:'13px 0',fontWeight:700,fontSize:15,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
-        <span style={{fontSize:18}}>☕</span> Invítame a un café en Ko-fi
-      </button>
-      <div style={{fontSize:10,color:'#94a3b8',textAlign:'center'}}>100% voluntario · sin compromisos · gracias 🙏</div>
-    </div>
   </div>;
 }
 
-// ── INICIO ──
 function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,turnos,nominas,onNav}){
-
   const tipo=ll('vac-tipo')||'laborables';const com=ll('vac-comunidad')||'cataluna';const cobroDia=parseInt(ll('cobro-dia')||'28');
   const hoy=new Date();hoy.setHours(0,0,0,0);
   const yK=String(CY);const totV=Number(vacT[yK]??0);
   const ye=vacE.filter(e=>yOf(e.fecha)===CY);
-  const usV=ye.reduce((a,e)=>a+dUsados(e,tipo,com,hoy),0);const restV=totV-usV;const pctV=totV>0?Math.min(100,(usV/totV)*100):0;
-  const n2=new Date();n2.setHours(0,0,0,0);
-  const fut=vacE.filter(e=>new Date(e.fecha+'T12:00:00')>n2).sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  const prox=fut[0]||null;const cdV=prox?wkDays(prox.fecha):null;
+  const usV=ye.reduce((a,e)=>a+dUsados(e,tipo,com,hoy),0);const restV=totV-usV;
   const cobro=nxtCobro(cobroDia);
   const fM=fallos.filter(i=>mOf(i.fecha)===CM&&yOf(i.fecha)===CY).length;
   const iM=incid.filter(i=>mOf(i.fecha)===CM&&yOf(i.fecha)===CY).length;
@@ -687,140 +713,97 @@ function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,turnos,nominas,on
   const tAct=(()=>{const tl=turnos.turnosList||[];const f=turnos.frecuencia||1;const a=turnos.anclaISO||null;const ai=turnos.anclaIdx??0;const ov=turnos.overrides||{};const mon=monOf(new Date());const k=d2s(mon);if(ov[k]!==undefined)return ov[k];return cTurno(mon,tl,f,a,ai);})();
   const nomM=nominas.find(n=>n.year===CY&&n.mes===CM);
   const dh=new Date();const dSem=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][dh.getDay()];
-  const fHoy=`${dSem}, ${dh.getDate()} de ${MESES[dh.getMonth()]} ${dh.getFullYear()}`;
-  const cdStr=c=>{if(!c)return null;const p=[];if(c.weeks>0)p.push(c.weeks+' sem');if(c.days>0)p.push(c.days+' día'+(c.days!==1?'s':''));return p.join(' y ')||'Hoy';};
-  const Card=({emoji,title,onClick,children,color})=><div onClick={onClick} style={{background:'white',borderRadius:14,border:'1px solid #e2e8f0',padding:14,cursor:'pointer'}}>
-    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}><span style={{fontSize:18}}>{emoji}</span><span style={{fontWeight:700,fontSize:14,color:'#1e293b'}}>{title}</span><span style={{marginLeft:'auto',fontSize:11,color:color||'#94a3b8',fontWeight:600}}>Ver →</span></div>{children}
-  </div>;
-  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
-    <div style={{background:'#1e293b',borderRadius:16,padding:18,color:'white'}}>
-      <div style={{fontSize:12,color:'#94a3b8',marginBottom:4}}>{fHoy}</div>
-      <div style={{fontSize:22,fontWeight:800,marginBottom:2}}>¡Hola! 👋</div>
-      <div style={{fontSize:13,color:'#94a3b8'}}>Tu resumen de hoy</div>
+  const fHoy=`${dSem}, ${dh.getDate()} ${MESES[dh.getMonth()].slice(0,3)} ${dh.getFullYear()}`;
+  const cdStr=c=>{if(!c)return null;const p=[];if(c.weeks>0)p.push(c.weeks+'s');if(c.days>0)p.push(c.days+'d');return p.join(' ')||'Hoy';};
+  const s={background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:10,cursor:'pointer'};
+
+  return <div style={{display:'flex',flexDirection:'column',gap:8}}>
+    {/* Fila 1: Hola + Turno */}
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+      <div style={{background:'#1e293b',borderRadius:12,padding:12,color:'white'}}>
+        <div style={{fontSize:10,color:'#94a3b8'}}>{fHoy}</div>
+        <div style={{fontSize:17,fontWeight:800,marginTop:2}}>¡Hola! 👋</div>
+        <div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>Tu resumen</div>
+      </div>
+      {tAct
+        ?<div onClick={()=>onNav('turnos')} style={{background:tc(tAct).bg,borderRadius:12,border:'2px solid '+tc(tAct).b,padding:12,cursor:'pointer'}}>
+          <div style={{fontSize:9,fontWeight:700,color:tc(tAct).c,textTransform:'uppercase'}}>Esta semana</div>
+          <div style={{fontSize:20,fontWeight:900,color:tc(tAct).c,marginTop:2}}>{tAct}</div>
+          <div style={{fontSize:9,color:tc(tAct).c,marginTop:2}}>Turno →</div>
+        </div>
+        :<div onClick={()=>onNav('turnos')} style={{...s,display:'flex',alignItems:'center',justifyContent:'center',border:'2px dashed #e2e8f0'}}>
+          <div style={{fontSize:11,color:'#94a3b8',textAlign:'center'}}>🔄 Configura turnos</div>
+        </div>}
     </div>
 
+    {/* Avisos */}
     <Avisos vacE={vacE} turnos={turnos}/>
-    {tAct&&<div onClick={()=>onNav('turnos')} style={{background:tc(tAct).bg,borderRadius:14,border:'2px solid '+tc(tAct).b,padding:'12px 16px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-      <div><div style={{fontSize:11,fontWeight:700,color:tc(tAct).c,textTransform:'uppercase'}}>Turno esta semana</div><div style={{fontSize:26,fontWeight:900,color:tc(tAct).c}}>{tAct}</div></div>
-      <span style={{fontSize:11,color:tc(tAct).c,fontWeight:600}}>Ver →</span>
-    </div>}
-    <Card emoji="🌴" title="Vacaciones" onClick={()=>onNav('vacaciones')} color={A.em}>
-      {totV===0?<div style={{fontSize:13,color:'#94a3b8'}}>Sin días configurados</div>:<>
-        <div style={{display:'flex',gap:10,marginBottom:10}}>
-          <div style={{flex:1,textAlign:'center'}}><div style={{fontSize:28,fontWeight:900,color:A.amb,lineHeight:1}}>{usV}</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>usados</div></div>
-          <div style={{width:1,background:'#f1f5f9'}}/>
-          <div style={{flex:1,textAlign:'center'}}><div style={{fontSize:28,fontWeight:900,color:A.em,lineHeight:1}}>{restV}</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>disponibles</div></div>
-          <div style={{width:1,background:'#f1f5f9'}}/>
-          <div style={{flex:1,textAlign:'center'}}><div style={{fontSize:28,fontWeight:900,color:'#64748b',lineHeight:1}}>{totV}</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>totales</div></div>
-        </div>
-        <div style={{height:6,background:'#f1f5f9',borderRadius:99,overflow:'hidden',marginBottom:8}}><div style={{height:'100%',width:pctV+'%',background:A.em,borderRadius:99}}/></div>
-        {prox&&cdV&&<div style={{fontSize:12,color:A.em,fontWeight:600}}>🗓 Próximas en {cdStr(cdV)} · {prox.desc||fmtL(prox.fecha)}</div>}
-      </>}
-    </Card>
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-      <Card emoji="💰" title="Cobro" onClick={()=>onNav('cobro')} color={A.pur}><div style={{fontSize:20,fontWeight:900,color:A.pur,lineHeight:1}}>{cobro.total===0?'¡Hoy!':cdStr({weeks:cobro.weeks,days:cobro.days})}</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>para cobrar</div></Card>
-      <Card emoji="💵" title="Nómina" onClick={()=>onNav('nomina')} color={A.teal}>{nomM?<><div style={{fontSize:20,fontWeight:900,color:A.teal}}>{Number(nomM.importe).toLocaleString('es-ES')}€</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>{MESES[CM]}</div></>:<div style={{fontSize:12,color:'#cbd5e1',marginTop:4}}>Sin registrar</div>}</Card>
+
+    {/* Fila 2: Vacaciones + Cobro + Nómina */}
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+      <div onClick={()=>onNav('vacaciones')} style={s}>
+        <div style={{fontSize:15}}>🌴</div>
+        <div style={{fontSize:9,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',marginTop:2}}>Vacac.</div>
+        {totV>0?<><div style={{fontSize:18,fontWeight:900,color:A.em,lineHeight:1,marginTop:2}}>{restV}</div><div style={{fontSize:9,color:'#94a3b8'}}>disponibles</div></>
+        :<div style={{fontSize:10,color:'#cbd5e1',marginTop:4}}>—</div>}
+      </div>
+      <div onClick={()=>onNav('cobro')} style={s}>
+        <div style={{fontSize:15}}>💰</div>
+        <div style={{fontSize:9,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',marginTop:2}}>Cobro</div>
+        <div style={{fontSize:15,fontWeight:900,color:A.pur,lineHeight:1,marginTop:2}}>{cobro.total===0?'¡Hoy!':cdStr({weeks:cobro.weeks,days:cobro.days})}</div>
+        <div style={{fontSize:9,color:'#94a3b8'}}>para cobrar</div>
+      </div>
+      <div onClick={()=>onNav('nomina')} style={s}>
+        <div style={{fontSize:15}}>💵</div>
+        <div style={{fontSize:9,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',marginTop:2}}>Nómina</div>
+        {nomM?<><div style={{fontSize:15,fontWeight:900,color:A.teal,lineHeight:1,marginTop:2}}>{Number(nomM.importe).toLocaleString('es-ES')}€</div><div style={{fontSize:9,color:'#94a3b8'}}>{MESES[CM]}</div></>
+        :<div style={{fontSize:10,color:'#cbd5e1',marginTop:4}}>—</div>}
+      </div>
     </div>
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-      <Card emoji="⚠️" title="Fallos" onClick={()=>onNav('fallos')} color={A.red}><div style={{fontSize:28,fontWeight:900,color:fM>0?A.red:'#94a3b8',lineHeight:1}}>{fM}</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>este mes</div>{iM>0&&<div style={{fontSize:11,color:A.amb,marginTop:6,fontWeight:600}}>{iM} incidencia{iM!==1?'s':''}</div>}</Card>
-      <Card emoji="🚫" title="Ausencias" onClick={()=>onNav('ausencias')} color={aP>0?A.amb:A.red}><div style={{fontSize:28,fontWeight:900,color:aM>0?A.red:'#94a3b8',lineHeight:1}}>{aM}</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>este mes</div>{aP>0&&<div style={{fontSize:11,color:A.amb,marginTop:6,fontWeight:600}}>{aP} pendiente{aP!==1?'s':''}</div>}</Card>
+
+    {/* Fila 3: Fallos + Ausencias + Horas */}
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+      <div onClick={()=>onNav('fallos')} style={s}>
+        <div style={{fontSize:15}}>⚠️</div>
+        <div style={{fontSize:9,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',marginTop:2}}>Fallos</div>
+        <div style={{fontSize:18,fontWeight:900,color:fM>0?A.red:'#94a3b8',lineHeight:1,marginTop:2}}>{fM}</div>
+        <div style={{fontSize:9,color:'#94a3b8'}}>este mes</div>
+        {iM>0&&<div style={{fontSize:9,color:A.amb,fontWeight:600,marginTop:2}}>{iM} incid.</div>}
+      </div>
+      <div onClick={()=>onNav('ausencias')} style={s}>
+        <div style={{fontSize:15}}>🚫</div>
+        <div style={{fontSize:9,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',marginTop:2}}>Ausenc.</div>
+        <div style={{fontSize:18,fontWeight:900,color:aM>0?A.red:'#94a3b8',lineHeight:1,marginTop:2}}>{aM}</div>
+        <div style={{fontSize:9,color:'#94a3b8'}}>este mes</div>
+        {aP>0&&<div style={{fontSize:9,color:A.amb,fontWeight:600,marginTop:2}}>{aP} pend.</div>}
+      </div>
+      <div onClick={()=>onNav('horas')} style={s}>
+        <div style={{fontSize:15}}>⏱️</div>
+        <div style={{fontSize:9,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',marginTop:2}}>H.Extra</div>
+        <div style={{fontSize:18,fontWeight:900,color:hM>0?A.blue:'#94a3b8',lineHeight:1,marginTop:2}}>{hM}</div>
+        <div style={{fontSize:9,color:'#94a3b8'}}>este mes</div>
+      </div>
     </div>
-    <Card emoji="⏱️" title="Horas extra" onClick={()=>onNav('horas')} color={A.blue}><div style={{display:'flex',alignItems:'baseline',gap:6}}><div style={{fontSize:34,fontWeight:900,color:hM>0?A.blue:'#94a3b8',lineHeight:1}}>{hM}</div><div style={{fontSize:15,color:'#94a3b8'}}>h este mes</div></div></Card>
 
     {/* Ko-fi */}
-    <div style={{background:'linear-gradient(135deg,#fff5f0,#fff0eb)',borderRadius:14,border:'1px solid #fcd34d',padding:16,display:'flex',alignItems:'center',gap:12}}>
-      <span style={{fontSize:32,flexShrink:0}}>☕</span>
+    <div style={{background:'linear-gradient(135deg,#fff5f0,#fff0eb)',borderRadius:12,border:'1px solid #fcd34d',padding:10,display:'flex',alignItems:'center',gap:8}}>
+      <span style={{fontSize:20,flexShrink:0}}>☕</span>
       <div style={{flex:1,minWidth:0}}>
-        <div style={{fontWeight:700,fontSize:14,color:'#1e293b',marginBottom:2}}>¿Te es útil Labora?</div>
-        <div style={{fontSize:12,color:'#64748b'}}>Es gratis y sin anuncios. Si quieres apoyar el proyecto, invítame a un café 🙏</div>
+        <div style={{fontWeight:700,fontSize:12,color:'#1e293b'}}>¿Te es útil Labora?</div>
+        <div style={{fontSize:10,color:'#64748b'}}>Gratis y sin anuncios 🙏</div>
       </div>
-      <button onClick={()=>window.open('https://ko-fi.com/laboraapp','_blank')} style={{flexShrink:0,background:'#FF5E5B',color:'white',border:'none',borderRadius:10,padding:'10px 14px',fontWeight:700,fontSize:13,cursor:'pointer'}}>
-        Apoyar
-      </button>
+      <button onClick={()=>window.open('https://ko-fi.com/laboraapp','_blank')} style={{flexShrink:0,background:'#FF5E5B',color:'white',border:'none',borderRadius:8,padding:'7px 10px',fontWeight:700,fontSize:11,cursor:'pointer'}}>Apoyar</button>
     </div>
   </div>;
 }
 
-// ── DISCLAIMER ──
-function DisclaimerModal({onAcepto}){
-  const [scroll,setScroll]=useState(false);
-  const ref=useRef(null);
-  const onScroll=()=>{const el=ref.current;if(!el)return;if(el.scrollTop+el.clientHeight>=el.scrollHeight-20)setScroll(true);};
-  return <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:999,display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
-    <div style={{background:'white',borderRadius:'20px 20px 0 0',width:'100%',maxWidth:500,maxHeight:'90vh',display:'flex',flexDirection:'column'}}>
-      <div style={{padding:'20px 20px 0',flexShrink:0}}>
-        <div style={{width:40,height:4,background:'#e2e8f0',borderRadius:99,margin:'0 auto 16px'}}/>
-        <div style={{fontSize:18,fontWeight:800,color:'#1e293b',marginBottom:4}}>⚖️ Aviso legal importante</div>
-        <div style={{fontSize:12,color:'#94a3b8',marginBottom:12}}>Lee esto antes de usar Labora · desplázate hasta el final para aceptar</div>
-      </div>
-      <div ref={ref} onScroll={onScroll} style={{overflowY:'auto',padding:'0 20px',flex:1}}>
-        <div style={{fontSize:13,color:'#475569',lineHeight:1.7,display:'flex',flexDirection:'column',gap:14}}>
-          <div style={{background:'#fef3c7',border:'1px solid #fcd34d',borderRadius:10,padding:12}}>
-            <div style={{fontWeight:700,color:'#92400e',marginBottom:4}}>⚠️ Herramienta de apoyo, no asesoramiento legal</div>
-            <div>Labora es una aplicación de registro personal. Los cálculos que realiza (vacaciones, festivos, horas extra, etc.) son orientativos y pueden no coincidir con tu convenio colectivo, contrato o legislación aplicable.</div>
-          </div>
-          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>📋 Qué es Labora</div>Labora es una herramienta digital para que los trabajadores puedan llevar un registro personal de su vida laboral: vacaciones, turnos, nóminas, ausencias y horas extra. No es un sistema oficial de control de presencia ni está vinculado a ningún sistema de RRHH de ninguna empresa.</div>
-          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>🚫 Qué NO es Labora</div>
-            <div style={{display:'flex',flexDirection:'column',gap:6}}>
-              <div>• <strong>No es asesoramiento jurídico ni laboral.</strong> Si tienes dudas sobre tus derechos, consulta a un abogado laboralista o a tu sindicato.</div>
-              <div>• <strong>No garantiza exactitud legal.</strong> Los festivos, convenios y normativas varían por comunidad, sector y empresa. Verifica siempre con tu convenio colectivo.</div>
-              <div>• <strong>No reemplaza la documentación oficial</strong> de tu empresa (nóminas, contratos, partes de trabajo).</div>
-              <div>• <strong>No es válida como prueba legal</strong> en procedimientos judiciales o administrativos por sí sola.</div>
-            </div>
-          </div>
-          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>🔒 Tus datos y privacidad</div>Todos tus datos se almacenan <strong>únicamente en tu dispositivo</strong>. Labora no envía ningún dato a servidores externos, no tiene acceso a tu información y no comparte nada con terceros. Si desinstales la app o limpias el caché, los datos se pierden. Por eso existe la función de backup.</div>
-          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>⚖️ Limitación de responsabilidad</div>El desarrollador de Labora no se hace responsable de decisiones laborales, económicas o legales tomadas basándose en los datos o cálculos de la app. El uso de Labora es responsabilidad exclusiva del usuario.</div>
-          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>📅 Festivos y convenios</div>Los festivos nacionales y autonómicos se calculan de forma automática pero pueden no estar actualizados o pueden variar. Comprueba siempre el calendario oficial de tu comunidad y tu convenio colectivo.</div>
-          <div style={{background:'#f0fdf4',border:'1px solid #6ee7b7',borderRadius:10,padding:12,marginBottom:8}}>
-            <div style={{fontWeight:700,color:'#065f46',marginBottom:4}}>✅ Al aceptar, confirmas que</div>
-            <div style={{display:'flex',flexDirection:'column',gap:4}}>
-              <div>• Has leído y entendido este aviso legal.</div>
-              <div>• Usarás Labora como herramienta de apoyo personal.</div>
-              <div>• Verificarás cualquier dato importante con las fuentes oficiales.</div>
-              <div>• Entiendes que el desarrollador no tiene responsabilidad sobre el uso que hagas de la app.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div style={{padding:20,flexShrink:0,borderTop:'1px solid #f1f5f9'}}>
-        {!scroll&&<div style={{fontSize:11,color:'#94a3b8',textAlign:'center',marginBottom:10}}>↓ Desplázate hasta el final para aceptar</div>}
-        <button onClick={scroll?onAcepto:null} style={{width:'100%',background:scroll?A.em:'#e2e8f0',color:scroll?'white':'#94a3b8',border:'none',borderRadius:12,padding:'14px 0',fontWeight:700,fontSize:15,cursor:scroll?'pointer':'not-allowed',transition:'all 0.3s'}}>
-          {scroll?'✓ Entendido, empezar a usar Labora':'Lee el aviso para continuar'}
-        </button>
-      </div>
-    </div>
-  </div>;
-}
-
-function DisclaimerInfo(){
-  const [open,setOpen]=useState(false);
-  return <>
-    {open&&<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:998,display:'flex',alignItems:'flex-end'}} onClick={()=>setOpen(false)}>
-      <div onClick={e=>e.stopPropagation()} style={{background:'white',borderRadius:'20px 20px 0 0',width:'100%',maxHeight:'80vh',display:'flex',flexDirection:'column'}}>
-        <div style={{padding:'20px 20px 0',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div style={{fontSize:16,fontWeight:800,color:'#1e293b'}}>⚖️ Aviso legal</div>
-          <button onClick={()=>setOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8'}}><IcoX/></button>
-        </div>
-        <div style={{overflowY:'auto',padding:'12px 20px 24px',fontSize:13,color:'#475569',lineHeight:1.7,display:'flex',flexDirection:'column',gap:12}}>
-          <div style={{background:'#fef3c7',border:'1px solid #fcd34d',borderRadius:10,padding:12}}><div style={{fontWeight:700,color:'#92400e',marginBottom:4}}>⚠️ Herramienta de apoyo, no asesoramiento legal</div>Los cálculos son orientativos. Verifica siempre con tu convenio colectivo y fuentes oficiales.</div>
-          <div>Labora almacena todos los datos <strong>solo en tu dispositivo</strong>. No envía nada a servidores externos.</div>
-          <div>El desarrollador no se hace responsable de decisiones tomadas basándose en los datos de la app.</div>
-          <div style={{fontSize:11,color:'#94a3b8'}}>Versión del aviso: 1.0 · {new Date().getFullYear()}</div>
-        </div>
-      </div>
-    </div>}
-    <button onClick={()=>setOpen(true)} style={{background:'none',border:'none',cursor:'pointer',fontSize:11,color:'#94a3b8',textDecoration:'underline',padding:0}}>⚖️ Aviso legal</button>
-  </>;
-}
-
-// ── APP ──
 function App(){
   const [tab,setTab]=useState('inicio');const [year,setYear]=useState(CY);
-  const [disclaimerOk,setDisclaimerOk]=useState(()=>{const v=ll('disclaimer-ok');return v===true;});
   const [fallos,setFallos]=useState([]);const [horas,setHoras]=useState([]);
   const [vacE,setVacE]=useState([]);const [vacT,setVacT]=useState({});
   const [incid,setIncid]=useState([]);const [aus,setAus]=useState([]);
   const [turnos,setTurnos]=useState({});const [nominas,setNominas]=useState([]);
+  const [disclaimerOk,setDisclaimerOk]=useState(()=>{const v=ll('disclaimer-ok');return v===true;});
 
   useEffect(()=>{
     const f=ll('fallos');if(Array.isArray(f))setFallos(f);
@@ -837,6 +820,7 @@ function App(){
   const sVe=d=>{setVacE(d);ls('vac-e',d);};const sVt=d=>{setVacT(d);ls('vac-t',d);};
   const sI=d=>{setIncid(d);ls('incid',d);};const sA=d=>{setAus(d);ls('ausencias',d);};
   const sT=d=>{setTurnos(d);ls('turnos',d);};const sN=d=>{setNominas(d);ls('nominas',d);};
+  const acept=()=>{ls('disclaimer-ok',true);setDisclaimerOk(true);};
 
   const ys=[];for(let y=CY+1;y>=CY-4;y--)ys.push(y);
   const showY=['vacaciones','fallos','ausencias','horas'].includes(tab);
@@ -847,8 +831,6 @@ function App(){
     {id:'fallos',label:'Fallos',emoji:'⚠️'},{id:'ausencias',label:'Ausenc.',emoji:'🚫'},
     {id:'horas',label:'H.Extra',emoji:'⏱️'},
   ];
-
-  const acept=()=>{ls('disclaimer-ok',true);setDisclaimerOk(true);};
 
   return <div style={{minHeight:'100svh',display:'flex',flexDirection:'column',background:'#f8fafc',fontFamily:'system-ui,-apple-system,sans-serif'}}>
     {!disclaimerOk&&<DisclaimerModal onAcepto={acept}/>}
