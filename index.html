@@ -340,7 +340,7 @@ function NominaSection({nominas,onUpdate}){
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><span style={{fontWeight:700,color:'#1e293b'}}>{ed?'Editar':'Nueva nómina'}</span><button onClick={()=>{setForm(false);setEd(null);}} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IcoX/></button></div>
       <NomForm initial={ed||{mes:String(CM),importe:'',extra:'',notas:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={A.teal} inp={inp}/>
     </div>}
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>{MESES.map((m,i)=>{
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>{MESES.map((m,i)=>{
       const nom=gN(i);const df=gD(i);const esE=ME.includes(i);const esA=i===CM&&year===CY;
       return <div key={i} onClick={()=>{if(nom){setEd(nom);setForm(false);}else{setEd(null);setForm(true);}}} style={{background:nom?'white':'#f8fafc',borderRadius:12,border:'2px solid '+(esA?A.teal:nom?'#e2e8f0':'#f1f5f9'),padding:12,cursor:'pointer',position:'relative'}}>
         {esE&&<div style={{position:'absolute',top:6,right:8,fontSize:9,fontWeight:700,color:A.amb}}>+Extra</div>}
