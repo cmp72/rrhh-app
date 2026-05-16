@@ -340,7 +340,7 @@ function NominaSection({nominas,onUpdate}){
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><span style={{fontWeight:700,color:'#1e293b'}}>{ed?'Editar':'Nueva nómina'}</span><button onClick={()=>{setForm(false);setEd(null);}} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IcoX/></button></div>
       <NomForm initial={ed||{mes:String(CM),importe:'',extra:'',notas:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={A.teal} inp={inp}/>
     </div>}
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>{MESES.map((m,i)=>{
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:8}}>{MESES.map((m,i)=>{
       const nom=gN(i);const df=gD(i);const esE=ME.includes(i);const esA=i===CM&&year===CY;
       return <div key={i} onClick={()=>{if(nom){setEd(nom);setForm(false);}else{setEd(null);setForm(true);}}} style={{background:nom?'white':'#f8fafc',borderRadius:12,border:'2px solid '+(esA?A.teal:nom?'#e2e8f0':'#f1f5f9'),padding:12,cursor:'pointer',position:'relative'}}>
         {esE&&<div style={{position:'absolute',top:6,right:8,fontSize:9,fontWeight:700,color:A.amb}}>+Extra</div>}
@@ -716,11 +716,11 @@ function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,turnos,nominas,on
         {prox&&cdV&&<div style={{fontSize:12,color:A.em,fontWeight:600}}>🗓 Próximas en {cdStr(cdV)} · {prox.desc||fmtL(prox.fecha)}</div>}
       </>}
     </Card>
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
       <Card emoji="💰" title="Cobro" onClick={()=>onNav('cobro')} color={A.pur}><div style={{fontSize:20,fontWeight:900,color:A.pur,lineHeight:1}}>{cobro.total===0?'¡Hoy!':cdStr({weeks:cobro.weeks,days:cobro.days})}</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>para cobrar</div></Card>
       <Card emoji="💵" title="Nómina" onClick={()=>onNav('nomina')} color={A.teal}>{nomM?<><div style={{fontSize:20,fontWeight:900,color:A.teal}}>{Number(nomM.importe).toLocaleString('es-ES')}€</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>{MESES[CM]}</div></>:<div style={{fontSize:12,color:'#cbd5e1',marginTop:4}}>Sin registrar</div>}</Card>
     </div>
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
       <Card emoji="⚠️" title="Fallos" onClick={()=>onNav('fallos')} color={A.red}><div style={{fontSize:28,fontWeight:900,color:fM>0?A.red:'#94a3b8',lineHeight:1}}>{fM}</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>este mes</div>{iM>0&&<div style={{fontSize:11,color:A.amb,marginTop:6,fontWeight:600}}>{iM} incidencia{iM!==1?'s':''}</div>}</Card>
       <Card emoji="🚫" title="Ausencias" onClick={()=>onNav('ausencias')} color={aP>0?A.amb:A.red}><div style={{fontSize:28,fontWeight:900,color:aM>0?A.red:'#94a3b8',lineHeight:1}}>{aM}</div><div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>este mes</div>{aP>0&&<div style={{fontSize:11,color:A.amb,marginTop:6,fontWeight:600}}>{aP} pendiente{aP!==1?'s':''}</div>}</Card>
     </div>
