@@ -242,6 +242,105 @@ function Avisos({vacE,turnos}){
   </div>;
 }
 
+// ── NUEVO: Pantalla de inicio tipo dashboard ──────────────────────────────────
+function InicioSection({vacE,vacTotales,fallos,horas,ausencias,nominas,turnos,cobro,onNav}){
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  const tipo=ll('vac-tipo')||'laborables';
+  const com=ll('vac-comunidad')||'cataluna';
+  const yKey=String(CY);
+  const totalVac=Number(vacTotales[yKey]??0);
+  const yeVac=vacE.filter(e=>yOf(e.fecha)===CY);
+  const usadosVac=yeVac.reduce((a,e)=>a+dUsados(e,tipo,com,hoy),0);
+  const dispVac=totalVac-usadosVac;
+
+  const cobroData=nxtCobro(cobro);
+
+  const yeHrs=horas.filter(i=>yOf(i.fecha)===CY);
+  const sumHrs=yeHrs.reduce((s,i)=>s+Number(i.horas||0),0);
+
+  const yeFallos=fallos.filter(i=>yOf(i.fecha)===CY&&mOf(i.fecha)===CM);
+
+  const now=new Date();now.setHours(0,0,0,0);
+  const proxVac=vacE.filter(e=>new Date(e.fecha+'T12:00:00')>now).sort((a,b)=>a.fecha.localeCompare(b.fecha))[0]||null;
+  const cdVac=proxVac?wkDays(proxVac.fecha):null;
+
+  const tAct=(()=>{
+    const list=turnos.turnosList||[];const ancla=turnos.anclaISO||null;
+    if(list.length<2||!ancla)return null;
+    return cTurno(monOf(hoy),list,turnos.frecuencia||1,ancla,turnos.anclaIdx??0);
+  })();
+  const tSig=(()=>{
+    const list=turnos.turnosList||[];const ancla=turnos.anclaISO||null;
+    if(list.length<2||!ancla)return null;
+    const sig=new Date(monOf(hoy));sig.setDate(monOf(hoy).getDate()+7);
+    return cTurno(sig,list,turnos.frecuencia||1,ancla,turnos.anclaIdx??0);
+  })();
+
+  const ultimaNom=[...nominas].filter(n=>n.year===CY).sort((a,b)=>b.mes-a.mes)[0]||null;
+
+  const dias=new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  const diasCap=dias.charAt(0).toUpperCase()+dias.slice(1);
+
+  const Card=({emoji,top,val,valColor,sub,subColor,onClick})=>(
+    <div onClick={onClick} style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',cursor:'pointer',WebkitTapHighlightColor:'transparent'}}>
+      <div style={{fontSize:12,color:'#94a3b8',marginBottom:3}}>{emoji} {top}</div>
+      <div style={{fontSize:22,fontWeight:800,color:valColor||'#1e293b',lineHeight:1}}>{val}</div>
+      {sub&&<div style={{fontSize:11,marginTop:3,color:subColor||'#94a3b8'}}>{sub}</div>}
+    </div>
+  );
+
+  return <div style={{display:'flex',flexDirection:'column',gap:12}}>
+    <div style={{fontSize:13,color:'#64748b',fontWeight:600}}>{diasCap}</div>
+
+    {/* Aviso próximas vacaciones */}
+    {cdVac&&cdVac.total<=14&&<div style={{background:A.emL,border:'1px solid #6ee7b7',borderRadius:10,padding:'8px 12px',display:'flex',alignItems:'center',gap:8,cursor:'pointer'}} onClick={()=>onNav('vac')}>
+      <span style={{fontSize:16}}>🌴</span>
+      <span style={{fontSize:12,fontWeight:600,color:'#065f46'}}>
+        {cdVac.total===0?'¡Hoy empiezan tus vacaciones!':`Vacaciones en ${cdVac.total} día${cdVac.total!==1?'s':''}`}
+      </span>
+    </div>}
+
+    {/* Aviso cambio de turno */}
+    {tAct&&tSig&&tAct!==tSig&&<div style={{background:A.ambL,border:'1px solid #fcd34d',borderRadius:10,padding:'8px 12px',display:'flex',alignItems:'center',gap:8}}>
+      <span style={{fontSize:16}}>🔄</span>
+      <span style={{fontSize:12,fontWeight:600,color:'#92400e'}}>La semana que viene cambias a turno de {tSig}</span>
+    </div>}
+
+    {/* Grid 2x2 principal */}
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+      <Card emoji="🌴" top="Vacaciones disp." val={totalVac>0?dispVac:'—'} valColor={dispVac<0?A.red:A.em} sub={totalVac>0?`${usadosVac} usados de ${totalVac}`:'Sin configurar'} onClick={()=>onNav('vac')}/>
+      <Card emoji="💰" top="Días para cobrar" val={cobroData.total} valColor={A.pur} sub={`día ${cobro} de cada mes`} onClick={()=>onNav('cobro')}/>
+      <Card emoji="⏱️" top="Horas extra" val={sumHrs} valColor={A.blue} sub={`año ${CY}`} onClick={()=>onNav('horas')}/>
+      <Card
+        emoji="🔄"
+        top="Turno esta semana"
+        val={tAct||'—'}
+        valColor={tAct?tc(tAct).c:'#cbd5e1'}
+        sub={tSig&&tSig!==tAct?`→ ${tSig} próx.`:tAct?'rotación activa':'Sin configurar'}
+        subColor={tSig&&tSig!==tAct?A.amb:undefined}
+        onClick={()=>onNav('turnos')}
+      />
+    </div>
+
+    {/* Fila inferior */}
+    <div style={{display:'flex',gap:8}}>
+      <div onClick={()=>onNav('nominas')} style={{flex:1,background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',cursor:'pointer'}}>
+        <div style={{fontSize:12,color:'#94a3b8',marginBottom:3}}>💵 Última nómina</div>
+        {ultimaNom
+          ?<><div style={{fontSize:20,fontWeight:800,color:A.teal}}>{Number(ultimaNom.importe).toLocaleString('es-ES')}€</div>
+            <div style={{fontSize:11,color:'#94a3b8',marginTop:2}}>{MESES[ultimaNom.mes]} {CY}</div></>
+          :<div style={{fontSize:13,color:'#cbd5e1',marginTop:4}}>Sin registrar</div>}
+      </div>
+      <div onClick={()=>onNav('fallos')} style={{flex:1,background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',cursor:'pointer'}}>
+        <div style={{fontSize:12,color:'#94a3b8',marginBottom:3}}>⚠️ Fallos este mes</div>
+        <div style={{fontSize:20,fontWeight:800,color:yeFallos.length>0?A.red:'#1e293b'}}>{yeFallos.length}</div>
+        <div style={{fontSize:11,color:'#94a3b8',marginTop:2}}>{MESES[CM]} {CY}</div>
+      </div>
+    </div>
+  </div>;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function DisclaimerModal({onAcepto}){
   const [scroll,setScroll]=useState(false);
   const ref=useRef(null);
@@ -698,165 +797,119 @@ function BackupSection(){
   </div>;
 }
 
-function InicioSection({vacE,vacT,fallos,incid,ausencias,horas,turnos,nominas,onNav}){
-  const tipo=ll('vac-tipo')||'laborables';const com=ll('vac-comunidad')||'cataluna';const cobroDia=parseInt(ll('cobro-dia')||'28');
-  const hoy=new Date();hoy.setHours(0,0,0,0);
-  const yK=String(CY);const totV=Number(vacT[yK]??0);
-  const ye=vacE.filter(e=>yOf(e.fecha)===CY);
-  const usV=ye.reduce((a,e)=>a+dUsados(e,tipo,com,hoy),0);const restV=totV-usV;
-  const cobro=nxtCobro(cobroDia);
-  const fM=fallos.filter(i=>mOf(i.fecha)===CM&&yOf(i.fecha)===CY).length;
-  const iM=incid.filter(i=>mOf(i.fecha)===CM&&yOf(i.fecha)===CY).length;
-  const aM=ausencias.filter(i=>mOf(i.fecha)===CM&&yOf(i.fecha)===CY).length;
-  const aP=ausencias.filter(i=>i.estado==='Pendiente'&&yOf(i.fecha)===CY).length;
-  const hM=horas.filter(i=>mOf(i.fecha)===CM&&yOf(i.fecha)===CY).reduce((s,i)=>s+Number(i.horas||0),0);
-  const tAct=(()=>{const tl=turnos.turnosList||[];const f=turnos.frecuencia||1;const a=turnos.anclaISO||null;const ai=turnos.anclaIdx??0;const ov=turnos.overrides||{};const mon=monOf(new Date());const k=d2s(mon);if(ov[k]!==undefined)return ov[k];return cTurno(mon,tl,f,a,ai);})();
-  const nomM=nominas.find(n=>n.year===CY&&n.mes===CM);
-  const dh=new Date();const dSem=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][dh.getDay()];
-  const fHoy=`${dSem}, ${dh.getDate()} ${MESES[dh.getMonth()].slice(0,3)} ${dh.getFullYear()}`;
-  const cdStr=c=>{if(!c)return null;const p=[];if(c.weeks>0)p.push(c.weeks+'s');if(c.days>0)p.push(c.days+'d');return p.join(' ')||'Hoy';};
-  const s={background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:10,cursor:'pointer'};
-
-  return <div style={{display:'flex',flexDirection:'column',gap:8}}>
-    {/* Fila 1: Hola + Turno */}
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-      <div style={{background:'#1e293b',borderRadius:12,padding:12,color:'white'}}>
-        <div style={{fontSize:10,color:'#94a3b8'}}>{fHoy}</div>
-        <div style={{fontSize:17,fontWeight:800,marginTop:2}}>¡Hola! 👋</div>
-        <div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>Tu resumen</div>
-      </div>
-      {tAct
-        ?<div onClick={()=>onNav('turnos')} style={{background:tc(tAct).bg,borderRadius:12,border:'2px solid '+tc(tAct).b,padding:12,cursor:'pointer'}}>
-          <div style={{fontSize:9,fontWeight:700,color:tc(tAct).c,textTransform:'uppercase'}}>Esta semana</div>
-          <div style={{fontSize:20,fontWeight:900,color:tc(tAct).c,marginTop:2}}>{tAct}</div>
-          <div style={{fontSize:9,color:tc(tAct).c,marginTop:2}}>Turno →</div>
-        </div>
-        :<div onClick={()=>onNav('turnos')} style={{...s,display:'flex',alignItems:'center',justifyContent:'center',border:'2px dashed #e2e8f0'}}>
-          <div style={{fontSize:11,color:'#94a3b8',textAlign:'center'}}>🔄 Configura turnos</div>
-        </div>}
-    </div>
-
-    {/* Avisos */}
-    <Avisos vacE={vacE} turnos={turnos}/>
-
-    {/* Fila 2: Vacaciones + Cobro + Nómina */}
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
-      <div onClick={()=>onNav('vacaciones')} style={s}>
-        <div style={{fontSize:15}}>🌴</div>
-        <div style={{fontSize:9,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',marginTop:2}}>Vacac.</div>
-        {totV>0?<><div style={{fontSize:18,fontWeight:900,color:A.em,lineHeight:1,marginTop:2}}>{restV}</div><div style={{fontSize:9,color:'#94a3b8'}}>disponibles</div></>
-        :<div style={{fontSize:10,color:'#cbd5e1',marginTop:4}}>—</div>}
-      </div>
-      <div onClick={()=>onNav('cobro')} style={s}>
-        <div style={{fontSize:15}}>💰</div>
-        <div style={{fontSize:9,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',marginTop:2}}>Cobro</div>
-        <div style={{fontSize:15,fontWeight:900,color:A.pur,lineHeight:1,marginTop:2}}>{cobro.total===0?'¡Hoy!':cdStr({weeks:cobro.weeks,days:cobro.days})}</div>
-        <div style={{fontSize:9,color:'#94a3b8'}}>para cobrar</div>
-      </div>
-      <div onClick={()=>onNav('nomina')} style={s}>
-        <div style={{fontSize:15}}>💵</div>
-        <div style={{fontSize:9,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',marginTop:2}}>Nómina</div>
-        {nomM?<><div style={{fontSize:15,fontWeight:900,color:A.teal,lineHeight:1,marginTop:2}}>{Number(nomM.importe).toLocaleString('es-ES')}€</div><div style={{fontSize:9,color:'#94a3b8'}}>{MESES[CM]}</div></>
-        :<div style={{fontSize:10,color:'#cbd5e1',marginTop:4}}>—</div>}
-      </div>
-    </div>
-
-    {/* Fila 3: Fallos + Ausencias + Horas */}
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
-      <div onClick={()=>onNav('fallos')} style={s}>
-        <div style={{fontSize:15}}>⚠️</div>
-        <div style={{fontSize:9,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',marginTop:2}}>Fallos</div>
-        <div style={{fontSize:18,fontWeight:900,color:fM>0?A.red:'#94a3b8',lineHeight:1,marginTop:2}}>{fM}</div>
-        <div style={{fontSize:9,color:'#94a3b8'}}>este mes</div>
-        {iM>0&&<div style={{fontSize:9,color:A.amb,fontWeight:600,marginTop:2}}>{iM} incid.</div>}
-      </div>
-      <div onClick={()=>onNav('ausencias')} style={s}>
-        <div style={{fontSize:15}}>🚫</div>
-        <div style={{fontSize:9,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',marginTop:2}}>Ausenc.</div>
-        <div style={{fontSize:18,fontWeight:900,color:aM>0?A.red:'#94a3b8',lineHeight:1,marginTop:2}}>{aM}</div>
-        <div style={{fontSize:9,color:'#94a3b8'}}>este mes</div>
-        {aP>0&&<div style={{fontSize:9,color:A.amb,fontWeight:600,marginTop:2}}>{aP} pend.</div>}
-      </div>
-      <div onClick={()=>onNav('horas')} style={s}>
-        <div style={{fontSize:15}}>⏱️</div>
-        <div style={{fontSize:9,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',marginTop:2}}>H.Extra</div>
-        <div style={{fontSize:18,fontWeight:900,color:hM>0?A.blue:'#94a3b8',lineHeight:1,marginTop:2}}>{hM}</div>
-        <div style={{fontSize:9,color:'#94a3b8'}}>este mes</div>
-      </div>
-    </div>
-
-    {/* Ko-fi */}
-    <div style={{background:'linear-gradient(135deg,#fff5f0,#fff0eb)',borderRadius:12,border:'1px solid #fcd34d',padding:10,display:'flex',alignItems:'center',gap:8}}>
-      <span style={{fontSize:20,flexShrink:0}}>☕</span>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontWeight:700,fontSize:12,color:'#1e293b'}}>¿Te es útil Labora?</div>
-        <div style={{fontSize:10,color:'#64748b'}}>Gratis y sin anuncios 🙏</div>
-      </div>
-      <button onClick={()=>window.open('https://ko-fi.com/laboraapp','_blank')} style={{flexShrink:0,background:'#FF5E5B',color:'white',border:'none',borderRadius:8,padding:'7px 10px',fontWeight:700,fontSize:11,cursor:'pointer'}}>Apoyar</button>
-    </div>
-  </div>;
-}
-
+// ── COMPONENTE PRINCIPAL ──────────────────────────────────────────────────────
 function App(){
-  const [tab,setTab]=useState('inicio');const [year,setYear]=useState(CY);
-  const [fallos,setFallos]=useState([]);const [horas,setHoras]=useState([]);
-  const [vacE,setVacE]=useState([]);const [vacT,setVacT]=useState({});
-  const [incid,setIncid]=useState([]);const [aus,setAus]=useState([]);
-  const [turnos,setTurnos]=useState({});const [nominas,setNominas]=useState([]);
-  const [disclaimerOk,setDisclaimerOk]=useState(()=>{const v=ll('disclaimer-ok');return v===true;});
+  const [ok,setOk]=useState(()=>!!ll('disclaimer-ok'));
+  const [tab,setTab]=useState('inicio');
+  const [year,setYear]=useState(CY);
+  const [vacE,setVacE]=useState(()=>ll('vac-e')||[]);
+  const [vacT,setVacT]=useState(()=>ll('vac-t')||{});
+  const [fallos,setFallos]=useState(()=>ll('fallos')||[]);
+  const [horas,setHoras]=useState(()=>ll('horas')||[]);
+  const [incid,setIncid]=useState(()=>ll('incid')||[]);
+  const [ausencias,setAusencias]=useState(()=>ll('ausencias')||[]);
+  const [turnos,setTurnos]=useState(()=>ll('turnos')||{});
+  const [nominas,setNominas]=useState(()=>ll('nominas')||[]);
+  const [cobro,setCobro]=useState(()=>parseInt(ll('cobro-dia')||'28'));
 
+  const sv=(k,set)=>v=>{set(v);ls(k,v);};
+
+  // Sincroniza cobro desde localStorage cuando se actualiza en CobroSection
   useEffect(()=>{
-    const f=ll('fallos');if(Array.isArray(f))setFallos(f);
-    const h=ll('horas');if(Array.isArray(h))setHoras(h);
-    const vt=ll('vac-t');if(vt&&typeof vt==='object')setVacT(vt);
-    const i=ll('incid');if(Array.isArray(i))setIncid(i);
-    const a=ll('ausencias');if(Array.isArray(a))setAus(a);
-    const ve=ll('vac-e');if(Array.isArray(ve))setVacE(ve);
-    const t=ll('turnos');if(t&&typeof t==='object')setTurnos(t);
-    const n=ll('nominas');if(Array.isArray(n))setNominas(n);
-  },[]);
+    const c=parseInt(ll('cobro-dia')||'28');
+    setCobro(c);
+  },[tab]);
 
-  const sF=d=>{setFallos(d);ls('fallos',d);};const sH=d=>{setHoras(d);ls('horas',d);};
-  const sVe=d=>{setVacE(d);ls('vac-e',d);};const sVt=d=>{setVacT(d);ls('vac-t',d);};
-  const sI=d=>{setIncid(d);ls('incid',d);};const sA=d=>{setAus(d);ls('ausencias',d);};
-  const sT=d=>{setTurnos(d);ls('turnos',d);};const sN=d=>{setNominas(d);ls('nominas',d);};
-  const acept=()=>{ls('disclaimer-ok',true);setDisclaimerOk(true);};
-
-  const ys=[];for(let y=CY+1;y>=CY-4;y--)ys.push(y);
-  const showY=['vacaciones','fallos','ausencias','horas'].includes(tab);
+  if(!ok)return <DisclaimerModal onAcepto={()=>{ls('disclaimer-ok',true);setOk(true);}}/>;
 
   const TABS=[
-    {id:'inicio',label:'Inicio',emoji:'🏠'},{id:'vacaciones',label:'Vacac.',emoji:'🌴'},
-    {id:'turnos',label:'Turnos',emoji:'🔄'},{id:'nomina',label:'Nómina',emoji:'💵'},
-    {id:'fallos',label:'Fallos',emoji:'⚠️'},{id:'ausencias',label:'Ausenc.',emoji:'🚫'},
-    {id:'horas',label:'H.Extra',emoji:'⏱️'},
+    {id:'inicio',label:'Inicio',emoji:'🏠'},
+    {id:'vac',label:'Vac.',emoji:'🌴'},
+    {id:'horas',label:'Horas',emoji:'⏱️'},
+    {id:'nominas',label:'Nómina',emoji:'💵'},
+    {id:'mas',label:'Más',emoji:'⚙️'},
   ];
 
-  return <div style={{minHeight:'100svh',display:'flex',flexDirection:'column',background:'#f8fafc',fontFamily:'system-ui,-apple-system,sans-serif'}}>
-    {!disclaimerOk&&<DisclaimerModal onAcepto={acept}/>}
-    <div style={{background:'#1e293b',color:'white',padding:'12px 16px',display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
-      <span style={{fontSize:20}}>💼</span>
-      <div style={{flex:1}}><div style={{fontWeight:700,fontSize:15}}>Labora</div><div style={{fontSize:11,color:'#94a3b8'}}>Tu gestor laboral</div></div>
-      {showY&&<div style={{position:'relative'}}><select value={year} onChange={e=>setYear(Number(e.target.value))} style={{appearance:'none',background:'#334155',color:'white',border:'none',borderRadius:8,padding:'6px 28px 6px 10px',fontWeight:600,fontSize:14,cursor:'pointer'}}>{ys.map(y=><option key={y} value={y}>{y}</option>)}</select><span style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',pointerEvents:'none',color:'#94a3b8',fontSize:10}}>▾</span></div>}
-      {tab==='inicio'&&<div style={{display:'flex',gap:6,alignItems:'center'}}><DisclaimerInfo/><button onClick={()=>setTab('backup')} style={{background:'#334155',border:'none',borderRadius:8,padding:'6px 10px',color:'#94a3b8',cursor:'pointer',fontSize:16}}>💾</button></div>}
+  // "Más" agrupa: cobro, turnos, fallos, ausencias, backup
+  const MAS_TABS=[
+    {id:'cobro',label:'Cobro',emoji:'💰'},
+    {id:'turnos',label:'Turnos',emoji:'🔄'},
+    {id:'fallos',label:'Fallos',emoji:'⚠️'},
+    {id:'ausencias',label:'Ausencias',emoji:'🚫'},
+    {id:'backup',label:'Backup',emoji:'💾'},
+  ];
+
+  const isMas=MAS_TABS.some(t=>t.id===tab);
+  const navTab=isMas?'mas':tab;
+
+  const renderContent=()=>{
+    if(tab==='inicio')return <InicioSection
+      vacE={vacE} vacTotales={vacT} fallos={fallos} horas={horas}
+      ausencias={ausencias} nominas={nominas} turnos={turnos} cobro={cobro}
+      onNav={t=>setTab(t)}
+    />;
+    if(tab==='vac')return <VacSection entries={vacE} totales={vacT} year={year} onUpdateE={sv('vac-e',setVacE)} onUpdateT={sv('vac-t',setVacT)}/>;
+    if(tab==='horas')return <HorasSection items={horas} year={year} onUpdate={sv('horas',setHoras)}/>;
+    if(tab==='nominas')return <NominaSection nominas={nominas} onUpdate={sv('nominas',setNominas)}/>;
+    if(tab==='cobro')return <CobroSection/>;
+    if(tab==='turnos')return <TurnosSection turnos={turnos} onUpdate={sv('turnos',setTurnos)}/>;
+    if(tab==='fallos')return <FallosSection fallos={fallos} incid={incid} year={year} onUpdateF={sv('fallos',setFallos)} onUpdateI={sv('incid',setIncid)}/>;
+    if(tab==='ausencias')return <AusenciasSection items={ausencias} year={year} onUpdate={sv('ausencias',setAusencias)}/>;
+    if(tab==='backup')return <BackupSection/>;
+    if(tab==='mas')return <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{fontSize:13,fontWeight:600,color:'#64748b',marginBottom:4}}>Más opciones</div>
+      {MAS_TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{display:'flex',alignItems:'center',gap:12,background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:'14px 16px',cursor:'pointer',textAlign:'left',width:'100%'}}>
+        <span style={{fontSize:22}}>{t.emoji}</span>
+        <span style={{fontSize:15,fontWeight:600,color:'#1e293b'}}>{t.label}</span>
+        <span style={{marginLeft:'auto',color:'#cbd5e1',fontSize:18}}>›</span>
+      </button>)}
+    </div>;
+    return null;
+  };
+
+  const needsYear=['vac','horas','fallos','ausencias'].includes(tab);
+
+  return <div style={{maxWidth:500,margin:'0 auto',minHeight:'100vh',display:'flex',flexDirection:'column',background:'#f8fafc'}}>
+    {/* Header */}
+    <div style={{background:'#1e293b',padding:'14px 16px 12px',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+      <div>
+        <div style={{fontSize:18,fontWeight:800,color:'white',letterSpacing:-0.5}}>💼 Labora</div>
+        <div style={{fontSize:11,color:'#94a3b8',marginTop:1}}>
+          {tab==='inicio'?'Tu resumen laboral':TABS.find(t=>t.id===navTab)?.label||MAS_TABS.find(t=>t.id===tab)?.label||''}
+        </div>
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        {needsYear&&<select value={year} onChange={e=>setYear(Number(e.target.value))} style={{appearance:'none',background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.2)',borderRadius:8,padding:'5px 10px',color:'white',fontSize:13,fontWeight:600,cursor:'pointer'}}>
+          {[CY+1,CY,CY-1,CY-2].map(y=><option key={y} value={y} style={{background:'#1e293b'}}>{y}</option>)}
+        </select>}
+        <DisclaimerInfo/>
+      </div>
     </div>
-    <div style={{flex:1,overflowY:'auto',padding:16,paddingBottom:90}}>
-      {tab==='inicio'&&<InicioSection vacE={vacE} vacT={vacT} fallos={fallos} incid={incid} ausencias={aus} horas={horas} turnos={turnos} nominas={nominas} onNav={setTab}/>}
-      {tab==='vacaciones'&&<VacSection entries={vacE} totales={vacT} year={year} onUpdateE={sVe} onUpdateT={sVt}/>}
-      {tab==='cobro'&&<CobroSection/>}
-      {tab==='turnos'&&<TurnosSection turnos={turnos} onUpdate={sT}/>}
-      {tab==='nomina'&&<NominaSection nominas={nominas} onUpdate={sN}/>}
-      {tab==='fallos'&&<FallosSection fallos={fallos} incid={incid} year={year} onUpdateF={sF} onUpdateI={sI}/>}
-      {tab==='ausencias'&&<AusenciasSection items={aus} year={year} onUpdate={sA}/>}
-      {tab==='horas'&&<HorasSection items={horas} year={year} onUpdate={sH}/>}
-      {tab==='backup'&&<BackupSection/>}
+
+    {/* Contenido */}
+    <div className="ms" style={{flex:1,overflowY:'auto',padding:16}}>
+      {renderContent()}
     </div>
-    <div style={{position:'fixed',bottom:0,left:0,right:0,background:'white',borderTop:'1px solid #e2e8f0',display:'grid',gridTemplateColumns:'repeat(7,1fr)',zIndex:99}}>
-      {TABS.map(({id,label,emoji})=>{const act=tab===id;return <button key={id} onClick={()=>setTab(id)} style={{display:'flex',flexDirection:'column',alignItems:'center',padding:'7px 2px',background:act?'#f8fafc':'white',border:'none',cursor:'pointer'}}><span style={{fontSize:18,lineHeight:1}}>{emoji}</span><span style={{fontSize:8,fontWeight:600,marginTop:2,color:act?'#1e293b':'#94a3b8',whiteSpace:'nowrap'}}>{label}</span></button>;})}
+
+    {/* Ko-Fi strip — discreto, sobre la nav */}
+    <div style={{borderTop:'1px solid #e2e8f0',background:'white',textAlign:'center',padding:'5px 0 4px'}}>
+      <span style={{fontSize:11,color:'#94a3b8'}}>☕ ¿Te es útil? </span>
+      <a href="https://ko-fi.com" target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:'#FF5E5B',textDecoration:'none',fontWeight:600}}>Apoya Labora en Ko-Fi</a>
+    </div>
+
+    {/* Navegación inferior */}
+    <div style={{background:'white',borderTop:'1px solid #e2e8f0',display:'flex',flexShrink:0}}>
+      {TABS.map(t=>{const act=navTab===t.id;return <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'8px 0 10px',background:'none',border:'none',cursor:'pointer'}}>
+        <span style={{fontSize:18,lineHeight:1}}>{t.emoji}</span>
+        {act&&<div style={{width:4,height:4,borderRadius:'50%',background:'#7c3aed'}}/>}
+        <span style={{fontSize:9,color:act?'#7c3aed':'#94a3b8',fontWeight:act?700:400}}>{t.label}</span>
+      </button>;})}
     </div>
   </div>;
 }
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+const root=ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
 </script>
 </body>
 </html>
