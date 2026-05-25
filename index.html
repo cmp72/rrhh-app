@@ -19,13 +19,6 @@
     .ms::-webkit-scrollbar{display:none}
     .ms{-ms-overflow-style:none;scrollbar-width:none}
   </style>
-  <link rel="manifest" href="./manifest.json"/>
-  <link rel="apple-touch-icon" href="./icon-192.png"/>
-  <script>
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.register('./sw.js');
-    }
-  </script>
 </head>
 <body>
 <div id="root"></div>
@@ -225,132 +218,6 @@ function cTurno(mon,list,frec,ancla,idx){
   const bl=Math.floor(dif/frec);
   return list[((idx+bl)%list.length+list.length)%list.length];
 }
-
-// ── NUEVO: Pantalla de inicio tipo dashboard ──────────────────────────────────
-function InicioSection({vacE,vacTotales,fallos,horas,ausencias,nominas,turnos,cobro,onNav}){
-  const hoy=new Date();hoy.setHours(0,0,0,0);
-  const tipo=ll('vac-tipo')||'laborables';
-  const com=ll('vac-comunidad')||'cataluna';
-  const yKey=String(CY);
-  const totalVac=Number(vacTotales[yKey]??0);
-  const yeVac=vacE.filter(e=>yOf(e.fecha)===CY);
-  const usadosVac=yeVac.reduce((a,e)=>a+dUsados(e,tipo,com,hoy),0);
-  const dispVac=totalVac-usadosVac;
-
-  const cobroData=nxtCobro(cobro);
-
-  const yeHrs=horas.filter(i=>yOf(i.fecha)===CY);
-  const sumHrs=yeHrs.reduce((s,i)=>s+Number(i.horas||0),0);
-
-  const yeFallos=fallos.filter(i=>yOf(i.fecha)===CY&&mOf(i.fecha)===CM);
-
-  const now=new Date();now.setHours(0,0,0,0);
-  const proxVac=vacE.filter(e=>new Date(e.fecha+'T12:00:00')>now).sort((a,b)=>a.fecha.localeCompare(b.fecha))[0]||null;
-  const cdVac=proxVac?wkDays(proxVac.fecha):null;
-
-  const tAct=(()=>{
-    const list=turnos.turnosList||[];const ancla=turnos.anclaISO||null;
-    if(list.length<2||!ancla)return null;
-    return cTurno(monOf(hoy),list,turnos.frecuencia||1,ancla,turnos.anclaIdx??0);
-  })();
-  const tSig=(()=>{
-    const list=turnos.turnosList||[];const ancla=turnos.anclaISO||null;
-    if(list.length<2||!ancla)return null;
-    const sig=new Date(monOf(hoy));sig.setDate(monOf(hoy).getDate()+7);
-    return cTurno(sig,list,turnos.frecuencia||1,ancla,turnos.anclaIdx??0);
-  })();
-
-  const ultimaNom=[...nominas].filter(n=>n.year===CY).sort((a,b)=>b.mes-a.mes)[0]||null;
-
-  const dias=new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
-  const diasCap=dias.charAt(0).toUpperCase()+dias.slice(1);
-
-  // Card con acento de color a la izquierda y labels legibles
-  const Card=({emoji,top,val,valColor,sub,subColor,onClick,accent})=>(
-    <div onClick={onClick} style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px 10px 16px',cursor:'pointer',WebkitTapHighlightColor:'transparent',position:'relative',overflow:'hidden'}}>
-      {/* Barra acento izquierda */}
-      <div style={{position:'absolute',left:0,top:0,bottom:0,width:4,background:accent||valColor||'#e2e8f0',borderRadius:'4px 0 0 4px'}}/>
-      <div style={{fontSize:13,color:'#475569',fontWeight:600,marginBottom:4,display:'flex',alignItems:'center',gap:4}}>{emoji} {top}</div>
-      <div style={{fontSize:26,fontWeight:900,color:valColor||'#1e293b',lineHeight:1}}>{val}</div>
-      {sub&&<div style={{fontSize:12,marginTop:4,color:subColor||'#64748b',fontWeight:500}}>{sub}</div>}
-    </div>
-  );
-
-  // Accesos rápidos — rellena el espacio vacío y es útil
-  const ACCESOS=[
-    {emoji:'🌴',label:'Vacaciones',id:'vac'},
-    {emoji:'⏱️',label:'Horas extra',id:'horas'},
-    {emoji:'💵',label:'Nómina',id:'nominas'},
-    {emoji:'🔄',label:'Turnos',id:'turnos'},
-    {emoji:'🚫',label:'Ausencias',id:'ausencias'},
-    {emoji:'⚠️',label:'Fallos',id:'fallos'},
-  ];
-
-  return <div style={{display:'flex',flexDirection:'column',gap:12}}>
-    <div style={{fontSize:14,color:'#475569',fontWeight:700}}>{diasCap}</div>
-
-    {/* Aviso próximas vacaciones */}
-    {cdVac&&cdVac.total<=14&&<div style={{background:A.emL,border:'1px solid #6ee7b7',borderRadius:10,padding:'8px 12px',display:'flex',alignItems:'center',gap:8,cursor:'pointer'}} onClick={()=>onNav('vac')}>
-      <span style={{fontSize:16}}>🌴</span>
-      <span style={{fontSize:13,fontWeight:700,color:'#065f46'}}>
-        {cdVac.total===0?'¡Hoy empiezan tus vacaciones!':`Vacaciones en ${cdVac.total} día${cdVac.total!==1?'s':''}`}
-      </span>
-    </div>}
-
-    {/* Aviso cambio de turno */}
-    {tAct&&tSig&&tAct!==tSig&&<div style={{background:A.ambL,border:'1px solid #fcd34d',borderRadius:10,padding:'8px 12px',display:'flex',alignItems:'center',gap:8}}>
-      <span style={{fontSize:16}}>🔄</span>
-      <span style={{fontSize:13,fontWeight:700,color:'#92400e'}}>La semana que viene cambias a turno de {tSig}</span>
-    </div>}
-
-    {/* Grid 2x2 principal */}
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-      <Card emoji="🌴" top="Vacaciones disp." val={totalVac>0?dispVac:'—'} accent={A.em} valColor={dispVac<0?A.red:A.em} sub={totalVac>0?`${usadosVac} usados de ${totalVac}`:'Sin configurar'} onClick={()=>onNav('vac')}/>
-      <Card emoji="💰" top="Días para cobrar" val={cobroData.total} accent={A.pur} valColor={A.pur} sub={`día ${cobro} de cada mes`} onClick={()=>onNav('cobro')}/>
-      <Card emoji="⏱️" top="Horas extra" val={sumHrs} accent={A.blue} valColor={A.blue} sub={`año ${CY}`} onClick={()=>onNav('horas')}/>
-      <Card
-        emoji="🔄"
-        top="Turno esta semana"
-        val={tAct||'—'}
-        accent={tAct?tc(tAct).b:'#e2e8f0'}
-        valColor={tAct?tc(tAct).c:'#cbd5e1'}
-        sub={tSig&&tSig!==tAct?`→ ${tSig} próx.`:tAct?'rotación activa':'Sin configurar'}
-        subColor={tSig&&tSig!==tAct?A.amb:undefined}
-        onClick={()=>onNav('turnos')}
-      />
-    </div>
-
-    {/* Fila inferior: nómina + fallos */}
-    <div style={{display:'flex',gap:8}}>
-      <div onClick={()=>onNav('nominas')} style={{flex:1,background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px 10px 16px',cursor:'pointer',position:'relative',overflow:'hidden'}}>
-        <div style={{position:'absolute',left:0,top:0,bottom:0,width:4,background:A.teal,borderRadius:'4px 0 0 4px'}}/>
-        <div style={{fontSize:13,color:'#475569',fontWeight:600,marginBottom:4}}>💵 Última nómina</div>
-        {ultimaNom
-          ?<><div style={{fontSize:22,fontWeight:900,color:A.teal}}>{Number(ultimaNom.importe).toLocaleString('es-ES')}€</div>
-            <div style={{fontSize:12,color:'#64748b',marginTop:3,fontWeight:500}}>{MESES[ultimaNom.mes]} {CY}</div></>
-          :<div style={{fontSize:13,color:'#cbd5e1',marginTop:4}}>Sin registrar</div>}
-      </div>
-      <div onClick={()=>onNav('fallos')} style={{flex:1,background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px 10px 16px',cursor:'pointer',position:'relative',overflow:'hidden'}}>
-        <div style={{position:'absolute',left:0,top:0,bottom:0,width:4,background:yeFallos.length>0?A.red:'#e2e8f0',borderRadius:'4px 0 0 4px'}}/>
-        <div style={{fontSize:13,color:'#475569',fontWeight:600,marginBottom:4}}>⚠️ Fallos este mes</div>
-        <div style={{fontSize:22,fontWeight:900,color:yeFallos.length>0?A.red:'#1e293b'}}>{yeFallos.length}</div>
-        <div style={{fontSize:12,color:'#64748b',marginTop:3,fontWeight:500}}>{MESES[CM]} {CY}</div>
-      </div>
-    </div>
-
-    {/* Accesos rápidos — rellena el espacio vacío */}
-    <div style={{fontSize:12,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.5px',marginTop:2}}>Acceso rápido</div>
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:6}}>
-      {ACCESOS.map(a=>(
-        <button key={a.id} onClick={()=>onNav(a.id)} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:10,padding:'10px 6px',display:'flex',flexDirection:'column',alignItems:'center',gap:4,cursor:'pointer',WebkitTapHighlightColor:'transparent'}}>
-          <span style={{fontSize:20,lineHeight:1}}>{a.emoji}</span>
-          <span style={{fontSize:11,color:'#475569',fontWeight:600}}>{a.label}</span>
-        </button>
-      ))}
-    </div>
-  </div>;
-}
-// ─────────────────────────────────────────────────────────────────────────────
 
 function DisclaimerModal({onAcepto}){
   const [scroll,setScroll]=useState(false);
@@ -808,6 +675,110 @@ function BackupSection(){
   </div>;
 }
 
+// ── DASHBOARD INICIO ──────────────────────────────────────────────────────────
+function InicioSection({vacE,vacTotales,fallos,horas,ausencias,nominas,turnos,cobro,onNav}){
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  const tipo=ll('vac-tipo')||'laborables';
+  const com=ll('vac-comunidad')||'cataluna';
+  const yKey=String(CY);
+  const totalVac=Number(vacTotales[yKey]??0);
+  const yeVac=vacE.filter(e=>yOf(e.fecha)===CY);
+  const usadosVac=yeVac.reduce((a,e)=>a+dUsados(e,tipo,com,hoy),0);
+  const dispVac=totalVac-usadosVac;
+  const cobroData=nxtCobro(cobro);
+  const yeHrs=horas.filter(i=>yOf(i.fecha)===CY);
+  const sumHrs=yeHrs.reduce((s,i)=>s+Number(i.horas||0),0);
+  const yeFallos=fallos.filter(i=>yOf(i.fecha)===CY&&mOf(i.fecha)===CM);
+  const now=new Date();now.setHours(0,0,0,0);
+  const proxVac=vacE.filter(e=>new Date(e.fecha+'T12:00:00')>now).sort((a,b)=>a.fecha.localeCompare(b.fecha))[0]||null;
+  const cdVac=proxVac?wkDays(proxVac.fecha):null;
+  const tAct=(()=>{
+    const list=turnos.turnosList||[];const ancla=turnos.anclaISO||null;
+    if(list.length<2||!ancla)return null;
+    return cTurno(monOf(hoy),list,turnos.frecuencia||1,ancla,turnos.anclaIdx??0);
+  })();
+  const tSig=(()=>{
+    const list=turnos.turnosList||[];const ancla=turnos.anclaISO||null;
+    if(list.length<2||!ancla)return null;
+    const sig=new Date(monOf(hoy));sig.setDate(monOf(hoy).getDate()+7);
+    return cTurno(sig,list,turnos.frecuencia||1,ancla,turnos.anclaIdx??0);
+  })();
+  const ultimaNom=[...nominas].filter(n=>n.year===CY).sort((a,b)=>b.mes-a.mes)[0]||null;
+  const dias=new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  const diasCap=dias.charAt(0).toUpperCase()+dias.slice(1);
+
+  // Card con label arriba en color, valor grande, subtexto abajo
+  const Card=({emoji,label,labelColor,val,valColor,sub,subColor,onClick})=>(
+    <div onClick={onClick} style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'12px',cursor:'pointer',WebkitTapHighlightColor:'transparent',display:'flex',flexDirection:'column',gap:2}}>
+      <div style={{fontSize:11,fontWeight:700,textTransform:'uppercase',color:labelColor||'#94a3b8',letterSpacing:0.3}}>{emoji} {label}</div>
+      <div style={{fontSize:24,fontWeight:900,color:valColor||'#1e293b',lineHeight:1.1,marginTop:2}}>{val}</div>
+      {sub&&<div style={{fontSize:11,marginTop:2,color:subColor||'#94a3b8',fontWeight:500}}>{sub}</div>}
+    </div>
+  );
+
+  return <div style={{display:'flex',flexDirection:'column',gap:12}}>
+    <div style={{fontSize:13,color:'#64748b',fontWeight:600}}>{diasCap}</div>
+
+    {cdVac&&cdVac.total<=14&&<div style={{background:A.emL,border:'1px solid #6ee7b7',borderRadius:10,padding:'8px 12px',display:'flex',alignItems:'center',gap:8,cursor:'pointer'}} onClick={()=>onNav('vac')}>
+      <span style={{fontSize:16}}>🌴</span>
+      <span style={{fontSize:12,fontWeight:600,color:'#065f46'}}>
+        {cdVac.total===0?'¡Hoy empiezan tus vacaciones!':`Vacaciones en ${cdVac.total} día${cdVac.total!==1?'s':''}`}
+      </span>
+    </div>}
+
+    {tAct&&tSig&&tAct!==tSig&&<div style={{background:A.ambL,border:'1px solid #fcd34d',borderRadius:10,padding:'8px 12px',display:'flex',alignItems:'center',gap:8}}>
+      <span style={{fontSize:16}}>🔄</span>
+      <span style={{fontSize:12,fontWeight:600,color:'#92400e'}}>La semana que viene cambias a turno de {tSig}</span>
+    </div>}
+
+    {/* Grid 2×2 */}
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+      <Card
+        emoji="🌴" label="Vacaciones disp." labelColor={A.em}
+        val={totalVac>0?dispVac:'—'} valColor={dispVac<0?A.red:A.em}
+        sub={totalVac>0?`${usadosVac} usados de ${totalVac} días`:'Sin configurar'}
+        onClick={()=>onNav('vac')}
+      />
+      <Card
+        emoji="💰" label="Días para cobrar" labelColor={A.pur}
+        val={cobroData.total} valColor={A.pur}
+        sub={`Día ${cobro} de cada mes`}
+        onClick={()=>onNav('cobro')}
+      />
+      <Card
+        emoji="⏱️" label="Horas extra" labelColor={A.blue}
+        val={sumHrs} valColor={A.blue}
+        sub={`Año ${CY}`}
+        onClick={()=>onNav('horas')}
+      />
+      <Card
+        emoji="🔄" label="Turno esta semana" labelColor={tAct?tc(tAct).c:'#94a3b8'}
+        val={tAct||'—'} valColor={tAct?tc(tAct).c:'#cbd5e1'}
+        sub={tSig&&tSig!==tAct?`→ ${tSig} próx. semana`:tAct?'Rotación activa':'Sin configurar'}
+        subColor={tSig&&tSig!==tAct?A.amb:undefined}
+        onClick={()=>onNav('turnos')}
+      />
+    </div>
+
+    {/* Fila inferior */}
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+      <div onClick={()=>onNav('nominas')} style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'12px',cursor:'pointer'}}>
+        <div style={{fontSize:11,fontWeight:700,textTransform:'uppercase',color:A.teal,letterSpacing:0.3,marginBottom:4}}>💵 Última nómina</div>
+        {ultimaNom
+          ?<><div style={{fontSize:22,fontWeight:900,color:A.teal,lineHeight:1}}>{Number(ultimaNom.importe).toLocaleString('es-ES')}€</div>
+            <div style={{fontSize:11,color:'#94a3b8',marginTop:3}}>{MESES[ultimaNom.mes]} {CY}</div></>
+          :<div style={{fontSize:13,color:'#cbd5e1',marginTop:4}}>Sin registrar</div>}
+      </div>
+      <div onClick={()=>onNav('fallos')} style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'12px',cursor:'pointer'}}>
+        <div style={{fontSize:11,fontWeight:700,textTransform:'uppercase',color:yeFallos.length>0?A.red:'#94a3b8',letterSpacing:0.3,marginBottom:4}}>⚠️ Fallos este mes</div>
+        <div style={{fontSize:22,fontWeight:900,color:yeFallos.length>0?A.red:'#1e293b',lineHeight:1}}>{yeFallos.length}</div>
+        <div style={{fontSize:11,color:'#94a3b8',marginTop:3}}>{MESES[CM]} {CY}</div>
+      </div>
+    </div>
+  </div>;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function App(){
   const [ok,setOk]=useState(()=>!!ll('disclaimer-ok'));
   const [tab,setTab]=useState('inicio');
@@ -897,11 +868,13 @@ function App(){
       {renderContent()}
     </div>
 
+    {/* Ko-Fi strip */}
     <div style={{borderTop:'1px solid #e2e8f0',background:'white',textAlign:'center',padding:'5px 0 4px'}}>
       <span style={{fontSize:11,color:'#94a3b8'}}>☕ ¿Te es útil? </span>
-      <a href="https://ko-fi.com/laboraapp" target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:'#FF5E5B',textDecoration:'none',fontWeight:600}}>Apoya Labora en Ko-Fi</a>
+      <a href="https://ko-fi.com" target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:'#FF5E5B',textDecoration:'none',fontWeight:600}}>Apoya Labora en Ko-Fi</a>
     </div>
 
+    {/* Nav inferior */}
     <div style={{background:'white',borderTop:'1px solid #e2e8f0',display:'flex',flexShrink:0}}>
       {TABS.map(t=>{const act=navTab===t.id;return <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'8px 0 10px',background:'none',border:'none',cursor:'pointer'}}>
         <span style={{fontSize:18,lineHeight:1}}>{t.emoji}</span>
