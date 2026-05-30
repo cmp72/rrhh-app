@@ -288,6 +288,26 @@ function InicioSection({vacE,vacTotales,fallos,horas,ausencias,nominas,turnos,co
     </div>
   );
 
+  const [calY,setCalY]=useState(CY);
+  const [calM,setCalM]=useState(CM);
+  const tipo=ll('vac-tipo')||'laborables';
+  const com=ll('vac-comunidad')||'cataluna';
+  const fsIni=festivos(calY,com);
+  const vacDIni=new Set();
+  vacE.filter(e=>yOf(e.fecha)===calY).forEach(e=>{
+    if(!e.dias||Number(e.dias)<1)return;
+    const fs=festivos(yOf(e.fecha),com);
+    const r=calcFin(e.fecha,Number(e.dias),tipo,fs);
+    const c=new Date(e.fecha+'T12:00:00');const fin=new Date(r.fin+'T12:00:00');
+    while(c<=fin){const iF=isFest(c,fs),iW=isWE(c);if(tipo==='laborables'?(!iF&&!iW):(!iF))vacDIni.add(d2s(c));c.setDate(c.getDate()+1);}
+  });
+  const tsIni=todayISO();
+  const f1Ini=new Date(calY,calM,1);
+  const sdIni=(f1Ini.getDay()+6)%7;
+  const dimIni=new Date(calY,calM+1,0).getDate();
+  const fmCal=fsIni.filter(f=>f.d.getMonth()===calM&&f.d.getFullYear()===calY);
+  const chCalM=dir=>{let m=calM+dir,y=calY;if(m>11){m=0;y++;}if(m<0){m=11;y--;}setCalY(y);setCalM(m);};
+
   return <div style={{display:'flex',flexDirection:'column',gap:12}}>
     <div style={{fontSize:13,color:'#64748b',fontWeight:600}}>{diasCap}</div>
 
@@ -331,6 +351,41 @@ function InicioSection({vacE,vacTotales,fallos,horas,ausencias,nominas,turnos,co
         <div style={{fontSize:20,fontWeight:800,color:yeFallos.length>0?A.red:'#1e293b'}}>{yeFallos.length}</div>
         <div style={{fontSize:11,color:'#94a3b8',marginTop:2}}>{MESES[CM]} {CY}</div>
       </div>
+    </div>
+
+    {/* Calendario en el inicio */}
+    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+        <span style={{fontWeight:700,fontSize:14,color:'#1e293b'}}>{MESES[calM]} {calY}</span>
+        <div style={{display:'flex',gap:6}}>
+          <button onClick={()=>chCalM(-1)} style={{width:28,height:28,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:15,display:'flex',alignItems:'center',justifyContent:'center'}}>&#8249;</button>
+          <button onClick={()=>chCalM(1)} style={{width:28,height:28,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:15,display:'flex',alignItems:'center',justifyContent:'center'}}>&#8250;</button>
+        </div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2,marginBottom:6}}>
+        {DS.map(d=><div key={d} style={{textAlign:'center',fontSize:9,fontWeight:600,color:'#94a3b8',padding:'3px 0'}}>{d}</div>)}
+        {Array(sdIni).fill(null).map((_,i)=><div key={'e'+i}/>)}
+        {Array(dimIni).fill(null).map((_,i)=>{
+          const d=i+1,dt=new Date(calY,calM,d),ds=d2s(dt);
+          const iF=isFest(dt,fsIni),iV=vacDIni.has(ds),iT=ds===tsIni,iW=isWE(dt);
+          let bg='transparent',col=iW?'#94a3b8':'#1e293b',fw='normal';
+          if(iT){bg='#1e293b';col='white';fw='700';}
+          else if(iF){bg='#dbeafe';col='#2563eb';fw='700';}
+          else if(iV){bg='#d1fae5';col='#065f46';}
+          return <div key={d} style={{textAlign:'center',padding:'4px 1px',borderRadius:5,fontSize:11,background:bg,color:col,fontWeight:fw,minHeight:22,display:'flex',alignItems:'center',justifyContent:'center'}}>{d}</div>;
+        })}
+      </div>
+      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:6}}>
+        <div style={{display:'flex',alignItems:'center',gap:3,fontSize:9,color:'#94a3b8'}}><div style={{width:7,height:7,borderRadius:'50%',background:'#2563eb'}}/> Festivo</div>
+        <div style={{display:'flex',alignItems:'center',gap:3,fontSize:9,color:'#94a3b8'}}><div style={{width:7,height:7,borderRadius:'50%',background:'#059669'}}/> Vacaciones</div>
+        <div style={{display:'flex',alignItems:'center',gap:3,fontSize:9,color:'#94a3b8'}}><div style={{width:7,height:7,borderRadius:'50%',background:'#1e293b'}}/> Hoy</div>
+      </div>
+      {fmCal.length>0&&<div style={{display:'flex',flexDirection:'column',gap:3}}>
+        {fmCal.map((f,i)=><div key={i} style={{display:'flex',gap:8,alignItems:'center',background:'#f8fafc',borderRadius:6,padding:'5px 8px'}}>
+          <span style={{fontSize:10,fontWeight:700,color:'#2563eb',minWidth:50}}>{f.d.getDate()} {MC[f.d.getMonth()]}</span>
+          <span style={{fontSize:11,color:'#475569'}}>{f.n}</span>
+        </div>)}
+      </div>}
     </div>
   </div>;
 }
