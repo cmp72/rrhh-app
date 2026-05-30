@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -280,7 +279,7 @@ function InicioSection({vacE,vacTotales,fallos,horas,ausencias,nominas,turnos,co
       {sub&&<div style={{fontSize:11,marginTop:3,color:subColor||'#94a3b8'}}>{sub}</div>}
     </div>
   );
-  return <div style={{display:'flex',flexDirection:'column',gap:12}}>
+  return <div style={{display:'flex',flexDirection:'column',gap:12,height:'100%'}}>
     <div style={{fontSize:13,color:'#64748b',fontWeight:600}}>{diasCap}</div>
     {cdVac&&cdVac.total<=14&&<div style={{background:A.emL,border:'1px solid #6ee7b7',borderRadius:10,padding:'8px 12px',display:'flex',alignItems:'center',gap:8,cursor:'pointer'}} onClick={()=>onNav('vac')}>
       <span style={{fontSize:16}}>🌴</span>
@@ -292,21 +291,19 @@ function InicioSection({vacE,vacTotales,fallos,horas,ausencias,nominas,turnos,co
       <span style={{fontSize:16}}>🔄</span>
       <span style={{fontSize:12,fontWeight:600,color:'#92400e'}}>La semana que viene cambias a turno de {tSig}</span>
     </div>}
-    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,flex:1}}>
       <Card emoji="🌴" top="Vacaciones disp." val={totalVac>0?dispVac:'—'} valColor={dispVac<0?A.red:A.em} sub={totalVac>0?`${usadosVac} usados de ${totalVac}`:'Sin configurar'} onClick={()=>onNav('vac')}/>
       <Card emoji="💰" top="Días para cobrar" val={cobroData.total} valColor={A.pur} sub={`día ${cobro} de cada mes`} onClick={()=>onNav('cobro')}/>
       <Card emoji="⏱️" top="Horas extra" val={sumHrs} valColor={A.blue} sub={`año ${CY}`} onClick={()=>onNav('horas')}/>
       <Card emoji="🔄" top="Turno esta semana" val={tAct||'—'} valColor={tAct?tc(tAct).c:'#cbd5e1'} sub={tSig&&tSig!==tAct?`→ ${tSig} próx.`:tAct?'rotación activa':'Sin configurar'} subColor={tSig&&tSig!==tAct?A.amb:undefined} onClick={()=>onNav('turnos')}/>
-    </div>
-    <div style={{display:'flex',gap:8}}>
-      <div onClick={()=>onNav('nominas')} style={{flex:1,background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',cursor:'pointer'}}>
+      <div onClick={()=>onNav('nominas')} style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',cursor:'pointer'}}>
         <div style={{fontSize:12,color:'#94a3b8',marginBottom:3}}>💵 Última nómina</div>
         {ultimaNom
           ?<><div style={{fontSize:20,fontWeight:800,color:A.teal}}>{Number(ultimaNom.importe).toLocaleString('es-ES')}€</div>
             <div style={{fontSize:11,color:'#94a3b8',marginTop:2}}>{MESES[ultimaNom.mes]} {CY}</div></>
           :<div style={{fontSize:13,color:'#cbd5e1',marginTop:4}}>Sin registrar</div>}
       </div>
-      <div onClick={()=>onNav('fallos')} style={{flex:1,background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',cursor:'pointer'}}>
+      <div onClick={()=>onNav('fallos')} style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',cursor:'pointer'}}>
         <div style={{fontSize:12,color:'#94a3b8',marginBottom:3}}>⚠️ Fallos este mes</div>
         <div style={{fontSize:20,fontWeight:800,color:yeFallos.length>0?A.red:'#1e293b'}}>{yeFallos.length}</div>
         <div style={{fontSize:11,color:'#94a3b8',marginTop:2}}>{MESES[CM]} {CY}</div>
@@ -851,8 +848,10 @@ function App(){
         <DisclaimerInfo/>
       </div>
     </div>
-    <div className="ms" style={{flex:1,overflowY:'auto',padding:16}}>
-      {renderContent()}
+    <div className="ms" style={{flex:1,overflowY:'auto',padding:16,display:'flex',flexDirection:'column'}}>
+      <div style={{flex:1,display:'flex',flexDirection:'column'}}>
+        {renderContent()}
+      </div>
     </div>
     <div style={{borderTop:'1px solid #e2e8f0',background:'white',textAlign:'center',padding:'5px 0 4px'}}>
       <span style={{fontSize:11,color:'#94a3b8'}}>☕ ¿Te es útil? </span>
