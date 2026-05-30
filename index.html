@@ -851,5 +851,20 @@ function App(){
 
 ReactDOM.createRoot(document.getElementById('root')).render(h(App));
 </script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/rrhh-app/sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const w = reg.installing;
+        w.addEventListener('statechange', () => {
+          if (w.state === 'installed' && navigator.serviceWorker.controller) {
+            w.postMessage({ type: 'SKIP_WAITING' });
+            window.location.reload();
+          }
+        });
+      });
+    });
+  }
+</script>
 </body>
 </html>
