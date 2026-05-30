@@ -840,6 +840,7 @@ function App(){
         <div style={{fontSize:11,color:'#94a3b8',marginTop:1}}>
           {tab==='inicio'?'Tu resumen laboral':TABS.find(t=>t.id===navTab)?.label||MAS_TABS.find(t=>t.id===tab)?.label||''}
         </div>
+        {tab==='inicio'&&<div style={{fontSize:11,color:'#94a3b8',marginTop:2}}>☕ <a href="https://ko-fi.com" target="_blank" rel="noopener noreferrer" style={{color:'#FF5E5B',textDecoration:'none',fontWeight:600}}>Apoya Labora en Ko-Fi</a></div>}
       </div>
       <div style={{display:'flex',alignItems:'center',gap:10}}>
         {needsYear&&<select value={year} onChange={e=>setYear(Number(e.target.value))} style={{appearance:'none',background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.2)',borderRadius:8,padding:'5px 10px',color:'white',fontSize:13,fontWeight:600,cursor:'pointer'}}>
@@ -853,10 +854,7 @@ function App(){
         {renderContent()}
       </div>
     </div>
-    <div style={{borderTop:'1px solid #e2e8f0',background:'white',textAlign:'center',padding:'5px 0 4px'}}>
-      <span style={{fontSize:11,color:'#94a3b8'}}>☕ ¿Te es útil? </span>
-      <a href="https://ko-fi.com" target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:'#FF5E5B',textDecoration:'none',fontWeight:600}}>Apoya Labora en Ko-Fi</a>
-    </div>
+
     <div style={{position:'fixed',bottom:0,left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:500,background:'white',borderTop:'1px solid #e2e8f0',display:'flex',zIndex:100}}>
       {TABS.map(t=>{const act=navTab===t.id;return <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'8px 0 10px',background:'none',border:'none',cursor:'pointer'}}>
         <span style={{fontSize:18,lineHeight:1}}>{t.emoji}</span>
