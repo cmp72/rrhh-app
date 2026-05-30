@@ -297,7 +297,7 @@ function DisclaimerModal({onAcepto}){
               h('div',null,'• Has leído y entendido este aviso legal.'),
               h('div',null,'• Usarás Labora como herramienta de apoyo personal.'),
               h('div',null,'• Verificarás datos importantes con fuentes oficiales.'),
-              h('div',null,'• Entiendes que el desarrollador no tiene responsabilidad sobre el uso de la app.'))))))
+              h('div',null,'• Entiendes que el desarrollador no tiene responsabilidad sobre el uso de la app.'))))))),
       h('div',{style:{padding:20,flexShrink:0,borderTop:'1px solid #f1f5f9'}},
         !scroll&&h('div',{style:{fontSize:11,color:'#94a3b8',textAlign:'center',marginBottom:10}},'↓ Desplázate hasta el final para aceptar'),
         h('button',{onClick:scroll?onAcepto:null,style:{width:'100%',background:scroll?A.em:'#e2e8f0',color:scroll?'white':'#94a3b8',border:'none',borderRadius:12,padding:'14px 0',fontWeight:700,fontSize:15,cursor:scroll?'pointer':'not-allowed',transition:'all 0.3s'}},scroll?'✓ Entendido, empezar a usar Labora':'Lee el aviso para continuar'))));
