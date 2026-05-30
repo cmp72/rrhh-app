@@ -1,1 +1,903 @@
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="Labora"/>
+  <meta name="theme-color" content="#1e293b"/>
+  <title>Labora</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+    body{margin:0;background:#f8fafc;overscroll-behavior:none}
+    input,textarea,select{font-size:16px!important;font-family:inherit}
+    button{font-family:inherit}
+    .ms::-webkit-scrollbar{display:none}
+    .ms{-ms-overflow-style:none;scrollbar-width:none}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef}=React;
+const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+const CY=new Date().getFullYear();
+const CM=new Date().getMonth();
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MC=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const DS=['L','M','X','J','V','S','D'];
+const yOf=s=>parseInt(s.slice(0,4),10);
+const mOf=s=>parseInt(s.slice(5,7),10)-1;
+const fmt=s=>new Date(s+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});
+const fmtL=s=>{const d=new Date(s+'T12:00:00');return d.getDate()+' de '+MESES[d.getMonth()]+' '+d.getFullYear();};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const isWE=d=>{const w=d.getDay();return w===0||w===6;};
+const d2s=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const sameD=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+const monOf=d=>{const r=new Date(d);const w=r.getDay();r.setDate(r.getDate()+(w===0?-6:1-w));r.setHours(0,0,0,0);return r;};
+const ll=k=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}};
+const ls=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
+
+function wkDays(iso){
+  const n=new Date();n.setHours(0,0,0,0);
+  const t=new Date(iso+'T12:00:00');
+  const df=Math.ceil((t-n)/86400000);
+  if(df<=0)return null;
+  return{weeks:Math.floor(df/7),days:df%7,total:df};
+}
+function nxtCobro(dia){
+  const n=new Date();n.setHours(0,0,0,0);
+  let y=n.getFullYear(),m=n.getMonth();
+  let c=new Date(y,m,dia);
+  if(c<=n){m++;if(m>11){m=0;y++;}c=new Date(y,m,dia);}
+  const df=Math.ceil((c-n)/86400000);
+  return{date:c,weeks:Math.floor(df/7),days:df%7,total:df};
+}
+function easter(y){
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,
+    f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,
+    i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,
+    mo2=Math.floor((a+11*h+22*l)/451),
+    mo=Math.floor((h+l-7*mo2+114)/31),
+    dy=((h+l-7*mo2+114)%31)+1;
+  return new Date(y,mo-1,dy);
+}
+function festivos(year,com){
+  const e=easter(year);
+  const vs=new Date(e);vs.setDate(e.getDate()-2);
+  const lp=new Date(e);lp.setDate(e.getDate()+1);
+  const js=new Date(e);js.setDate(e.getDate()-3);
+  const cL=['cataluna','c-valenciana','baleares','navarra','pais-vasco','la-rioja','murcia'];
+  const f=[
+    {d:new Date(year,0,1),n:'Año Nuevo'},{d:new Date(year,0,6),n:'Reyes Magos'},
+    {d:vs,n:'Viernes Santo'},{d:new Date(year,4,1),n:'Día del Trabajo'},
+    {d:new Date(year,9,12),n:'Fiesta Nacional'},{d:new Date(year,10,1),n:'Todos los Santos'},
+    {d:new Date(year,11,6),n:'Día de la Constitución'},{d:new Date(year,11,8),n:'Inmaculada Concepción'},
+    {d:new Date(year,11,25),n:'Navidad'},
+  ];
+  if(cL.includes(com))f.push({d:lp,n:'Lunes de Pascua'});else f.push({d:js,n:'Jueves Santo'});
+  if(com==='cataluna'){f.push({d:new Date(year,5,24),n:'Sant Joan'});f.push({d:new Date(year,8,11),n:'La Diada'});f.push({d:new Date(year,11,26),n:'Sant Esteve'});}
+  return f.sort((a,b)=>a.d-b.d);
+}
+const isFest=(d,fs)=>fs.some(f=>sameD(f.d,d));
+function calcFin(ini,dias,tipo,fs){
+  const c=new Date(ini+'T12:00:00');let ct=0,fu=0;
+  while(true){
+    const iF=isFest(c,fs),iW=isWE(c);
+    if(tipo==='laborables'){if(!iF&&!iW)ct++;else if(iF)fu++;}
+    else{if(!iF)ct++;else fu++;}
+    if(ct>=dias)break;
+    c.setDate(c.getDate()+1);
+  }
+  return{fin:d2s(c),fu};
+}
+function dUsados(e,tipo,com,hoy){
+  const dias=Number(e.dias||0);if(!dias)return 0;
+  const ini=new Date(e.fecha+'T12:00:00');if(ini>hoy)return 0;
+  const fs=festivos(yOf(e.fecha),com);
+  const c=new Date(ini);let ct=0,u=0;
+  while(c<=hoy&&ct<dias){
+    const iF=isFest(c,fs),iW=isWE(c);
+    if(tipo==='laborables'){if(!iF&&!iW){ct++;u++;}}
+    else{if(!iF){ct++;u++;}}
+    c.setDate(c.getDate()+1);
+  }
+  return u;
+}
+
+const A={red:'#dc2626',redL:'#fee2e2',blue:'#2563eb',blueL:'#dbeafe',
+  em:'#059669',emL:'#d1fae5',amb:'#d97706',ambL:'#fef3c7',
+  pur:'#7c3aed',purL:'#ede9fe',teal:'#0d9488',tealL:'#ccfbf1'};
+const TC={'Mañana':{bg:'#fef3c7',c:'#92400e',b:'#fcd34d'},'Tarde':{bg:'#dbeafe',c:'#1e3a8a',b:'#93c5fd'},'Noche':{bg:'#ede9fe',c:'#4c1d95',b:'#c4b5fd'}};
+const tc=t=>TC[t]||{bg:'#f0fdf4',c:'#065f46',b:'#6ee7b7'};
+const ME=[5,11];
+
+function Stat({label,value,unit,color}){return <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',flex:1,minWidth:0}}><div style={{fontSize:10,textTransform:'uppercase',color:'#94a3b8',fontWeight:600}}>{label}</div><div style={{fontSize:26,fontWeight:800,color,marginTop:2,lineHeight:1}}>{value}</div><div style={{fontSize:11,color:'#94a3b8',marginTop:2}}>{unit}</div></div>;}
+function SHead({emoji,title,sub,bg}){return <div style={{display:'flex',alignItems:'center',gap:10}}><div style={{width:40,height:40,borderRadius:12,background:bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>{emoji}</div><div><div style={{fontWeight:800,fontSize:16,color:'#1e293b'}}>{title}</div><div style={{fontSize:11,color:'#94a3b8'}}>{sub}</div></div></div>;}
+function AddBtn({label,color,onClick}){return <button onClick={onClick} style={{width:'100%',background:color,color:'white',border:'none',borderRadius:12,padding:'13px 0',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontWeight:600,fontSize:15,cursor:'pointer'}}><span style={{fontSize:20,lineHeight:1}}>+</span>{label}</button>;}
+function IcoEdit(){return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>;}
+function IcoTrash(){return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;}
+function IcoX({s=18}){return <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;}
+function IcoChk(){return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;}
+function Empty({text}){return <div style={{background:'white',borderRadius:12,border:'2px dashed #cbd5e1',padding:32,textAlign:'center',color:'#94a3b8',fontSize:14}}>{text}</div>;}
+
+function Item({item,onEdit,onDelete,children}){
+  const [conf,setConf]=useState(false);
+  return <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:12,display:'flex',gap:8}}>
+    <div style={{flex:1,minWidth:0}}>{children}</div>
+    <div style={{display:'flex',flexDirection:'column',gap:4,flexShrink:0}}>
+      {!conf?<><button onClick={()=>onEdit(item)} style={{padding:8,background:'none',border:'none',borderRadius:8,cursor:'pointer',color:'#94a3b8'}}><IcoEdit/></button><button onClick={()=>setConf(true)} style={{padding:8,background:'none',border:'none',borderRadius:8,cursor:'pointer',color:'#94a3b8'}}><IcoTrash/></button></>
+      :<><button onClick={()=>{onDelete(item.id);setConf(false);}} style={{padding:'6px 8px',background:'#dc2626',border:'none',borderRadius:8,cursor:'pointer',color:'white',fontWeight:800,fontSize:11}}>OK</button><button onClick={()=>setConf(false)} style={{padding:6,background:'#f1f5f9',border:'none',borderRadius:8,cursor:'pointer',color:'#64748b'}}><IcoX s={14}/></button></>}
+    </div>
+  </div>;
+}
+
+function FiltroMes({year,items,mes,onMes,color}){
+  const ref=useRef(null);
+  const con=new Set(items.filter(i=>yOf(i.fecha)===year).map(i=>mOf(i.fecha)));
+  useEffect(()=>{if(ref.current&&mes!==null){const b=ref.current.querySelector(`[data-m="${mes}"]`);if(b)b.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});}}, [mes]);
+  return <div ref={ref} className="ms" style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:4}}>
+    <button onClick={()=>onMes(null)} style={{flexShrink:0,padding:'6px 14px',borderRadius:20,border:'1px solid '+(mes===null?color:'#e2e8f0'),background:mes===null?color:'white',color:mes===null?'white':'#64748b',fontWeight:600,fontSize:12,cursor:'pointer'}}>Todos</button>
+    {MC.map((m,i)=>{const a=mes===i,t=con.has(i);return <button key={i} data-m={i} onClick={()=>onMes(a?null:i)} style={{flexShrink:0,padding:'6px 12px',borderRadius:20,border:'1px solid '+(a?color:t?'#e2e8f0':'#f1f5f9'),background:a?color:'white',color:a?'white':t?'#475569':'#cbd5e1',fontWeight:a||t?600:400,fontSize:12,cursor:'pointer',opacity:t||a?1:0.5}}>{m}</button>;})}
+  </div>;
+}
+
+function Form({title,fields,initial,onSave,onCancel,color}){
+  const [d,setD]=useState({...initial});
+  const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
+  const sub=()=>{for(const f of fields)if(f.req&&!String(d[f.name]||'').trim()){alert('Completa: '+f.label);return;}onSave(d);};
+  return <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><span style={{fontWeight:700,color:'#1e293b'}}>{title}</span><button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IcoX/></button></div>
+    {fields.map(f=><div key={f.name}><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>{f.label}{f.req&&<span style={{color:'#ef4444'}}> *</span>}</label>
+      {f.type==='textarea'?<textarea rows={3} value={d[f.name]||''} onChange={e=>setD({...d,[f.name]:e.target.value})} placeholder={f.ph||''} style={{...inp,resize:'none'}}/>
+      :<input type={f.type||'text'} step={f.step} min={f.min} value={d[f.name]||''} onChange={e=>setD({...d,[f.name]:e.target.value})} placeholder={f.ph||''} style={inp}/>}
+    </div>)}
+    <div style={{display:'flex',gap:8}}><button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button><button onClick={sub} style={{flex:1,padding:'11px 0',borderRadius:8,border:'none',background:color,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button></div>
+  </div>;
+}
+
+function FotoV({src,onClose}){return <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.92)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}><img src={src} style={{maxWidth:'100%',maxHeight:'90vh',borderRadius:8,objectFit:'contain'}}/><button onClick={onClose} style={{position:'absolute',top:16,right:16,background:'rgba(255,255,255,0.2)',border:'none',borderRadius:'50%',width:36,height:36,color:'white',fontSize:20,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>x</button></div>;}
+
+function FotosPicker({fotos,onChange}){
+  const [v,setV]=useState(null);
+  const add=e=>{const fs=Array.from(e.target.files).slice(0,3-fotos.length);fs.forEach(f=>{const r=new FileReader();r.onload=ev=>onChange([...fotos,ev.target.result]);r.readAsDataURL(f);});e.target.value='';};
+  return <div>{v&&<FotoV src={v} onClose={()=>setV(null)}/>}<div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:6}}>{fotos.map((f,i)=><div key={i} style={{position:'relative'}}><img src={f} onClick={()=>setV(f)} style={{width:72,height:72,borderRadius:8,objectFit:'cover',border:'1px solid #e2e8f0',cursor:'pointer'}}/><button onClick={()=>onChange(fotos.filter((_,fi)=>fi!==i))} style={{position:'absolute',top:-6,right:-6,width:18,height:18,borderRadius:'50%',background:'#dc2626',border:'none',color:'white',fontSize:10,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>x</button></div>)}{fotos.length<3&&<label style={{width:72,height:72,borderRadius:8,border:'2px dashed #cbd5e1',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:24,color:'#94a3b8',background:'#f8fafc'}}>+<input type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={add}/></label>}</div></div>;
+}
+
+function IncidForm({initial,onSave,onCancel,color}){
+  const [d,setD]=useState({...initial});const [fotos,setFotos]=useState(initial.fotos||[]);
+  const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
+  const sub=()=>{if(!d.fecha||!String(d.titulo||'').trim()||!String(d.desc||'').trim()){alert('Completa todos los campos');return;}onSave({...d,fotos});};
+  return <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><span style={{fontWeight:700,color:'#1e293b'}}>{initial.id?'Editar':'Nueva incidencia'}</span><button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IcoX/></button></div>
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha *</label><input type="date" value={d.fecha||''} onChange={e=>setD({...d,fecha:e.target.value})} style={inp}/></div>
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Título *</label><input type="text" value={d.titulo||''} onChange={e=>setD({...d,titulo:e.target.value})} style={inp}/></div>
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Descripción *</label><textarea rows={3} value={d.desc||''} onChange={e=>setD({...d,desc:e.target.value})} style={{...inp,resize:'none'}}/></div>
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fotos (máx. 3)</label><FotosPicker fotos={fotos} onChange={setFotos}/></div>
+    <div style={{display:'flex',gap:8}}><button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button><button onClick={sub} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:color,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button></div>
+  </div>;
+}
+
+function IncidItem({it,onEdit,onDelete}){
+  const [v,setV]=useState(null);
+  return <Item item={it} onEdit={onEdit} onDelete={onDelete}>{v&&<FotoV src={v} onClose={()=>setV(null)}/>}<div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div>{it.titulo&&<div style={{fontSize:14,fontWeight:700,color:'#1e293b',marginTop:3}}>{it.titulo}</div>}<div style={{fontSize:13,color:'#475569',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>{it.fotos&&it.fotos.length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:8}}>{it.fotos.map((f,i)=><img key={i} src={f} onClick={()=>setV(f)} style={{width:60,height:60,borderRadius:6,objectFit:'cover',border:'1px solid #e2e8f0',cursor:'pointer'}}/>)}</div>}</Item>;
+}
+
+function generarInforme(year){
+  const fals=(ll('fallos')||[]).filter(i=>yOf(i.fecha)===year);
+  const hrs=(ll('horas')||[]).filter(i=>yOf(i.fecha)===year);
+  const vac=(ll('vac-e')||[]).filter(i=>yOf(i.fecha)===year);
+  const vacT=ll('vac-t')||{};
+  const inc=(ll('incid')||[]).filter(i=>yOf(i.fecha)===year);
+  const aus=(ll('ausencias')||[]).filter(i=>yOf(i.fecha)===year);
+  const nom=(ll('nominas')||[]).filter(n=>n.year===year);
+  const tipo=ll('vac-tipo')||'laborables';const com=ll('vac-comunidad')||'cataluna';
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  const totalD=Number(vacT[String(year)]??0);
+  const usVac=vac.reduce((a,e)=>a+dUsados(e,tipo,com,hoy),0);
+  const totHrs=hrs.reduce((s,i)=>s+Number(i.horas||0),0);
+  const totNom=nom.reduce((s,n)=>s+Number(n.importe||0)+(ME.includes(n.mes)?Number(n.extra||0):0),0);
+  const fD=s=>new Date(s+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const tbl=(titulo,rows)=>rows.length===0?'':(`<h2>${titulo}</h2><table><thead><tr>${Object.keys(rows[0]).map(k=>`<th>${k}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${Object.values(r).map(v=>`<td>${v}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>Labora ${year}</title><style>body{font-family:system-ui,sans-serif;max-width:900px;margin:0 auto;padding:32px;color:#1e293b;font-size:13px}h1{font-size:24px;margin-bottom:4px}.sub{color:#94a3b8;margin-bottom:32px}h2{font-size:15px;font-weight:700;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-top:28px}table{width:100%;border-collapse:collapse;margin-bottom:8px}th{background:#f8fafc;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0}td{padding:8px 10px;border-bottom:1px solid #f1f5f9;color:#475569}.res{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px}.card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;min-width:120px}.cl{font-size:10px;text-transform:uppercase;color:#94a3b8;font-weight:600}.cv{font-size:22px;font-weight:800;color:#1e293b;margin-top:2px}.cu{font-size:11px;color:#94a3b8}footer{margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center}@media print{body{padding:16px}}</style></head><body><h1>💼 Labora — Informe ${year}</h1><div class="sub">Generado el ${new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'})}</div><h2>Resumen</h2><div class="res"><div class="card"><div class="cl">Vacaciones usadas</div><div class="cv">${usVac}</div><div class="cu">de ${totalD} días</div></div><div class="card"><div class="cl">Horas extra</div><div class="cv">${totHrs}</div><div class="cu">horas total</div></div><div class="card"><div class="cl">Fallos</div><div class="cv">${fals.length}</div><div class="cu">registrados</div></div><div class="card"><div class="cl">Ausencias</div><div class="cv">${aus.length}</div><div class="cu">registradas</div></div>${nom.length>0?`<div class="card"><div class="cl">Total nóminas</div><div class="cv">${totNom.toLocaleString('es-ES')}€</div><div class="cu">${nom.length} meses</div></div>`:''}</div>${tbl('🌴 Vacaciones',[...vac].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(e=>({'Inicio':fD(e.fecha),'Fin':e.fin?fD(e.fin):'-','Días':e.dias,'Nota':e.desc||'-'})))}${tbl('💵 Nóminas',[...nom].sort((a,b)=>a.mes-b.mes).map(n=>({'Mes':MESES[n.mes],'Nómina':Number(n.importe).toLocaleString('es-ES')+'€','Extra':ME.includes(n.mes)&&n.extra>0?Number(n.extra).toLocaleString('es-ES')+'€':'-','Total':(Number(n.importe)+(ME.includes(n.mes)?Number(n.extra||0):0)).toLocaleString('es-ES')+'€','Notas':n.notas||'-'})))}${tbl('⏱️ Horas extra',[...hrs].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(h=>({'Fecha':fD(h.fecha),'Horas':h.horas,'Nota':h.desc||'-'})))}${tbl('🚫 Ausencias',[...aus].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(a=>({'Fecha':fD(a.fecha),'Tipo':a.just,'Motivo':a.motivo||'-','Horas':a.horas>0?a.horas+'h':'Día completo','Estado':a.estado})))}${tbl('⚠️ Fallos',[...fals].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(f=>({'Fecha':fD(f.fecha),'Descripción':f.desc})))}${tbl('⚠️ Incidencias',[...inc].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(i=>({'Fecha':fD(i.fecha),'Título':i.titulo,'Descripción':i.desc})))}<footer>Generado con Labora</footer></body></html>`;
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const w=window.open(url,'_blank');
+  if(w)w.onload=()=>setTimeout(()=>w.print(),500);
+  setTimeout(()=>URL.revokeObjectURL(url),15000);
+}
+
+function cTurno(mon,list,frec,ancla,idx){
+  if(!list||!list.length||!ancla)return null;
+  const am=monOf(new Date(ancla+'T12:00:00'));
+  const dif=Math.round((monOf(mon)-am)/(7*86400000));
+  const bl=Math.floor(dif/frec);
+  return list[((idx+bl)%list.length+list.length)%list.length];
+}
+
+function Avisos({vacE,turnos}){
+  const avisos=[];
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  const en7=new Date(hoy);en7.setDate(hoy.getDate()+7);
+  const proxVac=vacE.filter(e=>{const f=new Date(e.fecha+'T12:00:00');return f>hoy&&f<=en7;}).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  if(proxVac.length>0){
+    const v=proxVac[0];const dias=Math.ceil((new Date(v.fecha+'T12:00:00')-hoy)/86400000);
+    avisos.push({emoji:'🌴',texto:`Tus vacaciones empiezan en ${dias} día${dias!==1?'s':''}`,color:'#065f46',bg:A.emL,border:'#6ee7b7'});
+  }
+  if(turnos.turnosList&&turnos.turnosList.length>=2&&turnos.anclaISO){
+    const monActual=monOf(hoy);const monSig=new Date(monActual);monSig.setDate(monActual.getDate()+7);
+    const tA=cTurno(monActual,turnos.turnosList,turnos.frecuencia||1,turnos.anclaISO,turnos.anclaIdx??0);
+    const tS=cTurno(monSig,turnos.turnosList,turnos.frecuencia||1,turnos.anclaISO,turnos.anclaIdx??0);
+    if(tA&&tS&&tA!==tS)avisos.push({emoji:'🔄',texto:`La semana que viene cambias a turno de ${tS}`,color:'#92400e',bg:A.ambL,border:'#fcd34d'});
+  }
+  if(!avisos.length)return null;
+  return <div style={{display:'flex',flexDirection:'column',gap:6}}>
+    {avisos.map((a,i)=><div key={i} style={{background:a.bg,border:'1px solid '+a.border,borderRadius:10,padding:'8px 12px',display:'flex',alignItems:'center',gap:8}}>
+      <span style={{fontSize:16}}>{a.emoji}</span><span style={{fontSize:12,fontWeight:600,color:a.color}}>{a.texto}</span>
+    </div>)}
+  </div>;
+}
+
+function InicioSection({vacE,vacTotales,fallos,horas,ausencias,nominas,turnos,cobro,onNav}){
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  const tipo=ll('vac-tipo')||'laborables';
+  const com=ll('vac-comunidad')||'cataluna';
+  const yKey=String(CY);
+  const totalVac=Number(vacTotales[yKey]??0);
+  const yeVac=vacE.filter(e=>yOf(e.fecha)===CY);
+  const usadosVac=yeVac.reduce((a,e)=>a+dUsados(e,tipo,com,hoy),0);
+  const dispVac=totalVac-usadosVac;
+
+  const cobroData=nxtCobro(cobro);
+
+  const yeHrs=horas.filter(i=>yOf(i.fecha)===CY);
+  const sumHrs=yeHrs.reduce((s,i)=>s+Number(i.horas||0),0);
+
+  const yeFallos=fallos.filter(i=>yOf(i.fecha)===CY&&mOf(i.fecha)===CM);
+
+  const now=new Date();now.setHours(0,0,0,0);
+  const proxVac=vacE.filter(e=>new Date(e.fecha+'T12:00:00')>now).sort((a,b)=>a.fecha.localeCompare(b.fecha))[0]||null;
+  const cdVac=proxVac?wkDays(proxVac.fecha):null;
+
+  const tAct=(()=>{
+    const list=turnos.turnosList||[];const ancla=turnos.anclaISO||null;
+    if(list.length<2||!ancla)return null;
+    return cTurno(monOf(hoy),list,turnos.frecuencia||1,ancla,turnos.anclaIdx??0);
+  })();
+  const tSig=(()=>{
+    const list=turnos.turnosList||[];const ancla=turnos.anclaISO||null;
+    if(list.length<2||!ancla)return null;
+    const sig=new Date(monOf(hoy));sig.setDate(monOf(hoy).getDate()+7);
+    return cTurno(sig,list,turnos.frecuencia||1,ancla,turnos.anclaIdx??0);
+  })();
+
+  const ultimaNom=[...nominas].filter(n=>n.year===CY).sort((a,b)=>b.mes-a.mes)[0]||null;
+
+  const dias=new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  const diasCap=dias.charAt(0).toUpperCase()+dias.slice(1);
+
+  const Card=({emoji,top,val,valColor,sub,subColor,onClick})=>(
+    <div onClick={onClick} style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',cursor:'pointer',WebkitTapHighlightColor:'transparent'}}>
+      <div style={{fontSize:12,color:'#94a3b8',marginBottom:3}}>{emoji} {top}</div>
+      <div style={{fontSize:22,fontWeight:800,color:valColor||'#1e293b',lineHeight:1}}>{val}</div>
+      {sub&&<div style={{fontSize:11,marginTop:3,color:subColor||'#94a3b8'}}>{sub}</div>}
+    </div>
+  );
+
+  return <div style={{display:'flex',flexDirection:'column',gap:12}}>
+    <div style={{fontSize:13,color:'#64748b',fontWeight:600}}>{diasCap}</div>
+
+    {cdVac&&cdVac.total<=14&&<div style={{background:A.emL,border:'1px solid #6ee7b7',borderRadius:10,padding:'8px 12px',display:'flex',alignItems:'center',gap:8,cursor:'pointer'}} onClick={()=>onNav('vac')}>
+      <span style={{fontSize:16}}>🌴</span>
+      <span style={{fontSize:12,fontWeight:600,color:'#065f46'}}>
+        {cdVac.total===0?'¡Hoy empiezan tus vacaciones!':`Vacaciones en ${cdVac.total} día${cdVac.total!==1?'s':''}`}
+      </span>
+    </div>}
+
+    {tAct&&tSig&&tAct!==tSig&&<div style={{background:A.ambL,border:'1px solid #fcd34d',borderRadius:10,padding:'8px 12px',display:'flex',alignItems:'center',gap:8}}>
+      <span style={{fontSize:16}}>🔄</span>
+      <span style={{fontSize:12,fontWeight:600,color:'#92400e'}}>La semana que viene cambias a turno de {tSig}</span>
+    </div>}
+
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+      <Card emoji="🌴" top="Vacaciones disp." val={totalVac>0?dispVac:'—'} valColor={dispVac<0?A.red:A.em} sub={totalVac>0?`${usadosVac} usados de ${totalVac}`:'Sin configurar'} onClick={()=>onNav('vac')}/>
+      <Card emoji="💰" top="Días para cobrar" val={cobroData.total} valColor={A.pur} sub={`día ${cobro} de cada mes`} onClick={()=>onNav('cobro')}/>
+      <Card emoji="⏱️" top="Horas extra" val={sumHrs} valColor={A.blue} sub={`año ${CY}`} onClick={()=>onNav('horas')}/>
+      <Card
+        emoji="🔄"
+        top="Turno esta semana"
+        val={tAct||'—'}
+        valColor={tAct?tc(tAct).c:'#cbd5e1'}
+        sub={tSig&&tSig!==tAct?`→ ${tSig} próx.`:tAct?'rotación activa':'Sin configurar'}
+        subColor={tSig&&tSig!==tAct?A.amb:undefined}
+        onClick={()=>onNav('turnos')}
+      />
+    </div>
+
+    <div style={{display:'flex',gap:8}}>
+      <div onClick={()=>onNav('nominas')} style={{flex:1,background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',cursor:'pointer'}}>
+        <div style={{fontSize:12,color:'#94a3b8',marginBottom:3}}>💵 Última nómina</div>
+        {ultimaNom
+          ?<><div style={{fontSize:20,fontWeight:800,color:A.teal}}>{Number(ultimaNom.importe).toLocaleString('es-ES')}€</div>
+            <div style={{fontSize:11,color:'#94a3b8',marginTop:2}}>{MESES[ultimaNom.mes]} {CY}</div></>
+          :<div style={{fontSize:13,color:'#cbd5e1',marginTop:4}}>Sin registrar</div>}
+      </div>
+      <div onClick={()=>onNav('fallos')} style={{flex:1,background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'10px 12px',cursor:'pointer'}}>
+        <div style={{fontSize:12,color:'#94a3b8',marginBottom:3}}>⚠️ Fallos este mes</div>
+        <div style={{fontSize:20,fontWeight:800,color:yeFallos.length>0?A.red:'#1e293b'}}>{yeFallos.length}</div>
+        <div style={{fontSize:11,color:'#94a3b8',marginTop:2}}>{MESES[CM]} {CY}</div>
+      </div>
+    </div>
+  </div>;
+}
+
+function DisclaimerModal({onAcepto}){
+  const [scroll,setScroll]=useState(false);
+  const ref=useRef(null);
+  const onScroll=()=>{const el=ref.current;if(!el)return;if(el.scrollTop+el.clientHeight>=el.scrollHeight-20)setScroll(true);};
+  return <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:999,display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
+    <div style={{background:'white',borderRadius:'20px 20px 0 0',width:'100%',maxWidth:500,maxHeight:'90vh',display:'flex',flexDirection:'column'}}>
+      <div style={{padding:'20px 20px 0',flexShrink:0}}>
+        <div style={{width:40,height:4,background:'#e2e8f0',borderRadius:99,margin:'0 auto 16px'}}/>
+        <div style={{fontSize:18,fontWeight:800,color:'#1e293b',marginBottom:4}}>⚖️ Aviso legal importante</div>
+        <div style={{fontSize:12,color:'#94a3b8',marginBottom:12}}>Lee esto antes de usar Labora · desplázate hasta el final para aceptar</div>
+      </div>
+      <div ref={ref} onScroll={onScroll} style={{overflowY:'auto',padding:'0 20px',flex:1}}>
+        <div style={{fontSize:13,color:'#475569',lineHeight:1.7,display:'flex',flexDirection:'column',gap:14}}>
+          <div style={{background:'#fef3c7',border:'1px solid #fcd34d',borderRadius:10,padding:12}}>
+            <div style={{fontWeight:700,color:'#92400e',marginBottom:4}}>⚠️ Herramienta de apoyo, no asesoramiento legal</div>
+            <div>Labora es una aplicación de registro personal. Los cálculos que realiza son orientativos y pueden no coincidir con tu convenio colectivo, contrato o legislación aplicable.</div>
+          </div>
+          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>📋 Qué es Labora</div>Labora es una herramienta digital para que los trabajadores puedan llevar un registro personal de su vida laboral. No es un sistema oficial de control de presencia ni está vinculado a ningún sistema de RRHH.</div>
+          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>🚫 Qué NO es Labora</div>
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              <div>• <strong>No es asesoramiento jurídico ni laboral.</strong> Si tienes dudas sobre tus derechos, consulta a un abogado laboralista o a tu sindicato.</div>
+              <div>• <strong>No garantiza exactitud legal.</strong> Los festivos, convenios y normativas varían. Verifica siempre con tu convenio colectivo.</div>
+              <div>• <strong>No reemplaza la documentación oficial</strong> de tu empresa.</div>
+              <div>• <strong>No es válida como prueba legal</strong> en procedimientos judiciales o administrativos por sí sola.</div>
+            </div>
+          </div>
+          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>🔒 Tus datos y privacidad</div>Todos tus datos se almacenan <strong>únicamente en tu dispositivo</strong>. Labora no envía ningún dato a servidores externos, no tiene acceso a tu información y no comparte nada con terceros.</div>
+          <div><div style={{fontWeight:700,color:'#1e293b',marginBottom:4}}>⚖️ Limitación de responsabilidad</div>El desarrollador de Labora no se hace responsable de decisiones laborales, económicas o legales tomadas basándose en los datos o cálculos de la app.</div>
+          <div style={{background:'#f0fdf4',border:'1px solid #6ee7b7',borderRadius:10,padding:12,marginBottom:8}}>
+            <div style={{fontWeight:700,color:'#065f46',marginBottom:4}}>✅ Al aceptar, confirmas que</div>
+            <div style={{display:'flex',flexDirection:'column',gap:4}}>
+              <div>• Has leído y entendido este aviso legal.</div>
+              <div>• Usarás Labora como herramienta de apoyo personal.</div>
+              <div>• Verificarás cualquier dato importante con las fuentes oficiales.</div>
+              <div>• Entiendes que el desarrollador no tiene responsabilidad sobre el uso que hagas de la app.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style={{padding:20,flexShrink:0,borderTop:'1px solid #f1f5f9'}}>
+        {!scroll&&<div style={{fontSize:11,color:'#94a3b8',textAlign:'center',marginBottom:10}}>↓ Desplázate hasta el final para aceptar</div>}
+        <button onClick={scroll?onAcepto:null} style={{width:'100%',background:scroll?A.em:'#e2e8f0',color:scroll?'white':'#94a3b8',border:'none',borderRadius:12,padding:'14px 0',fontWeight:700,fontSize:15,cursor:scroll?'pointer':'not-allowed',transition:'all 0.3s'}}>
+          {scroll?'✓ Entendido, empezar a usar Labora':'Lee el aviso para continuar'}
+        </button>
+      </div>
+    </div>
+  </div>;
+}
+
+function DisclaimerInfo(){
+  const [open,setOpen]=useState(false);
+  return <>
+    {open&&<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:998,display:'flex',alignItems:'flex-end'}} onClick={()=>setOpen(false)}>
+      <div onClick={e=>e.stopPropagation()} style={{background:'white',borderRadius:'20px 20px 0 0',width:'100%',maxHeight:'80vh',display:'flex',flexDirection:'column'}}>
+        <div style={{padding:'20px 20px 0',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div style={{fontSize:16,fontWeight:800,color:'#1e293b'}}>⚖️ Aviso legal</div>
+          <button onClick={()=>setOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8'}}><IcoX/></button>
+        </div>
+        <div style={{overflowY:'auto',padding:'12px 20px 24px',fontSize:13,color:'#475569',lineHeight:1.7,display:'flex',flexDirection:'column',gap:12}}>
+          <div style={{background:'#fef3c7',border:'1px solid #fcd34d',borderRadius:10,padding:12}}><div style={{fontWeight:700,color:'#92400e',marginBottom:4}}>⚠️ Herramienta de apoyo, no asesoramiento legal</div>Los cálculos son orientativos. Verifica siempre con tu convenio colectivo y fuentes oficiales.</div>
+          <div>Labora almacena todos los datos <strong>solo en tu dispositivo</strong>. No envía nada a servidores externos.</div>
+          <div>El desarrollador no se hace responsable de decisiones tomadas basándose en los datos de la app.</div>
+          <div style={{fontSize:11,color:'#94a3b8'}}>Versión del aviso: 1.0 · {new Date().getFullYear()}</div>
+        </div>
+      </div>
+    </div>}
+    <button onClick={()=>setOpen(true)} style={{background:'none',border:'none',cursor:'pointer',fontSize:11,color:'#94a3b8',textDecoration:'underline',padding:0}}>⚖️ Aviso legal</button>
+  </>;
+}
+
+function TurnosSection({turnos:cfg,onUpdate}){
+  const [cy,setCy]=useState(CY);const [cm,setCm]=useState(CM);
+  const list=cfg.turnosList||[];const frec=cfg.frecuencia||1;const ancla=cfg.anclaISO||null;const idx=cfg.anclaIdx??0;const ov=cfg.overrides||{};
+  const configured=list.length>=2&&ancla;
+  const PRESETS=[{label:'☀️  Mañana / Tarde',t:['Mañana','Tarde']},{label:'🌙  Mañana / Tarde / Noche',t:['Mañana','Tarde','Noche']}];
+  const FREQS=[{l:'Cada semana',v:1},{l:'Cada 2 semanas',v:2},{l:'Cada 3 semanas',v:3},{l:'Mensual',v:4}];
+  const getSem=mon=>{const k=d2s(mon);if(ov[k]!==undefined)return{t:ov[k],ov:true};return{t:cTurno(mon,list,frec,ancla,idx),ov:false};};
+  const setOv=(mon,t)=>{const k=d2s(mon);const auto=cTurno(mon,list,frec,ancla,idx);const n={...ov};if(t===null||t===auto)delete n[k];else n[k]=t;onUpdate({...cfg,overrides:n});};
+  const chM=dir=>{let m=cm+dir,y=cy;if(m>11){m=0;y++;}if(m<0){m=11;y--;}setCy(y);setCm(m);};
+  const getMons=(y,m)=>{const r=[];const f=new Date(y,m,1);const l=new Date(y,m+1,0);const c=monOf(f);while(c<=l){r.push(new Date(c));c.setDate(c.getDate()+7);}return r;};
+  const mons=getMons(cy,cm);const todStr=d2s(monOf(new Date()));
+  const tAct=configured?getSem(monOf(new Date())).t:null;
+  const pIdx=PRESETS.findIndex(p=>JSON.stringify(p.t)===JSON.stringify(list));
+  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <SHead emoji="🔄" title="Turnos" sub="Rotación automática" bg={A.ambL}/>
+    <div style={{background:tAct?tc(tAct).bg:'#f8fafc',borderRadius:14,border:'2px solid '+(tAct?tc(tAct).b:'#e2e8f0'),padding:18,textAlign:'center'}}>
+      <div style={{fontSize:11,color:'#94a3b8',fontWeight:600,textTransform:'uppercase',marginBottom:6}}>Esta semana</div>
+      <div style={{fontSize:38,fontWeight:900,color:tAct?tc(tAct).c:'#cbd5e1'}}>{tAct||'—'}</div>
+    </div>
+    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:16}}>
+      <div>
+        <div style={{fontSize:12,fontWeight:700,color:'#64748b',textTransform:'uppercase',marginBottom:10}}>1. ¿Qué turnos tienes?</div>
+        {PRESETS.map((p,i)=>{const sel=pIdx===i;return <button key={i} onClick={()=>onUpdate({...cfg,turnosList:p.t,anclaIdx:0,overrides:{}})} style={{width:'100%',padding:'14px 16px',borderRadius:12,border:'2px solid '+(sel?A.amb:'#e2e8f0'),background:sel?'#fffbeb':'white',textAlign:'left',cursor:'pointer',fontWeight:700,fontSize:15,color:sel?A.amb:'#475569',marginBottom:8,display:'flex',justifyContent:'space-between',alignItems:'center'}}><span>{p.label}</span>{sel&&<span>✓</span>}</button>;})}
+      </div>
+      {list.length>=2&&<div>
+        <div style={{fontSize:12,fontWeight:700,color:'#64748b',textTransform:'uppercase',marginBottom:10}}>2. ¿Cada cuánto cambia?</div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>{FREQS.map(f=><button key={f.v} onClick={()=>onUpdate({...cfg,frecuencia:f.v,overrides:{}})} style={{padding:'10px 14px',borderRadius:20,border:'2px solid '+(frec===f.v?A.amb:'#e2e8f0'),background:frec===f.v?'#fffbeb':'white',cursor:'pointer',fontWeight:600,fontSize:13,color:frec===f.v?A.amb:'#475569'}}>{f.l}</button>)}</div>
+      </div>}
+      {list.length>=2&&<div>
+        <div style={{fontSize:12,fontWeight:700,color:'#64748b',textTransform:'uppercase',marginBottom:10}}>3. ¿Qué turno tienes esta semana?</div>
+        <div style={{display:'flex',gap:10}}>{list.map((t,i)=><button key={i} onClick={()=>onUpdate({...cfg,anclaISO:d2s(monOf(new Date())),anclaIdx:i,overrides:{}})} style={{flex:1,padding:'16px 8px',borderRadius:12,border:'2px solid '+(idx===i&&ancla?tc(t).b:'#e2e8f0'),background:idx===i&&ancla?tc(t).bg:'white',cursor:'pointer',fontWeight:800,fontSize:18,color:idx===i&&ancla?tc(t).c:'#94a3b8',textAlign:'center'}}>{t}{idx===i&&ancla&&<div style={{fontSize:11,marginTop:4}}>✓</div>}</button>)}</div>
+        {configured&&<div style={{fontSize:11,color:A.em,marginTop:8,fontWeight:600,textAlign:'center'}}>✓ Rotación activa</div>}
+      </div>}
+    </div>
+    {configured&&<div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+        <span style={{fontWeight:700,fontSize:15,color:'#1e293b'}}>{MESES[cm]} {cy}</span>
+        <div style={{display:'flex',gap:8}}><button onClick={()=>chM(-1)} style={{width:30,height:30,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:16}}>&#8249;</button><button onClick={()=>chM(1)} style={{width:30,height:30,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:16}}>&#8250;</button></div>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>{mons.map((mon,i)=>{
+        const fri=new Date(mon);fri.setDate(mon.getDate()+4);
+        const isNow=d2s(mon)===todStr;const {t,ov:isOv}=getSem(mon);
+        const ts=t?tc(t):{bg:'#f8fafc',c:'#94a3b8',b:'#e2e8f0'};
+        return <div key={i} style={{border:'2px solid '+(isNow?A.amb:'#e2e8f0'),borderRadius:10,overflow:'hidden',background:isNow?'#fffbeb':'white'}}>
+          <div style={{display:'flex',alignItems:'center',padding:'8px 12px',gap:8}}>
+            <div style={{flex:1}}>{isNow&&<div style={{fontSize:10,fontWeight:700,color:A.amb}}>← Esta semana</div>}<div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>{mon.getDate()} {MC[mon.getMonth()]} – {fri.getDate()} {MC[fri.getMonth()]}</div></div>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:2}}>
+              <div style={{fontSize:13,fontWeight:700,color:ts.c,background:ts.bg,border:'1px solid '+ts.b,borderRadius:20,padding:'4px 12px'}}>{t||'—'}</div>
+              {isOv&&<div style={{fontSize:9,color:A.amb,fontWeight:700}}>modificado</div>}
+            </div>
+          </div>
+          <div className="ms" style={{display:'flex',gap:6,padding:'0 12px 10px',overflowX:'auto'}}>
+            {list.map(tt=><button key={tt} onClick={()=>setOv(mon,t===tt&&isOv?null:tt)} style={{flexShrink:0,padding:'5px 14px',borderRadius:20,border:'2px solid '+(t===tt?tc(tt).b:'#e2e8f0'),background:t===tt?tc(tt).bg:'white',color:t===tt?tc(tt).c:'#64748b',fontSize:12,fontWeight:600,cursor:'pointer'}}>{tt}</button>)}
+            {isOv&&<button onClick={()=>setOv(mon,null)} style={{flexShrink:0,padding:'5px 10px',borderRadius:20,border:'1px solid #e2e8f0',background:'white',color:'#94a3b8',fontSize:11,cursor:'pointer'}}>↩ auto</button>}
+          </div>
+        </div>;
+      })}</div>
+    </div>}
+  </div>;
+}
+
+function NominaSection({nominas,onUpdate}){
+  const [year,setYear]=useState(CY);const [form,setForm]=useState(false);const [ed,setEd]=useState(null);
+  const yn=nominas.filter(n=>n.year===year);
+  const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
+  const tot=yn.reduce((s,n)=>s+Number(n.importe||0)+(ME.includes(n.mes)?Number(n.extra||0):0),0);
+  const med=yn.length>0?(tot/yn.length).toFixed(0):0;
+  const gD=m=>{const a=yn.find(n=>n.mes===m);const b=yn.find(n=>n.mes===m-1);if(!a||!b)return null;return Number(a.importe)-Number(b.importe);};
+  const gN=m=>yn.find(n=>n.mes===m)||null;
+  const save=data=>{
+    const it={...data,year,mes:parseInt(data.mes),importe:parseFloat(data.importe)||0,extra:parseFloat(data.extra||0)||0};
+    if(ed){onUpdate(nominas.map(n=>n.id===ed.id?{...it,id:ed.id}:n));setEd(null);}
+    else{const ex=nominas.find(n=>n.year===year&&n.mes===parseInt(data.mes));if(ex)onUpdate(nominas.map(n=>n.id===ex.id?{...it,id:ex.id}:n));else onUpdate([...nominas,{...it,id:uid()}]);setForm(false);}
+  };
+  const ys=[];for(let y=CY+1;y>=CY-4;y--)ys.push(y);
+  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <SHead emoji="💵" title="Nómina" sub="Historial de cobros" bg={A.tealL}/>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:'12px 16px'}}><span style={{fontWeight:700,color:'#1e293b'}}>Año</span><select value={year} onChange={e=>setYear(Number(e.target.value))} style={{appearance:'none',background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:8,padding:'6px 12px',fontWeight:600,fontSize:14,cursor:'pointer',color:'#1e293b'}}>{ys.map(y=><option key={y} value={y}>{y}</option>)}</select></div>
+    {yn.length>0&&<div style={{display:'flex',gap:10}}><Stat label="Total año" value={tot.toLocaleString('es-ES')+'€'} unit={yn.length+' nóminas'} color={A.teal}/><Stat label="Media" value={Number(med).toLocaleString('es-ES')+'€'} unit="por mes" color={A.teal}/></div>}
+    <AddBtn label="Registrar nómina" color={A.teal} onClick={()=>{setEd(null);setForm(true);}}/>
+    {(form||ed)&&<div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><span style={{fontWeight:700,color:'#1e293b'}}>{ed?'Editar':'Nueva nómina'}</span><button onClick={()=>{setForm(false);setEd(null);}} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IcoX/></button></div>
+      <NomForm initial={ed||{mes:String(CM),importe:'',extra:'',notas:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={A.teal} inp={inp}/>
+    </div>}
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>{MESES.map((m,i)=>{
+      const nom=gN(i);const df=gD(i);const esE=ME.includes(i);const esA=i===CM&&year===CY;
+      return <div key={i} onClick={()=>{if(nom){setEd(nom);setForm(false);}else{setEd(null);setForm(true);}}} style={{background:nom?'white':'#f8fafc',borderRadius:12,border:'2px solid '+(esA?A.teal:nom?'#e2e8f0':'#f1f5f9'),padding:12,cursor:'pointer',position:'relative'}}>
+        {esE&&<div style={{position:'absolute',top:6,right:8,fontSize:9,fontWeight:700,color:A.amb}}>+Extra</div>}
+        <div style={{fontSize:11,fontWeight:700,color:esA?A.teal:'#94a3b8',marginBottom:4}}>{MC[i]}</div>
+        {nom?<><div style={{fontSize:18,fontWeight:800,color:'#1e293b'}}>{Number(nom.importe).toLocaleString('es-ES')}€</div>{esE&&nom.extra>0&&<div style={{fontSize:11,color:A.amb,fontWeight:600}}>+{Number(nom.extra).toLocaleString('es-ES')}€</div>}{df!==null&&<div style={{fontSize:11,marginTop:2,fontWeight:600,color:df>0?A.em:df<0?A.red:'#94a3b8'}}>{df>0?'▲':'▼'} {Math.abs(df).toLocaleString('es-ES')}€</div>}</>
+        :<div style={{fontSize:12,color:'#cbd5e1',marginTop:4}}>Toca para añadir</div>}
+      </div>;
+    })}</div>
+    {yn.length>0&&<div style={{display:'flex',flexDirection:'column',gap:8}}><div style={{fontSize:12,fontWeight:700,color:'#94a3b8',textTransform:'uppercase'}}>Detalle</div>
+      {[...yn].sort((a,b)=>b.mes-a.mes).map(n=>{const df=gD(n.mes);const esE=ME.includes(n.mes);const tot2=Number(n.importe)+(esE?Number(n.extra||0):0);return <Item key={n.id} item={n} onEdit={i=>{setEd(i);setForm(false);}} onDelete={id=>onUpdate(nominas.filter(x=>x.id!==id))}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><div><div style={{fontSize:13,fontWeight:700,color:'#1e293b'}}>{MESES[n.mes]} {year}</div>{esE&&n.extra>0&&<div style={{fontSize:11,color:A.amb}}>+ paga extra</div>}</div><div style={{textAlign:'right'}}><div style={{fontSize:18,fontWeight:800,color:A.teal}}>{tot2.toLocaleString('es-ES')}€</div>{df!==null&&<div style={{fontSize:11,fontWeight:600,color:df>0?A.em:df<0?A.red:'#94a3b8'}}>{df>0?'▲ +':'▼ '}{df.toLocaleString('es-ES')}€</div>}</div></div>
+        {n.notas&&<div style={{fontSize:12,color:'#64748b',marginTop:4}}>{n.notas}</div>}
+      </Item>;})}
+    </div>}
+    {yn.length===0&&<Empty text="Sin nóminas este año"/>}
+  </div>;
+}
+function NomForm({initial,onSave,onCancel,color,inp}){
+  const [mes,setMes]=useState(String(initial.mes||CM));const [imp,setImp]=useState(String(initial.importe||''));const [ext,setExt]=useState(String(initial.extra||''));const [not,setNot]=useState(initial.notas||'');
+  const esE=ME.includes(parseInt(mes));
+  const sub=()=>{if(!imp||parseFloat(imp)<0){alert('Ingresa el importe');return;}onSave({mes,importe:imp,extra:esE?ext:'0',notas:not});};
+  return <>
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Mes *</label><select value={mes} onChange={e=>setMes(e.target.value)} style={inp}>{MESES.map((m,i)=><option key={i} value={i}>{m}</option>)}</select></div>
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Importe (€) *</label><input type="number" min="0" step="0.01" placeholder="1850.00" value={imp} onChange={e=>setImp(e.target.value)} style={inp}/></div>
+    {esE&&<div style={{background:A.ambL,borderRadius:8,padding:'10px 12px',border:'1px solid #fcd34d'}}><div style={{fontSize:12,fontWeight:700,color:A.amb,marginBottom:6}}>🎉 Paga extra — {MESES[parseInt(mes)]}</div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Importe extra (€)</label><input type="number" min="0" step="0.01" placeholder="1850.00" value={ext} onChange={e=>setExt(e.target.value)} style={inp}/></div>}
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Notas</label><textarea rows={2} placeholder="Ej: Plus transporte..." value={not} onChange={e=>setNot(e.target.value)} style={{...inp,resize:'none'}}/></div>
+    <div style={{display:'flex',gap:8}}><button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button><button onClick={sub} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:color,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button></div>
+  </>;
+}
+
+function Calendario({entries,fests,cy,cm,onCh,tipo,com}){
+  const vacD=new Set();
+  entries.forEach(e=>{
+    if(!e.dias||Number(e.dias)<1)return;
+    const fs=festivos(yOf(e.fecha),com);const r=calcFin(e.fecha,Number(e.dias),tipo,fs);
+    const c=new Date(e.fecha+'T12:00:00');const fin=new Date(r.fin+'T12:00:00');
+    while(c<=fin){const iF=isFest(c,fs),iW=isWE(c);if(tipo==='laborables'?(!iF&&!iW):(!iF))vacD.add(d2s(c));c.setDate(c.getDate()+1);}
+  });
+  const ts=todayISO();const f1=new Date(cy,cm,1);const sd=(f1.getDay()+6)%7;const dim=new Date(cy,cm+1,0).getDate();
+  const fm=fests.filter(f=>f.d.getMonth()===cm&&f.d.getFullYear()===cy);
+  return <div>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+      <span style={{fontWeight:700,fontSize:15,color:'#1e293b'}}>{MESES[cm]} {cy}</span>
+      <div style={{display:'flex',gap:8}}><button onClick={()=>onCh(-1)} style={{width:30,height:30,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:16}}>&#8249;</button><button onClick={()=>onCh(1)} style={{width:30,height:30,borderRadius:'50%',border:'1px solid #e2e8f0',background:'white',cursor:'pointer',fontSize:16}}>&#8250;</button></div>
+    </div>
+    <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2,marginBottom:8}}>
+      {DS.map(d=><div key={d} style={{textAlign:'center',fontSize:10,fontWeight:600,color:'#94a3b8',padding:'4px 0'}}>{d}</div>)}
+      {Array(sd).fill(null).map((_,i)=><div key={'e'+i}/>)}
+      {Array(dim).fill(null).map((_,i)=>{
+        const d=i+1,dt=new Date(cy,cm,d),ds=d2s(dt);
+        const iF=isFest(dt,fests),iV=vacD.has(ds),iT=ds===ts,iW=isWE(dt);
+        let bg='transparent',col=iW?'#94a3b8':'#1e293b',fw='normal';
+        if(iT){bg='#1e293b';col='white';fw='700';}else if(iF){bg='#dbeafe';col='#2563eb';fw='700';}else if(iV){bg='#d1fae5';col='#065f46';}
+        return <div key={d} style={{textAlign:'center',padding:'5px 1px',borderRadius:6,fontSize:12,background:bg,color:col,fontWeight:fw,minHeight:28,display:'flex',alignItems:'center',justifyContent:'center'}}>{d}</div>;
+      })}
+    </div>
+    <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:8}}>
+      <div style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'#94a3b8'}}><div style={{width:8,height:8,borderRadius:'50%',background:'#2563eb'}}/> Festivo</div>
+      <div style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'#94a3b8'}}><div style={{width:8,height:8,borderRadius:'50%',background:'#059669'}}/> Vacaciones</div>
+      <div style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'#94a3b8'}}><div style={{width:8,height:8,borderRadius:'50%',background:'#1e293b'}}/> Hoy</div>
+    </div>
+    {fm.length>0&&<div style={{display:'flex',flexDirection:'column',gap:4}}>{fm.map((f,i)=><div key={i} style={{display:'flex',gap:10,background:'white',border:'1px solid #e2e8f0',borderRadius:8,padding:'8px 12px',alignItems:'center'}}><span style={{fontSize:11,fontWeight:600,color:'#2563eb',minWidth:64}}>{f.d.getDate()} {MESES[f.d.getMonth()].slice(0,3)}</span><span style={{fontSize:13,color:'#1e293b'}}>{f.n}</span></div>)}</div>}
+  </div>;
+}
+
+function VacForm({initial,tipo,fs,onSave,onCancel,color}){
+  const [fecha,setFecha]=useState(initial.fecha||'');const [dias,setDias]=useState(initial.dias?String(initial.dias):'');const [desc,setDesc]=useState(initial.desc||'');const [fin,setFin]=useState('');const [fu,setFu]=useState(0);
+  const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
+  const calc=(f,d)=>{if(!f||!d||parseInt(d)<1){setFin('');return;}const r=calcFin(f,parseInt(d),tipo,fs);setFin(r.fin);setFu(r.fu);};
+  const sub=()=>{if(!fecha||!dias||parseInt(dias)<1){alert('Completa los campos');return;}const r=calcFin(fecha,parseInt(dias),tipo,fs);onSave({fecha,dias:parseInt(dias),fin:r.fin,desc});};
+  return <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><span style={{fontWeight:700,color:'#1e293b'}}>Registrar vacaciones</span><button onClick={onCancel} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IcoX/></button></div>
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha inicio *</label><input type="date" value={fecha} onChange={e=>{setFecha(e.target.value);calc(e.target.value,dias);}} style={inp}/></div>
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Días ({tipo}) *</label><input type="number" min="1" step="1" placeholder="5" value={dias} onChange={e=>{setDias(e.target.value);calc(fecha,e.target.value);}} style={inp}/></div>
+    {fin&&<div style={{background:'#f0fdf4',border:'1px solid #6ee7b7',borderRadius:8,padding:'10px 12px',fontSize:13,color:'#065f46'}}>Fin: <strong>{fmtL(fin)}</strong>{fu>0&&<div style={{fontSize:12,marginTop:4,color:'#059669'}}>{fu} festivo{fu>1?'s':''} no contado{fu>1?'s':''}</div>}</div>}
+    <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Nota</label><textarea rows={2} placeholder="Ej: Verano" value={desc} onChange={e=>setDesc(e.target.value)} style={{...inp,resize:'none'}}/></div>
+    <div style={{display:'flex',gap:8}}><button onClick={onCancel} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button><button onClick={sub} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:color,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button></div>
+  </div>;
+}
+
+function VacSection({entries,totales,year,onUpdateE,onUpdateT}){
+  const [form,setForm]=useState(false);const [ed,setEd]=useState(null);const [editT,setEditT]=useState(false);const [tInp,setTInp]=useState('');
+  const [cy,setCy]=useState(CY);const [cm,setCm]=useState(CM);
+  const [tipo,setTipo]=useState(()=>ll('vac-tipo')||'laborables');const [com,setCom]=useState(()=>ll('vac-comunidad')||'cataluna');
+  const fs=festivos(year,com);const fsCal=festivos(cy,com);
+  const chM=dir=>{let m=cm+dir,y=cy;if(m>11){m=0;y++;}if(m<0){m=11;y--;}setCy(y);setCm(m);};
+  const yKey=String(year);const totalD=Number(totales[yKey]??0);
+  const ye=entries.filter(e=>yOf(e.fecha)===year);const hoy=new Date();hoy.setHours(0,0,0,0);
+  const used=ye.reduce((a,e)=>a+dUsados(e,tipo,com,hoy),0);const rest=totalD-used;const pct=totalD>0?Math.min(100,(used/totalD)*100):0;
+  const now=new Date();now.setHours(0,0,0,0);
+  const fut=entries.filter(e=>new Date(e.fecha+'T12:00:00')>now).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const prox=fut[0]||null;const cd=prox?wkDays(prox.fecha):null;
+  const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:20,fontWeight:700,boxSizing:'border-box',outline:'none'};
+  const save=e=>{if(ed){onUpdateE(entries.map(i=>i.id===ed.id?{...e,id:ed.id}:i));setEd(null);}else{onUpdateE([{...e,id:uid()},...entries]);setForm(false);}};
+  const cdStr=c=>{if(!c)return null;const p=[];if(c.weeks>0)p.push(c.weeks+' sem');if(c.days>0)p.push(c.days+' día'+(c.days!==1?'s':''));return p.join(' y ')||'Hoy';};
+  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <SHead emoji="🌴" title="Vacaciones" sub={'Días '+year} bg={A.emL}/>
+    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14,display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><div><div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Tipo</div><div style={{fontSize:11,color:'#94a3b8'}}>Según convenio</div></div><select value={tipo} onChange={e=>{setTipo(e.target.value);ls('vac-tipo',e.target.value);}} style={{fontSize:13,padding:'6px 8px',borderRadius:8,border:'1px solid #e2e8f0',background:'#f8fafc',color:'#1e293b'}}><option value="laborables">Laborables</option><option value="naturales">Naturales</option></select></div>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><div><div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Comunidad</div><div style={{fontSize:11,color:'#94a3b8'}}>Para festivos</div></div><select value={com} onChange={e=>{setCom(e.target.value);ls('vac-comunidad',e.target.value);}} style={{fontSize:12,padding:'6px 8px',borderRadius:8,border:'1px solid #e2e8f0',background:'#f8fafc',color:'#1e293b',maxWidth:130}}><option value="cataluna">Cataluña</option><option value="c-valenciana">C. Valenciana</option><option value="baleares">Baleares</option><option value="navarra">Navarra</option><option value="pais-vasco">País Vasco</option><option value="la-rioja">La Rioja</option><option value="murcia">Murcia</option><option value="otras">Resto España</option></select></div>
+    </div>
+    {cd&&<div style={{background:A.emL,borderRadius:14,padding:16,border:'1px solid #6ee7b7'}}>
+      <div style={{fontSize:11,color:A.em,fontWeight:700,marginBottom:4,textTransform:'uppercase'}}>Próximas vacaciones</div>
+      <div style={{fontWeight:700,color:'#065f46',fontSize:14,marginBottom:8}}>{prox.desc||fmtL(prox.fecha)}</div>
+      <div style={{display:'flex',alignItems:'baseline',gap:6,flexWrap:'wrap'}}>
+        {cd.weeks>0&&<><span style={{fontSize:40,fontWeight:900,color:A.em,lineHeight:1}}>{cd.weeks}</span><span style={{fontSize:15,color:A.em,fontWeight:600}}>sem</span></>}
+        {cd.days>0&&<><span style={{fontSize:40,fontWeight:900,color:'#065f46',lineHeight:1,marginLeft:cd.weeks>0?8:0}}>{cd.days}</span><span style={{fontSize:15,color:'#065f46',fontWeight:600}}>día{cd.days!==1?'s':''}</span></>}
+        {cd.weeks===0&&cd.days===0&&<span style={{fontSize:20,fontWeight:800,color:A.em}}>¡Hoy!</span>}
+      </div>
+      <div style={{fontSize:12,color:'#047857',marginTop:4}}>Inician el {fmtL(prox.fecha)}</div>
+    </div>}
+    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}><span style={{fontSize:11,textTransform:'uppercase',color:'#94a3b8',fontWeight:700}}>Días totales</span>{!editT&&<button onClick={()=>{setTInp(String(totalD||''));setEditT(true);}} style={{background:'none',border:'none',cursor:'pointer',color:A.em,fontWeight:600,fontSize:12,padding:4}}>{totalD>0?'Cambiar':'Definir'}</button>}</div>
+      {editT?<div style={{display:'flex',gap:8}}><input type="number" min="0" step="1" value={tInp} autoFocus onChange={e=>setTInp(e.target.value)} style={inp}/><button onClick={()=>{const n=parseInt(tInp,10);if(isNaN(n)||n<0){alert('Número inválido');return;}onUpdateT({...totales,[yKey]:n});setEditT(false);}} style={{background:A.em,border:'none',borderRadius:8,padding:'0 12px',cursor:'pointer',color:'white',display:'flex',alignItems:'center'}}><IcoChk/></button><button onClick={()=>setEditT(false)} style={{background:'#f1f5f9',border:'none',borderRadius:8,padding:'0 10px',cursor:'pointer',color:'#64748b',display:'flex',alignItems:'center'}}><IcoX/></button></div>
+      :<span style={{fontSize:30,fontWeight:800,color:'#1e293b'}}>{totalD} <span style={{fontSize:14,fontWeight:400,color:'#94a3b8'}}>días</span></span>}
+    </div>
+    <div style={{display:'flex',gap:10}}><Stat label="Usados" value={used} unit="días" color={A.amb}/><Stat label="Disponibles" value={rest} unit="días" color={rest<0?A.red:A.em}/></div>
+    {totalD>0&&<div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:12}}><div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'#94a3b8',marginBottom:6}}><span>Progreso</span><span>{used}/{totalD}</span></div><div style={{height:10,background:'#f1f5f9',borderRadius:99,overflow:'hidden'}}><div style={{height:'100%',width:pct+'%',background:A.em,borderRadius:99,transition:'width 0.3s'}}/></div></div>}
+    <AddBtn label="Registrar vacaciones" color={A.em} onClick={()=>{setEd(null);setForm(true);}}/>
+    {(form||ed)&&<VacForm initial={ed||{fecha:todayISO(),dias:'',desc:''}} tipo={tipo} fs={fs} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={A.em}/>}
+    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:14}}><Calendario entries={ye} fests={fsCal} cy={cy} cm={cm} onCh={chM} tipo={tipo} com={com}/></div>
+    <div style={{display:'flex',flexDirection:'column',gap:8}}>
+      {ye.length===0&&<Empty text="Sin vacaciones este año"/>}
+      {[...ye].sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(it=>{const wd=wkDays(it.fecha);return <Item key={it.id} item={it} onEdit={i=>{setEd(i);setForm(false);}} onDelete={id=>onUpdateE(entries.filter(i=>i.id!==id))}>
+        <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8}}><span style={{fontSize:12,color:'#94a3b8'}}>{fmtL(it.fecha)}{it.fin&&it.fin!==it.fecha?' — '+fmtL(it.fin):''}</span><span style={{fontSize:18,fontWeight:800,color:A.em,flexShrink:0}}>{it.dias} {it.dias===1?'día':'días'}</span></div>
+        {it.desc&&<div style={{fontSize:13,color:'#475569',marginTop:3}}>{it.desc}</div>}
+        {wd&&<div style={{fontSize:12,color:A.em,marginTop:4,fontWeight:600}}>Faltan {cdStr(wd)}</div>}
+        {!wd&&<div style={{fontSize:12,color:'#94a3b8',marginTop:4}}>Ya pasaron</div>}
+      </Item>;})}
+    </div>
+  </div>;
+}
+
+function CobroSection(){
+  const [dia,setDia]=useState(()=>parseInt(ll('cobro-dia')||'28'));const [ed,setEd]=useState(false);const [inp2,setInp2]=useState('');
+  const c=nxtCobro(dia);const mes=c.date.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+  const guar=()=>{const n=parseInt(inp2);if(isNaN(n)||n<1||n>31){alert('Día inválido');return;}setDia(n);ls('cobro-dia',n);setEd(false);};
+  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <SHead emoji="💰" title="Próximo cobro" sub="Tu día de cobro" bg={A.purL}/>
+    <div style={{background:'white',borderRadius:16,border:'1px solid #e2e8f0',padding:24,textAlign:'center'}}>
+      <div style={{fontSize:13,color:'#94a3b8',marginBottom:4}}>Cobro</div>
+      <div style={{fontSize:22,fontWeight:800,color:'#1e293b',marginBottom:8}}>Día {dia} de {mes}</div>
+      {!ed?<button onClick={()=>{setInp2(String(dia));setEd(true);}} style={{fontSize:12,color:A.pur,background:'none',border:'none',cursor:'pointer',textDecoration:'underline',marginBottom:16}}>Cambiar día</button>
+      :<div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:16}}><input type="number" min="1" max="31" value={inp2} onChange={e=>setInp2(e.target.value)} style={{width:80,padding:'8px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:18,fontWeight:700,textAlign:'center'}} autoFocus/><button onClick={guar} style={{background:A.pur,border:'none',borderRadius:8,padding:'0 14px',cursor:'pointer',color:'white',display:'flex',alignItems:'center'}}><IcoChk/></button><button onClick={()=>setEd(false)} style={{background:'#f1f5f9',border:'none',borderRadius:8,padding:'0 10px',cursor:'pointer',color:'#64748b',display:'flex',alignItems:'center'}}><IcoX/></button></div>}
+      <div style={{background:A.purL,borderRadius:12,padding:'20px 16px',marginBottom:12}}>
+        <div style={{fontSize:13,color:A.pur,fontWeight:600,marginBottom:8}}>Tiempo restante</div>
+        <div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:6,flexWrap:'wrap'}}>
+          {c.weeks>0&&<><span style={{fontSize:52,fontWeight:900,color:A.pur,lineHeight:1}}>{c.weeks}</span><span style={{fontSize:16,color:A.pur,fontWeight:600}}>sem</span></>}
+          {c.days>0&&<><span style={{fontSize:52,fontWeight:900,color:'#5b21b6',lineHeight:1,marginLeft:c.weeks>0?8:0}}>{c.days}</span><span style={{fontSize:16,color:'#5b21b6',fontWeight:600}}>día{c.days!==1?'s':''}</span></>}
+          {c.weeks===0&&c.days===0&&<span style={{fontSize:28,fontWeight:800,color:A.em}}>¡Hoy cobras!</span>}
+        </div>
+      </div>
+      <div style={{fontSize:13,color:'#94a3b8'}}>{c.total===1?'¡Mañana cobras!':`Faltan ${c.total} días`}</div>
+    </div>
+  </div>;
+}
+
+function FallosSection({fallos,incid,year,onUpdateF,onUpdateI}){
+  const [sub,setSub]=useState('fallos');const [fF,setFF]=useState(false);const [edF,setEdF]=useState(null);const [fI,setFI]=useState(false);const [edI,setEdI]=useState(null);const [mF,setMF]=useState(null);const [mI,setMI]=useState(null);
+  const yf=fallos.filter(i=>yOf(i.fecha)===year);const mf=yf.filter(i=>mOf(i.fecha)===CM&&year===CY);
+  const yi=incid.filter(i=>yOf(i.fecha)===year);const mi=yi.filter(i=>mOf(i.fecha)===CM&&year===CY);
+  const yfF=mF!==null?yf.filter(i=>mOf(i.fecha)===mF):yf;
+  const yiF=mI!==null?yi.filter(i=>mOf(i.fecha)===mI):yi;
+  const FF=[{name:'fecha',label:'Fecha',type:'date',req:true},{name:'desc',label:'Descripción',type:'textarea',req:true,ph:'Describe el fallo...'}];
+  const sF=e=>{if(edF){onUpdateF(fallos.map(i=>i.id===edF.id?{...e,id:edF.id}:i));setEdF(null);}else{onUpdateF([{...e,id:uid()},...fallos]);setFF(false);}};
+  const sI=e=>{if(edI){onUpdateI(incid.map(i=>i.id===edI.id?{...e,id:edI.id}:i));setEdI(null);}else{onUpdateI([{...e,id:uid()},...incid]);setFI(false);}};
+  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <SHead emoji="⚠️" title="Fallos" sub="Errores e incidencias" bg={A.redL}/>
+    <div style={{display:'flex',background:'white',borderRadius:10,border:'1px solid #e2e8f0',padding:4,gap:4}}>
+      <button onClick={()=>setSub('fallos')} style={{flex:1,padding:'8px 0',borderRadius:8,border:'none',background:sub==='fallos'?'#1e293b':'transparent',color:sub==='fallos'?'white':'#64748b',fontWeight:600,fontSize:13,cursor:'pointer'}}>Fallos propios</button>
+      <button onClick={()=>setSub('incid')} style={{flex:1,padding:'8px 0',borderRadius:8,border:'none',background:sub==='incid'?'#1e293b':'transparent',color:sub==='incid'?'white':'#64748b',fontWeight:600,fontSize:13,cursor:'pointer'}}>Incidencias</button>
+    </div>
+    {sub==='fallos'&&<div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{display:'flex',gap:10}}><Stat label={MESES[CM]} value={mf.length} unit="este mes" color={A.red}/><Stat label={'Año '+year} value={yf.length} unit="total" color={A.red}/></div>
+      <FiltroMes year={year} items={fallos} mes={mF} onMes={setMF} color={A.red}/>
+      <AddBtn label="Añadir fallo" color={A.red} onClick={()=>{setEdF(null);setFF(true);}}/>
+      {(fF||edF)&&<Form title={edF?'Editar fallo':'Nuevo fallo'} fields={FF} initial={edF||{fecha:todayISO(),desc:''}} onSave={sF} onCancel={()=>{setFF(false);setEdF(null);}} color={A.red}/>}
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {yfF.length===0&&<Empty text={mF!==null?'Sin fallos en '+MESES[mF]:'Sin fallos este año'}/>}
+        {[...yfF].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=><Item key={it.id} item={it} onEdit={setEdF} onDelete={id=>onUpdateF(fallos.filter(i=>i.id!==id))}><div style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</div><div style={{fontSize:14,color:'#1e293b',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div></Item>)}
+      </div>
+    </div>}
+    {sub==='incid'&&<div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{display:'flex',gap:10}}><Stat label={MESES[CM]} value={mi.length} unit="este mes" color={A.amb}/><Stat label={'Año '+year} value={yi.length} unit="total" color={A.amb}/></div>
+      <FiltroMes year={year} items={incid} mes={mI} onMes={setMI} color={A.amb}/>
+      <AddBtn label="Añadir incidencia" color={A.amb} onClick={()=>{setEdI(null);setFI(true);}}/>
+      {(fI||edI)&&<IncidForm initial={edI||{fecha:todayISO(),titulo:'',desc:'',fotos:[]}} onSave={sI} onCancel={()=>{setFI(false);setEdI(null);}} color={A.amb}/>}
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {yiF.length===0&&<Empty text={mI!==null?'Sin incidencias en '+MESES[mI]:'Sin incidencias este año'}/>}
+        {[...yiF].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=><IncidItem key={it.id} it={it} onEdit={i=>{setEdI(i);setFI(false);}} onDelete={id=>onUpdateI(incid.filter(i=>i.id!==id))}/>)}
+      </div>
+    </div>}
+  </div>;
+}
+
+function AusenciasSection({items,year,onUpdate}){
+  const [form,setForm]=useState(false);const [ed,setEd]=useState(null);const [fecha,setFecha]=useState(todayISO());const [just,setJust]=useState('');const [mot,setMot]=useState('');const [hrs,setHrs]=useState('');const [est,setEst]=useState('Pendiente');const [mes,setMes]=useState(null);
+  const yi=items.filter(i=>yOf(i.fecha)===year);const mi=yi.filter(i=>mOf(i.fecha)===CM&&year===CY);
+  const hPM=mi.filter(i=>i.estado==='Pendiente').reduce((s,i)=>s+Number(i.horas||0),0);
+  const hPA=yi.filter(i=>i.estado==='Pendiente').reduce((s,i)=>s+Number(i.horas||0),0);
+  const yiF=mes!==null?yi.filter(i=>mOf(i.fecha)===mes):yi;
+  const reset=()=>{setFecha(todayISO());setJust('');setMot('');setHrs('');setEst('Pendiente');};
+  const guar=()=>{if(!fecha||!just){alert('Completa los campos requeridos');return;}const it={fecha,just,motivo:mot,horas:parseFloat(hrs)||0,estado:est};if(ed){onUpdate(items.map(i=>i.id===ed.id?{...it,id:ed.id}:i));setEd(null);}else onUpdate([{...it,id:uid()},...items]);setForm(false);reset();};
+  const inp={width:'100%',padding:'10px 12px',border:'1px solid #cbd5e1',borderRadius:8,fontSize:16,boxSizing:'border-box',outline:'none'};
+  const Rb=({val,cur,onS,col})=><button onClick={()=>onS(val)} style={{padding:'8px 14px',borderRadius:20,border:'1px solid '+(cur===val?(col||A.blue):'#e2e8f0'),background:cur===val?(col||A.blue):'white',color:cur===val?'white':'#475569',fontSize:13,fontWeight:600,cursor:'pointer'}}>{val}</button>;
+  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <SHead emoji="🚫" title="Ausencias" sub="Días no trabajados" bg={A.redL}/>
+    <div style={{display:'flex',gap:10}}><Stat label={MESES[CM]} value={mi.length} unit="este mes" color={A.red}/><Stat label={'Año '+year} value={yi.length} unit="total" color={A.red}/></div>
+    {(hPM>0||hPA>0)&&<div style={{display:'flex',gap:10}}><Stat label="H. pend. mes" value={hPM+'h'} unit="pendientes" color={A.amb}/><Stat label="H. pend. año" value={hPA+'h'} unit="pendientes" color={A.amb}/></div>}
+    <FiltroMes year={year} items={items} mes={mes} onMes={setMes} color={A.red}/>
+    <AddBtn label="Registrar ausencia" color={A.red} onClick={()=>{reset();setEd(null);setForm(true);}}/>
+    {form&&<div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}><span style={{fontWeight:700,color:'#1e293b'}}>{ed?'Editar':'Nueva ausencia'}</span><button onClick={()=>{setForm(false);setEd(null);}} style={{background:'none',border:'none',cursor:'pointer',color:'#94a3b8',padding:4}}><IcoX/></button></div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Fecha *</label><input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={inp}/></div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:6}}>¿Justificada? *</label><div style={{display:'flex',gap:8}}><Rb val="Justificada" cur={just} onS={setJust} col={A.em}/><Rb val="Injustificada" cur={just} onS={setJust} col={A.red}/></div></div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Motivo</label><textarea rows={2} placeholder="Ej: Cita médica..." value={mot} onChange={e=>setMot(e.target.value)} style={{...inp,resize:'none'}}/></div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:4}}>Horas (0 = día completo)</label><input type="number" min="0" max="12" step="0.5" value={hrs} onChange={e=>setHrs(e.target.value)} style={inp}/></div>
+      <div><label style={{display:'block',fontSize:12,fontWeight:600,color:'#64748b',marginBottom:6}}>Estado</label><div style={{display:'flex',gap:8,flexWrap:'wrap'}}><Rb val="Pendiente" cur={est} onS={setEst} col={A.amb}/><Rb val="Devueltas" cur={est} onS={setEst} col={A.em}/><Rb val="Descontadas" cur={est} onS={setEst} col='#475569'/></div></div>
+      <div style={{display:'flex',gap:8}}><button onClick={()=>{setForm(false);setEd(null);}} style={{flex:1,padding:'11px 0',borderRadius:8,border:'1px solid #cbd5e1',background:'white',color:'#475569',fontWeight:600,cursor:'pointer'}}>Cancelar</button><button onClick={guar} style={{flex:2,padding:'11px 0',borderRadius:8,border:'none',background:A.red,color:'white',fontWeight:600,cursor:'pointer'}}>Guardar</button></div>
+    </div>}
+    <div style={{display:'flex',flexDirection:'column',gap:8}}>
+      {yiF.length===0&&<Empty text={mes!==null?'Sin ausencias en '+MESES[mes]:'Sin ausencias este año'}/>}
+      {[...yiF].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=>{
+        const inj=it.just==='Injustificada';const ec=it.estado==='Devueltas'?A.em:it.estado==='Descontadas'?'#475569':A.amb;
+        return <Item key={it.id} item={it} onEdit={i=>{setFecha(i.fecha);setJust(i.just);setMot(i.motivo||'');setHrs(String(i.horas||''));setEst(i.estado||'Pendiente');setEd(i);setForm(true);}} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginBottom:4}}><span style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</span><span style={{fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:20,background:inj?A.redL:A.emL,color:inj?A.red:A.em}}>{it.just}</span></div>
+          {it.motivo&&<div style={{fontSize:13,color:'#475569',marginBottom:4,wordBreak:'break-word'}}>{it.motivo}</div>}
+          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{it.horas>0&&<span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:A.ambL,color:A.amb}}>{it.horas}h</span>}<span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:'#f1f5f9',color:ec}}>{it.estado}</span></div>
+        </Item>;
+      })}
+    </div>
+  </div>;
+}
+
+function HorasSection({items,year,onUpdate}){
+  const [form,setForm]=useState(false);const [ed,setEd]=useState(null);const [mes,setMes]=useState(null);
+  const yi=items.filter(i=>yOf(i.fecha)===year);const mi=yi.filter(i=>mOf(i.fecha)===CM&&year===CY);
+  const sum=a=>a.reduce((s,i)=>s+Number(i.horas||0),0);
+  const yiF=mes!==null?yi.filter(i=>mOf(i.fecha)===mes):yi;
+  const F=[{name:'fecha',label:'Fecha',type:'date',req:true},{name:'horas',label:'Horas',type:'number',step:'0.5',min:'0',req:true,ph:'2.5'},{name:'desc',label:'Nota',type:'textarea',ph:'Motivo...'}];
+  const save=e=>{const c={...e,horas:Number(e.horas)||0};if(ed){onUpdate(items.map(i=>i.id===ed.id?{...c,id:ed.id}:i));setEd(null);}else{onUpdate([{...c,id:uid()},...items]);setForm(false);}};
+  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <SHead emoji="⏱️" title="Horas extra" sub="Fuera de horario" bg={A.blueL}/>
+    <div style={{display:'flex',gap:10}}><Stat label={MESES[CM]} value={sum(mi)} unit="horas este mes" color={A.blue}/><Stat label={'Año '+year} value={sum(yi)} unit="horas total" color={A.blue}/></div>
+    <FiltroMes year={year} items={items} mes={mes} onMes={setMes} color={A.blue}/>
+    <AddBtn label="Añadir horas extra" color={A.blue} onClick={()=>{setEd(null);setForm(true);}}/>
+    {(form||ed)&&<Form title={ed?'Editar':'Nuevas horas extra'} fields={F} initial={ed||{fecha:todayISO(),horas:'',desc:''}} onSave={save} onCancel={()=>{setForm(false);setEd(null);}} color={A.blue}/>}
+    <div style={{display:'flex',flexDirection:'column',gap:8}}>
+      {yiF.length===0&&<Empty text={mes!==null?'Sin horas en '+MESES[mes]:'Sin horas extra este año'}/>}
+      {[...yiF].sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(it=><Item key={it.id} item={it} onEdit={setEd} onDelete={id=>onUpdate(items.filter(i=>i.id!==id))}><div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8}}><span style={{fontSize:12,color:'#94a3b8'}}>{fmt(it.fecha)}</span><span style={{fontSize:20,fontWeight:800,color:A.blue}}>{it.horas} h</span></div>{it.desc&&<div style={{fontSize:13,color:'#475569',marginTop:3,wordBreak:'break-word'}}>{it.desc}</div>}</Item>)}
+    </div>
+  </div>;
+}
+
+function BackupSection(){
+  const [msg,setMsg]=useState('');const [yInf,setYInf]=useState(CY);
+  const ys=[];for(let y=CY+1;y>=CY-4;y--)ys.push(y);
+  const exp=()=>{
+    const data={version:3,fecha:new Date().toISOString(),fallos:ll('fallos')||[],horas:ll('horas')||[],vacE:ll('vac-e')||[],vacT:ll('vac-t')||{},incid:ll('incid')||[],ausencias:ll('ausencias')||[],cobroDia:ll('cobro-dia')||28,vacTipo:ll('vac-tipo')||'laborables',vacComunidad:ll('vac-comunidad')||'cataluna',turnos:ll('turnos')||{},nominas:ll('nominas')||[]};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='labora-backup-'+todayISO()+'.json';a.click();URL.revokeObjectURL(url);
+    setMsg('Backup descargado ✓');setTimeout(()=>setMsg(''),4000);
+  };
+  const imp=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const r=new FileReader();
+    r.onload=ev=>{
+      try{
+        const data=JSON.parse(ev.target.result);if(!data.version){alert('Archivo inválido');return;}
+        if(Array.isArray(data.fallos))ls('fallos',data.fallos);if(Array.isArray(data.horas))ls('horas',data.horas);
+        if(Array.isArray(data.vacE))ls('vac-e',data.vacE);if(data.vacT)ls('vac-t',data.vacT);
+        if(Array.isArray(data.incid))ls('incid',data.incid);if(Array.isArray(data.ausencias))ls('ausencias',data.ausencias);
+        if(data.cobroDia)ls('cobro-dia',data.cobroDia);if(data.vacTipo)ls('vac-tipo',data.vacTipo);
+        if(data.vacComunidad)ls('vac-comunidad',data.vacComunidad);
+        if(data.turnos)ls('turnos',data.turnos);if(Array.isArray(data.nominas))ls('nominas',data.nominas);
+        setMsg('Datos restaurados. Recarga la app.');
+      }catch{alert('Error al leer el archivo.');}
+    };
+    r.readAsText(file);e.target.value='';
+  };
+  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <SHead emoji="💾" title="Backup y reportes" sub="Exporta e importa tus datos" bg="#f0fdf4"/>
+    <div style={{background:'white',borderRadius:12,border:'2px solid '+A.teal,padding:16,display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{fontWeight:700,fontSize:14,color:'#1e293b'}}>📄 Informe anual</div>
+      <div style={{fontSize:12,color:'#64748b'}}>Se abre una página con todos tus datos. Desde ahí: <strong>Imprimir → Guardar como PDF</strong>.</div>
+      <div style={{display:'flex',gap:8}}><select value={yInf} onChange={e=>setYInf(Number(e.target.value))} style={{flex:1,padding:'11px 12px',border:'1px solid #e2e8f0',borderRadius:8,fontSize:15,fontWeight:700,color:'#1e293b',background:'#f8fafc'}}>{ys.map(y=><option key={y} value={y}>{y}</option>)}</select><button onClick={()=>generarInforme(yInf)} style={{flex:2,background:A.teal,color:'white',border:'none',borderRadius:10,padding:'11px 0',fontWeight:700,fontSize:15,cursor:'pointer'}}>📄 Ver informe {yInf}</button></div>
+    </div>
+    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Exportar datos</div>
+      <div style={{fontSize:12,color:'#64748b'}}>Descarga todos tus datos en un archivo.</div>
+      <button onClick={exp} style={{width:'100%',background:A.em,color:'white',border:'none',borderRadius:10,padding:'13px 0',fontWeight:600,fontSize:15,cursor:'pointer'}}>Descargar backup</button>
+    </div>
+    <div style={{background:'white',borderRadius:12,border:'1px solid #e2e8f0',padding:16,display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{fontSize:13,fontWeight:600,color:'#1e293b'}}>Restaurar datos</div>
+      <div style={{fontSize:12,color:'#64748b'}}>Los datos actuales serán reemplazados.</div>
+      <label style={{width:'100%',background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:10,padding:'13px 0',fontWeight:600,fontSize:15,cursor:'pointer',textAlign:'center',color:A.blue,display:'block'}}>Seleccionar archivo<input type="file" accept=".json" style={{display:'none'}} onChange={imp}/></label>
+    </div>
+    {msg&&<div style={{background:'#f0fdf4',border:'1px solid #6ee7b7',borderRadius:10,padding:'12px 14px',fontSize:13,color:'#065f46',fontWeight:600}}>{msg}</div>}
+  </div>;
+}
+
+function App(){
+  const [ok,setOk]=useState(()=>!!ll('disclaimer-ok'));
+  const [tab,setTab]=useState('inicio');
+  const [year,setYear]=useState(CY);
+  const [vacE,setVacE]=useState(()=>ll('vac-e')||[]);
+  const [vacT,setVacT]=useState(()=>ll('vac-t')||{});
+  const [fallos,setFallos]=useState(()=>ll('fallos')||[]);
+  const [horas,setHoras]=useState(()=>ll('horas')||[]);
+  const [incid,setIncid]=useState(()=>ll('incid')||[]);
+  const [ausencias,setAusencias]=useState(()=>ll('ausencias')||[]);
+  const [turnos,setTurnos]=useState(()=>ll('turnos')||{});
+  const [nominas,setNominas]=useState(()=>ll('nominas')||[]);
+  const [cobro,setCobro]=useState(()=>parseInt(ll('cobro-dia')||'28'));
+
+  const sv=(k,set)=>v=>{set(v);ls(k,v);};
+
+  useEffect(()=>{
+    const c=parseInt(ll('cobro-dia')||'28');
+    setCobro(c);
+  },[tab]);
+
+  if(!ok)return <DisclaimerModal onAcepto={()=>{ls('disclaimer-ok',true);setOk(true);}}/>;
+
+  const TABS=[
+    {id:'inicio',label:'Inicio',emoji:'🏠'},
+    {id:'vac',label:'Vac.',emoji:'🌴'},
+    {id:'horas',label:'Horas',emoji:'⏱️'},
+    {id:'nominas',label:'Nómina',emoji:'💵'},
+    {id:'mas',label:'Más',emoji:'⚙️'},
+  ];
+
+  const MAS_TABS=[
+    {id:'cobro',label:'Cobro',emoji:'💰'},
+    {id:'turnos',label:'Turnos',emoji:'🔄'},
+    {id:'fallos',label:'Fallos',emoji:'⚠️'},
+    {id:'ausencias',label:'Ausencias',emoji:'🚫'},
+    {id:'backup',label:'Backup',emoji:'💾'},
+  ];
+
+  const isMas=MAS_TABS.some(t=>t.id===tab);
+  const navTab=isMas?'mas':tab;
+
+  const renderContent=()=>{
+    if(tab==='inicio')return <InicioSection
+      vacE={vacE} vacTotales={vacT} fallos={fallos} horas={horas}
+      ausencias={ausencias} nominas={nominas} turnos={turnos} cobro={cobro}
+      onNav={t=>setTab(t)}
+    />;
+    if(tab==='vac')return <VacSection entries={vacE} totales={vacT} year={year} onUpdateE={sv('vac-e',setVacE)} onUpdateT={sv('vac-t',setVacT)}/>;
+    if(tab==='horas')return <HorasSection items={horas} year={year} onUpdate={sv('horas',setHoras)}/>;
+    if(tab==='nominas')return <NominaSection nominas={nominas} onUpdate={sv('nominas',setNominas)}/>;
+    if(tab==='cobro')return <CobroSection/>;
+    if(tab==='turnos')return <TurnosSection turnos={turnos} onUpdate={sv('turnos',setTurnos)}/>;
+    if(tab==='fallos')return <FallosSection fallos={fallos} incid={incid} year={year} onUpdateF={sv('fallos',setFallos)} onUpdateI={sv('incid',setIncid)}/>;
+    if(tab==='ausencias')return <AusenciasSection items={ausencias} year={year} onUpdate={sv('ausencias',setAusencias)}/>;
+    if(tab==='backup')return <BackupSection/>;
+    if(tab==='mas')return <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{fontSize:13,fontWeight:600,color:'#64748b',marginBottom:4}}>Más opciones</div>
+      {MAS_TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{display:'flex',alignItems:'center',gap:12,background:'white',border:'1px solid #e2e8f0',borderRadius:12,padding:'14px 16px',cursor:'pointer',textAlign:'left',width:'100%'}}>
+        <span style={{fontSize:22}}>{t.emoji}</span>
+        <span style={{fontSize:15,fontWeight:600,color:'#1e293b'}}>{t.label}</span>
+        <span style={{marginLeft:'auto',color:'#cbd5e1',fontSize:18}}>›</span>
+      </button>)}
+    </div>;
+    return null;
+  };
+
+  const needsYear=['vac','horas','fallos','ausencias'].includes(tab);
+
+  return <div style={{maxWidth:500,margin:'0 auto',minHeight:'100vh',display:'flex',flexDirection:'column',background:'#f8fafc'}}>
+    <div style={{background:'#1e293b',padding:'14px 16px 12px',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+      <div>
+        <div style={{fontSize:18,fontWeight:800,color:'white',letterSpacing:-0.5}}>💼 Labora</div>
+        <div style={{fontSize:11,color:'#94a3b8',marginTop:1}}>
+          {tab==='inicio'?'Tu resumen laboral':TABS.find(t=>t.id===navTab)?.label||MAS_TABS.find(t=>t.id===tab)?.label||''}
+        </div>
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        {needsYear&&<select value={year} onChange={e=>setYear(Number(e.target.value))} style={{appearance:'none',background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.2)',borderRadius:8,padding:'5px 10px',color:'white',fontSize:13,fontWeight:600,cursor:'pointer'}}>
+          {[CY+1,CY,CY-1,CY-2].map(y=><option key={y} value={y} style={{background:'#1e293b'}}>{y}</option>)}
+        </select>}
+        <DisclaimerInfo/>
+      </div>
+    </div>
+
+    <div className="ms" style={{flex:1,overflowY:'auto',padding:16}}>
+      {renderContent()}
+    </div>
+
+    <div style={{borderTop:'1px solid #e2e8f0',background:'white',textAlign:'center',padding:'5px 0 4px'}}>
+      <span style={{fontSize:11,color:'#94a3b8'}}>☕ ¿Te es útil? </span>
+      <a href="https://ko-fi.com" target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:'#FF5E5B',textDecoration:'none',fontWeight:600}}>Apoya Labora en Ko-Fi</a>
+    </div>
+
+    <div style={{background:'white',borderTop:'1px solid #e2e8f0',display:'flex',flexShrink:0}}>
+      {TABS.map(t=>{const act=navTab===t.id;return <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'8px 0 10px',background:'none',border:'none',cursor:'pointer'}}>
+        <span style={{fontSize:18,lineHeight:1}}>{t.emoji}</span>
+        {act&&<div style={{width:4,height:4,borderRadius:'50%',background:'#7c3aed'}}/>}
+        <span style={{fontSize:9,color:act?'#7c3aed':'#94a3b8',fontWeight:act?700:400}}>{t.label}</span>
+      </button>;})}
+    </div>
+  </div>;
+}
+
+const root=ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+</body>
+</html>
