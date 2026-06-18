@@ -889,5 +889,12 @@ function App(){
 const root=ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App/>);
 </script>
+  <script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/rrhh-app/sw.js');
+    });
+  }
+</script>
 </body>
 </html>
